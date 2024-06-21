@@ -138,7 +138,7 @@ impl DrawingBackend for TextDrawingBackend {
                     }
                     PixelState::HLine(c) => {
                         if let Some(c) = PixelState::get_color(*c) {
-                            stdout.queue(crossterm::style::SetForegroundColor(c));
+                            stdout.queue(crossterm::style::SetForegroundColor(c)).unwrap();
                             stdout.queue(crossterm::style::Print("─")).unwrap();
                             stdout.queue(crossterm::style::ResetColor).unwrap();
                         } else {
@@ -147,7 +147,7 @@ impl DrawingBackend for TextDrawingBackend {
                     }
                     PixelState::VLine(c) => {
                         if let Some(c) = PixelState::get_color(*c) {
-                            stdout.queue(crossterm::style::SetForegroundColor(c));
+                            stdout.queue(crossterm::style::SetForegroundColor(c)).unwrap();
                             stdout.queue(crossterm::style::Print("│")).unwrap();
                             stdout.queue(crossterm::style::ResetColor).unwrap();
                         } else {
@@ -156,7 +156,7 @@ impl DrawingBackend for TextDrawingBackend {
                     }
                     PixelState::Cross(c) => {
                         if let Some(c) = PixelState::get_color(*c) {
-                            stdout.queue(crossterm::style::SetForegroundColor(c));
+                            stdout.queue(crossterm::style::SetForegroundColor(c)).unwrap();
                             stdout.queue(crossterm::style::Print("┼")).unwrap();
                             stdout.queue(crossterm::style::ResetColor).unwrap();
                         } else {
