@@ -26,6 +26,7 @@ pub mod app;
 pub mod debug_util;
 pub mod tui;
 pub mod data;
+pub mod stream;
 
 fn main() -> Result<()> {
     initialize_logging()?;
@@ -38,7 +39,7 @@ fn main() -> Result<()> {
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);
-    let app = App::new();
+    let app = App::new(stream::layer());
     app.run(&mut terminal, tick_rate)?;
 
     // let host = cpal::default_host();
