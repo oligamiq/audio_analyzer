@@ -4,6 +4,7 @@
         "crossterm",
         "fundsp",
         "LOGLEVEL",
+        "mels",
         "ratatui"
     ]
 }

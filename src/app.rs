@@ -2,36 +2,33 @@ use std::time::{Duration, Instant};
 
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
-use fundsp::{hacker::AudioUnit, net::Net};
-use ratatui::{prelude::*, widgets::{Axis, Block, Chart, Dataset}};
+use ratatui::{
+    prelude::*,
+    widgets::{Axis, Block, Chart, Dataset},
+};
 
-use crate::{data::{test_data::TestDataType, RawDataType}, A};
+use crate::{data::RawDataLayer, stream::MelLayer};
 
 #[derive(Clone)]
-pub struct App {
-    data_from: RawDataType,
+pub struct App<R: RawDataLayer, T: MelLayer> {
     data: Vec<(f64, f64)>,
     window: [f64; 2],
-    net: Net,
+    mel_layer: T,
+    raw_data_layer: R,
 }
 
-impl App{
-    pub fn new(from: RawDataType, mut net: Net) -> Self {
-        let input = from.get_data();
-        let id = net.push(Box::new(input));
-        net.connect_input(0, id, 0);
-        net.connect_output(0, id, 0);
-
+impl<R, T> App<R, T>
+where
+    R: RawDataLayer,
+    T: MelLayer,
+{
+    pub fn new(raw_data_layer: R, mel_layer: T) -> Self {
         Self {
-            data_from: from,
+            raw_data_layer,
+            mel_layer,
             window: [0.0, 20.0],
             data: vec![(0.0, 0.0)],
-            net,
         }
-    }
-
-    fn on_tick(&mut self) {
-
     }
 
     pub fn run<B: Backend>(
@@ -48,7 +45,9 @@ impl App{
                 if let Event::Key(key) = event::read()? {
                     if key.modifiers == crossterm::event::KeyModifiers::CONTROL {
                         match key.code {
-                            KeyCode::Char('c') => return Err(color_eyre::Report::msg("Terminated by Ctrl+C")),
+                            KeyCode::Char('c') => {
+                                return Err(color_eyre::Report::msg("Terminated by Ctrl+C"))
+                            }
                             _ => {}
                         }
                     }
@@ -58,7 +57,6 @@ impl App{
                 }
             }
             if last_tick.elapsed() >= tick_rate {
-                self.on_tick();
                 last_tick = Instant::now();
             }
         }
@@ -121,5 +119,4 @@ impl App{
 
         f.render_widget(chart, area);
     }
-
 }

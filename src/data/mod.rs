@@ -1,17 +1,8 @@
-use fundsp::prelude::*;
+use crossbeam_channel::Receiver;
 use test_data::TestDataType;
 
 pub mod test_data;
 
-#[derive(Debug, Clone, Copy)]
-pub enum RawDataType {
-    Test(TestDataType),
-}
-
-impl RawDataType {
-    pub fn get_data(&self) -> impl AudioUnit {
-        match self {
-            RawDataType::Test(a) => a.get_data(),
-        }
-    }
+pub trait RawDataLayer {
+    fn voice_stream_receiver(&self) -> Receiver<Vec<f32>>;
 }

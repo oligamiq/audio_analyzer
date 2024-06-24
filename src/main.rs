@@ -1,35 +1,33 @@
-#![allow(clippy::precedence)]
-
-#[cfg(debug_assertions)] // required when disable_release is set (default)
-#[global_allocator]
-static A: AllocDisabler = AllocDisabler;
-
 use std::io::stdout;
 use std::time::Duration;
 
 use app::App;
-use assert_no_alloc::*;
+use clap::Parser as _;
 use color_eyre::Result;
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{FromSample, SizedSample};
+use command::Args;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::ExecutableCommand as _;
+use data::test_data::TestDataType;
 use debug_util::initialize_logging;
-use fundsp::hacker::*;
+use mel_spec::config::MelConfig;
 use ratatui::prelude::*;
+use stream::first_layer::DefaultMelLayer;
 
 // pub mod console;
 // pub mod plot;
 pub mod app;
-pub mod debug_util;
-pub mod tui;
+pub mod command;
 pub mod data;
+pub mod debug_util;
 pub mod stream;
+pub mod tui;
 
 fn main() -> Result<()> {
     initialize_logging()?;
+
+    let args = Args::parse();
 
     // setup terminal
     stdout().execute(EnterAlternateScreen)?;
@@ -37,9 +35,22 @@ fn main() -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
 
+    // layer config
+    let raw_data_layer = TestDataType::TestData1;
+
+    let mel_layer = {
+        let mut mel_layer = DefaultMelLayer::new();
+        std::mem::swap(
+            mel_layer.borrow_mel_config(),
+            &mut MelConfig::new(400, 160, args.mels, 16000.0),
+        );
+        mel_layer
+    };
+
     // create app and run it
     let tick_rate = Duration::from_millis(250);
-    let app = App::new(stream::layer());
+
+    let app = App::new(raw_data_layer, mel_layer);
     app.run(&mut terminal, tick_rate)?;
 
     // let host = cpal::default_host();
