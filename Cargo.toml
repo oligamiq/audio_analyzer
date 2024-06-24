@@ -45,6 +45,7 @@ compact_str = "0.7.1"
 parking_lot = "0.12.3"
 smallvec = "1.13.2"
 ndarray = "0.15.6"
+symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
