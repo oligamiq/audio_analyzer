@@ -9,6 +9,7 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::ExecutableCommand as _;
+use data::device_stream::Device;
 use data::test_data::TestDataType;
 use debug_util::initialize_logging;
 use mel_spec::config::MelConfig;
@@ -26,6 +27,9 @@ pub mod tui;
 
 fn main() -> Result<()> {
     initialize_logging()?;
+
+    let mut raw_data_layer = Device::new();
+    raw_data_layer.run();
 
     let args = Args::parse();
 
@@ -51,7 +55,7 @@ fn main() -> Result<()> {
     let tick_rate = Duration::from_millis(250);
 
     let app = App::new(raw_data_layer, mel_layer);
-    app.run(&mut terminal, tick_rate)?;
+    // app.run(&mut terminal, tick_rate)?;
 
     // let host = cpal::default_host();
 
