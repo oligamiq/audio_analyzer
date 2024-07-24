@@ -10,15 +10,18 @@ cpal = "0.15.3"
 plotters = "0.3.6"
 
 # command args
-clap = { version = "4.5.7", features = ["derive", "unicode", "wrap_help"] }
+clap = { version = "4.5.10", features = ["derive", "unicode", "wrap_help"] }
 
 # console
 console = { version = "0.15.8", features = ["windows-console-colors"] }
-ratatui = "0.26.3"
+ratatui = "0.27.0"
 crossterm = "0.27.0"
 indicatif = "0.17.8"
 billboard = "0.2.0"
 atty = "0.2.14"
+
+# locad music file
+symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
 # mel spectrogram
 mel_spec = { git = "https://github.com/wavey-ai/mel-spec" }
@@ -34,18 +37,17 @@ tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 # utils
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 directories = "5.0.1"
 predicates = "3.1.0"
 number_prefix = "0.4.0"
 crossbeam-channel = "0.5.13"
 
 # low memory usage
-compact_str = "0.7.1"
+compact_str = "0.8.0"
 parking_lot = "0.12.3"
 smallvec = "1.13.2"
 ndarray = "0.15.6"
-symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
