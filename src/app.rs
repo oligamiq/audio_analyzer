@@ -1,4 +1,7 @@
-use std::{thread, time::{Duration, Instant}};
+use std::{
+    thread,
+    time::{Duration, Instant},
+};
 
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
