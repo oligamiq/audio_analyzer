@@ -3,16 +3,14 @@ use std::thread;
 use color_eyre::eyre::ContextCompat as _;
 use crossbeam_channel::Receiver;
 use symphonia::core::{
-    audio::{AudioBuffer, SampleBuffer, Signal},
+    audio::Signal,
     codecs::DecoderOptions,
-    conv::IntoSample,
     formats::FormatOptions,
     io::MediaSourceStream,
     meta::MetadataOptions,
     probe,
 };
 use tracing::warn;
-use tracing_subscriber::fmt::format::Format;
 
 use crate::trace_dbg;
 

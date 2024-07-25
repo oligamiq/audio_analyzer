@@ -53,7 +53,7 @@ where
             });
         }
 
-        let mut receiver = self.mel_layer.mel_frame_stream_receiver();
+        let receiver = self.mel_layer.mel_frame_stream_receiver();
 
         loop {
             terminal.draw(|frame| self.ui(frame))?;
