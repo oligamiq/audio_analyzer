@@ -5,15 +5,22 @@ use crossbeam_channel::{Receiver, Sender};
 use mel_spec::{config::MelConfig, vad::DetectionSettings};
 use mel_spec_pipeline::pipeline::{AudioConfig, MelFrame, Pipeline, PipelineConfig};
 
+use crate::trace_dbg;
+
 use super::MelLayer;
 
 pub struct DefaultMelLayer {
     mel_config: Option<MelConfig>,
     detection_settings: Option<DetectionSettings>,
-    audio_config: Option<AudioConfig>,
+    audio_config: Option<AudioConfigBuilder>,
     pipeline: Option<Arc<Pipeline>>,
     handles: Option<Vec<std::thread::JoinHandle<()>>>,
     sender: Option<Sender<Vec<f32>>>,
+}
+
+pub struct AudioConfigBuilder {
+    bit_depth: usize,
+    sampling_rate: f64,
 }
 
 impl MelLayer for DefaultMelLayer {
@@ -33,6 +40,9 @@ impl MelLayer for DefaultMelLayer {
     fn start(&mut self) {
         self.start();
     }
+    fn set_sampling_rate(&mut self, sampling_rate: f64) {
+        self.set_sampling_rate(sampling_rate);
+    }
 }
 
 impl DefaultMelLayer {
@@ -40,7 +50,7 @@ impl DefaultMelLayer {
         DefaultMelLayer {
             mel_config: Some(MelConfig::new(400, 160, 80, 16000.0)),
             detection_settings: Some(DetectionSettings::new(1.0, 3, 6, 0)),
-            audio_config: Some(AudioConfig::new(32, 16000.0)),
+            audio_config: Some(AudioConfigBuilder { bit_depth: 32, sampling_rate: 16000.0 }),
             pipeline: None,
             handles: None,
             sender: None,
@@ -55,8 +65,21 @@ impl DefaultMelLayer {
         self.detection_settings.as_mut().unwrap()
     }
 
-    pub fn borrow_audio_config(&mut self) -> &mut AudioConfig {
+    pub fn borrow_audio_config(&mut self) -> &mut AudioConfigBuilder {
         self.audio_config.as_mut().unwrap()
+    }
+
+    pub fn set_sampling_rate(&mut self, sampling_rate: f64) {
+        self.audio_config.as_mut().unwrap().sampling_rate = sampling_rate;
+
+        let mel_config = self.mel_config.as_mut().unwrap();
+        let new_mel_config = MelConfig::new(
+            mel_config.fft_size(),
+            mel_config.hop_size(),
+            mel_config.n_mels(),
+            sampling_rate,
+        );
+        *mel_config = new_mel_config;
     }
 
     pub fn start(&mut self) {
@@ -67,8 +90,11 @@ impl DefaultMelLayer {
             ..
         } = self;
 
+
+        let audio_config = audio_config.take().unwrap();
+
         let config = PipelineConfig::new(
-            audio_config.take().unwrap(),
+            AudioConfig::new(audio_config.bit_depth, audio_config.sampling_rate),
             mel_config.take().unwrap(),
             detection_settings.take().unwrap(),
         );
@@ -85,7 +111,16 @@ impl DefaultMelLayer {
         self.sender = Some(sender);
         let handle = std::thread::spawn(move || loop {
             let data = receiver.recv().unwrap();
-            pipeline.send_pcm(data.as_slice()).unwrap();
+            trace_dbg!(data.len());
+            if data.len() == 0 {
+                continue;
+            }
+            match pipeline.send_pcm(data.as_slice()) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Error sending data to pipeline: {}", e);
+                }
+            }
         });
         handles.push(handle);
 

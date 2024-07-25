@@ -3,12 +3,8 @@ use std::thread;
 use color_eyre::eyre::ContextCompat as _;
 use crossbeam_channel::Receiver;
 use symphonia::core::{
-    audio::Signal,
-    codecs::DecoderOptions,
-    formats::FormatOptions,
-    io::MediaSourceStream,
-    meta::MetadataOptions,
-    probe,
+    audio::Signal, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
+    meta::MetadataOptions, probe,
 };
 use tracing::warn;
 

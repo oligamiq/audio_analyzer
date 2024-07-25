@@ -8,4 +8,5 @@ pub trait MelLayer {
     fn mel_frame_stream_receiver(&self) -> Receiver<MelFrame>;
     fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>>;
     fn start(&mut self);
+    fn set_sampling_rate(&mut self, sampling_rate: f64);
 }

@@ -42,6 +42,7 @@ where
         let mut last_tick = Instant::now();
 
         self.raw_data_layer.start();
+        self.mel_layer.set_sampling_rate(self.raw_data_layer.sample_rate() as f64);
         self.mel_layer.start();
         {
             let sender = self.mel_layer.voice_stream_sender();
@@ -56,27 +57,27 @@ where
         let receiver = self.mel_layer.mel_frame_stream_receiver();
 
         loop {
-            terminal.draw(|frame| self.ui(frame))?;
+            // terminal.draw(|frame| self.ui(frame))?;
 
-            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
-            if crossterm::event::poll(timeout)? {
-                if let Event::Key(key) = event::read()? {
-                    if key.modifiers == crossterm::event::KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('c') => {
-                                return Err(color_eyre::Report::msg("Terminated by Ctrl+C"))
-                            }
-                            _ => {}
-                        }
-                    }
-                    // if key.code == KeyCode::Char('q') {
-                    //     return Ok(());
-                    // }
-                }
-            }
-            if last_tick.elapsed() >= tick_rate {
-                last_tick = Instant::now();
-            }
+            // let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+            // if crossterm::event::poll(timeout)? {
+            //     if let Event::Key(key) = event::read()? {
+            //         if key.modifiers == crossterm::event::KeyModifiers::CONTROL {
+            //             match key.code {
+            //                 KeyCode::Char('c') => {
+            //                     return Err(color_eyre::Report::msg("Terminated by Ctrl+C"))
+            //                 }
+            //                 _ => {}
+            //             }
+            //         }
+            //         // if key.code == KeyCode::Char('q') {
+            //         //     return Ok(());
+            //         // }
+            //     }
+            // }
+            // if last_tick.elapsed() >= tick_rate {
+            //     last_tick = Instant::now();
+            // }
 
             if let Ok(data) = receiver.try_recv() {
                 trace_dbg!(data);

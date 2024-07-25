@@ -28,9 +28,6 @@ pub mod tui;
 fn main() -> Result<()> {
     initialize_logging()?;
 
-    // let mut raw_data_layer = Device::new();
-    // raw_data_layer.run();
-
     let args = Args::parse();
 
     // setup terminal
@@ -40,7 +37,8 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    let raw_data_layer = TestData::new(TestDataType::TestData1);
+    let raw_data_layer = Device::new();
+    // let raw_data_layer = TestData::new(TestDataType::TestData1);
 
     let mel_layer = {
         let mut mel_layer = DefaultMelLayer::new();

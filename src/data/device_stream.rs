@@ -3,6 +3,8 @@ use std::thread;
 use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
 use crossbeam_channel::Receiver;
 
+use crate::trace_dbg;
+
 use super::RawDataLayer;
 
 pub struct Device {
@@ -30,7 +32,7 @@ impl Device {
     pub fn run(&mut self) {
         let device = self.device.take().unwrap();
 
-        dbg!(device.name().unwrap());
+        trace_dbg!(device.name().unwrap());
 
         // let mut supported_configs_range = device.supported_output_configs().wrap_err("cannot get supported config on audio device").unwrap();
 
@@ -65,6 +67,10 @@ impl Device {
                     &config.into(),
                     move |data, _: &_| {
                         let data = data.to_vec();
+                        if data.len() == 0 {
+                            return;
+                        }
+                        // trace_dbg!(data.len());
                         sender.send(data).unwrap();
                     },
                     err_fn,
@@ -75,6 +81,8 @@ impl Device {
             .unwrap();
 
             stream.play().unwrap();
+
+            loop {}
         });
 
         self.handles = Some(vec![handle]);
