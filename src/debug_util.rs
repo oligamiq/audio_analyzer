@@ -24,17 +24,22 @@ lazy_static! {
 }
 
 fn project_directory() -> Option<ProjectDirs> {
-    ProjectDirs::from("com", "kdheepak", env!("CARGO_PKG_NAME"))
+    ProjectDirs::from("com", "oligami", env!("CARGO_PKG_NAME"))
 }
 
 pub fn get_data_dir() -> PathBuf {
-    let directory = if let Some(s) = DATA_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.data_local_dir().to_path_buf()
-    } else {
+    let directory =
+    // if let Some(s) = DATA_FOLDER.clone() {
+    //      s
+    // } else
+    // if let Some(proj_dirs) = project_directory() {
+    //     proj_dirs.data_local_dir().to_path_buf()
+    // } else
+    {
         PathBuf::from(".").join(".data")
     };
+    // dbg!(directory.clone());
+    // panic!();
     directory
 }
 
@@ -47,7 +52,7 @@ pub fn initialize_logging() -> Result<()> {
         "RUST_LOG",
         std::env::var("RUST_LOG")
             .or_else(|_| std::env::var(LOG_ENV.clone()))
-            .unwrap_or_else(|_| format!("{}=info", env!("CARGO_CRATE_NAME"))),
+            .unwrap_or_else(|_| format!("{}=debug", env!("CARGO_CRATE_NAME"))),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)

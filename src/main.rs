@@ -28,8 +28,8 @@ pub mod tui;
 fn main() -> Result<()> {
     initialize_logging()?;
 
-    let mut raw_data_layer = Device::new();
-    raw_data_layer.run();
+    // let mut raw_data_layer = Device::new();
+    // raw_data_layer.run();
 
     let args = Args::parse();
 

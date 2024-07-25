@@ -3,7 +3,10 @@ use std::thread;
 use color_eyre::eyre::ContextCompat as _;
 use crossbeam_channel::Receiver;
 use symphonia::core::{audio::{AudioBuffer, SampleBuffer, Signal}, codecs::DecoderOptions, conv::IntoSample, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe};
+use tracing::warn;
 use tracing_subscriber::fmt::format::Format;
+
+use crate::trace_dbg;
 
 use super::RawDataLayer;
 
@@ -75,7 +78,13 @@ impl TestData {
 
         let handle = thread::spawn(move || { loop {
             // Get the next packet from the format reader.
-            let packet = format.next_packet().unwrap();
+            let packet = match format.next_packet() {
+                Ok(packet) => packet,
+                Err(e) => {
+                    eprintln!("Error reading packet: {}", e);
+                    break;
+                }
+            };
 
             // If the packet does not belong to the selected track, skip it.
             if packet.track_id() != track_id {
@@ -85,11 +94,19 @@ impl TestData {
             // Decode the packet into audio samples, ignoring any decode errors.
             match decoder.decode(&packet) {
                 Ok(audio_buf) => {
-                    // If the packet was decoded successfully, send the audio samples to the
-                    // receiver.
-                    let samples: AudioBuffer<f32> = audio_buf.make_equivalent();
-                    let buff = samples.chan(0);
-                    sender.send(buff.to_vec()).unwrap();
+                    let buf = match audio_buf {
+                        symphonia::core::audio::AudioBufferRef::F32(buf) => {
+                            let frames = String::from(format!("###Decoded packet with {} samples", buf.frames()));
+                            trace_dbg!(frames);
+                            buf
+                        },
+                        _ => {
+                            warn!("###This is not f32");
+                            continue;
+                        }
+                    };
+
+                    sender.send(buf.planes().planes()[0].to_vec()).unwrap();
                 }
                 Err(symphonia::core::errors::Error::DecodeError(_)) => (),
                 Err(_) => break,

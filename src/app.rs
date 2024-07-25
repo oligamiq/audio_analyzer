@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::{thread, time::{Duration, Instant}};
 
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Axis, Block, Chart, Dataset},
 };
 
-use crate::{data::RawDataLayer, stream::MelLayer};
+use crate::{data::RawDataLayer, stream::MelLayer, trace_dbg};
 
 #[derive(Clone)]
 pub struct App<R: RawDataLayer, T: MelLayer> {
@@ -37,6 +37,21 @@ where
         tick_rate: Duration,
     ) -> Result<()> {
         let mut last_tick = Instant::now();
+
+        self.raw_data_layer.start();
+        self.mel_layer.start();
+        {
+            let sender = self.mel_layer.voice_stream_sender();
+            let receiver = self.raw_data_layer.voice_stream_receiver();
+            thread::spawn(move || loop {
+                if let Ok(data) = receiver.recv() {
+                    sender.send(data).unwrap();
+                }
+            });
+        }
+
+        let mut receiver = self.mel_layer.mel_frame_stream_receiver();
+
         loop {
             terminal.draw(|frame| self.ui(frame))?;
 
@@ -58,6 +73,10 @@ where
             }
             if last_tick.elapsed() >= tick_rate {
                 last_tick = Instant::now();
+            }
+
+            if let Ok(data) = receiver.try_recv() {
+                trace_dbg!(data);
             }
         }
     }

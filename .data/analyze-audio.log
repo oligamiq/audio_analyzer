@@ -1,0 +1,433 @@
+2024-07-25T05:37:47.580945Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.581401Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.581604Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.581915Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.582206Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.582520Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.582842Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.583130Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.583389Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.583645Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.583892Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.584147Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.584385Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.584683Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.584961Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.585201Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.585449Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.585690Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.585925Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.586170Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.586410Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.586705Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.586961Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.587239Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.587493Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.587707Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.587952Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.588251Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.588524Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.588798Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.589072Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.589353Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.589658Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.589879Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.590054Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.590245Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.590471Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.590738Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.591034Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.591261Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.591372Z DEBUG src\app.rs:79: data value=MelFrame { mel: [[-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5]], shape=[20, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2, idx: 2 }
+2024-07-25T05:37:47.591480Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.591708Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.591988Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.592272Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.592534Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.592722Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.592918Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.593188Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.593465Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.593790Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.594047Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.594312Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.594540Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.594839Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.595126Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.595394Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.595679Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.596198Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.596444Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.596703Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.596931Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.597148Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.597360Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.597631Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.597889Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.598139Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.598396Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.598682Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.598937Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.599175Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.599406Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.599741Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.599983Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.600212Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.601201Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.601578Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.601866Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.602151Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.602440Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.602690Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.603010Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.603262Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.603515Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.603747Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.603964Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.604491Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.604763Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.605022Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.605285Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.605627Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.605892Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.606127Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.606391Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.606643Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.606870Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.607107Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.607338Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.607557Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.607791Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.608045Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.608288Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.608532Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.608793Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.609039Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.609280Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.609545Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.609826Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.610059Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.610319Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.610543Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.610815Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.611072Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.611309Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.611578Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.611856Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.612089Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.612311Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.612544Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.612766Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.613002Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.613267Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.613520Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.613792Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.614034Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.614303Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.614555Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.614810Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.615367Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.615638Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.615869Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.617420Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.617692Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.617943Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.618201Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.618786Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.619131Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.619404Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.619657Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.619916Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.620169Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.620425Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.620700Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.621014Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.621964Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.622341Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.622533Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.622811Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.623106Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.623400Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.623861Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.624132Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.624416Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 1152 samples"
+2024-07-25T05:37:47.624666Z DEBUG src\data\test_data.rs:100: frames value="###Decoded packet with 896 samples"
+2024-07-25T05:37:47.846132Z DEBUG src\app.rs:79: data value=MelFrame { mel: [[-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5]], shape=[20, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2, idx: 2 }
+2024-07-25T05:37:48.113852Z DEBUG src\app.rs:79: data value=MelFrame { mel: [[-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5]], shape=[80, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2, idx: 3 }
+2024-07-25T05:37:48.366239Z DEBUG src\app.rs:79: data value=MelFrame { mel: [[-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5]], shape=[80, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2, idx: 4 }
+2024-07-25T05:37:48.626243Z DEBUG src\app.rs:79: data value=MelFrame { mel: [[-1.487277060680408],
+ [-1.3973935071946144],
+ [-1.4404678119878822],
+ [-1.4789627698040348],
+ [-1.455520414956844],
+ [-1.425908491327958],
+ [-1.428794557006889],
+ [-1.423251194957837],
+ [-1.426052396974494],
+ [-1.464227640352878],
+ [-1.420987930253387],
+ [-1.4022025504029525],
+ [-1.3526666007729138],
+ [-1.3660332979257888],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.4033305669173988],
+ [-1.4083736278054242],
+ [-1.497853103502059],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.497794823304468],
+ [-1.3931392720667666],
+ [-1.346971406826925],
+ [-1.4102109716839095],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.473594885362294],
+ [-1.3926190669669207],
+ [-1.485646155129504],
+ [-1.5],
+ [-1.4634863536938356],
+ [-1.4395053861865206],
+ [-1.494429575263751],
+ [-1.4927540583524102],
+ [-1.5],
+ [-1.4703088537292266],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5],
+ [-1.5]], shape=[80, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2, idx: 5 }
