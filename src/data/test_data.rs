@@ -1,7 +1,8 @@
 use std::thread;
 
+use color_eyre::eyre::ContextCompat as _;
 use crossbeam_channel::Receiver;
-use symphonia::core::{audio::{AudioBuffer, SampleBuffer}, codecs::DecoderOptions, conv::IntoSample, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe};
+use symphonia::core::{audio::{AudioBuffer, SampleBuffer, Signal}, codecs::DecoderOptions, conv::IntoSample, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe};
 use tracing_subscriber::fmt::format::Format;
 
 use super::RawDataLayer;
@@ -29,7 +30,10 @@ impl TestData {
     }
 
     pub fn voice_stream_receiver(&self) -> Receiver<Vec<f32>> {
-
+        self.voice_stream_receiver
+            .clone()
+            .wrap_err("Sender is not initialized")
+            .unwrap()
     }
 
     pub fn start(&mut self) {
@@ -59,6 +63,9 @@ impl TestData {
         // Get the default track.
         let track = format.default_track().unwrap();
 
+        let sample_rate = track.codec_params.sample_rate.unwrap();
+        self.sample_rate = Some(sample_rate);
+
         // Create a decoder for the track.
         let mut decoder =
             symphonia::default::get_codecs().make(&track.codec_params, &decoder_opts).unwrap();
@@ -66,7 +73,7 @@ impl TestData {
         // Store the track identifier, we'll use it to filter packets.
         let track_id = track.id;
 
-        loop {
+        let handle = thread::spawn(move || { loop {
             // Get the next packet from the format reader.
             let packet = format.next_packet().unwrap();
 
@@ -81,26 +88,24 @@ impl TestData {
                     // If the packet was decoded successfully, send the audio samples to the
                     // receiver.
                     let samples: AudioBuffer<f32> = audio_buf.make_equivalent();
-                    let mut buffer = Vec::with_capacity(samples.capacity());
-                    for sample in samples {
-                        buffer.push(sample[0]);
-                    }
-                    sender.send(buffer).unwrap();
+                    let buff = samples.chan(0);
+                    sender.send(buff.to_vec()).unwrap();
                 }
                 Err(symphonia::core::errors::Error::DecodeError(_)) => (),
                 Err(_) => break,
             }
         }
+        });
+
+        self.handles = Some(vec![handle]);
     }
 
     pub fn sample_rate(&self) -> u32 {
-        match self {
-            TestDataType::TestData1 => 48000,
-        }
+        self.sample_rate.unwrap()
     }
 }
 
-impl RawDataLayer for TestDataType {
+impl RawDataLayer for TestData {
     fn voice_stream_receiver(&self) -> Receiver<Vec<f32>> {
         self.voice_stream_receiver()
     }
@@ -109,6 +114,9 @@ impl RawDataLayer for TestDataType {
     }
     fn sample_rate(&self) -> u32 {
         self.sample_rate()
+    }
+    fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
+        self.handles.take().unwrap()
     }
 
 }

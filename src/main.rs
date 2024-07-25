@@ -10,7 +10,7 @@ use crossterm::terminal::{
 };
 use crossterm::ExecutableCommand as _;
 use data::device_stream::Device;
-use data::test_data::TestDataType;
+use data::test_data::{TestData, TestDataType};
 use debug_util::initialize_logging;
 use mel_spec::config::MelConfig;
 use ratatui::prelude::*;
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    let raw_data_layer = TestDataType::TestData1;
+    let raw_data_layer = TestData::new(TestDataType::TestData1);
 
     let mel_layer = {
         let mut mel_layer = DefaultMelLayer::new();
