@@ -46,7 +46,8 @@ impl Device {
         // // }).unwrap();
 
         let config = device.default_input_config().unwrap();
-        // dbg!(&config);
+
+        dbg!(&config);
 
         self.sample_rate = Some(config.sample_rate().0);
 
@@ -77,6 +78,8 @@ impl Device {
         });
 
         self.handles = Some(vec![handle]);
+
+        println!("Device started");
     }
 }
 

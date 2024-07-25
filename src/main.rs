@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     let tick_rate = Duration::from_millis(250);
 
     let app = App::new(raw_data_layer, mel_layer);
-    // app.run(&mut terminal, tick_rate)?;
+    app.run(&mut terminal, tick_rate)?;
 
     // let host = cpal::default_host();
 
