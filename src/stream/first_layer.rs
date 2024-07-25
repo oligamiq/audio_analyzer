@@ -3,7 +3,7 @@ use std::sync::Arc;
 use color_eyre::eyre::ContextCompat;
 use crossbeam_channel::{Receiver, Sender};
 use mel_spec::{config::MelConfig, vad::DetectionSettings};
-use mel_spec_pipeline::pipeline::{AudioConfig, MelFrame, Pipeline, PipelineConfig};
+use mel_spec_pipeline::pipeline::{AudioConfig, MelFrame, Pipeline, PipelineConfig, VadResult};
 
 use crate::trace_dbg;
 
@@ -18,6 +18,7 @@ pub struct DefaultMelLayer {
     sender: Option<Sender<Vec<f32>>>,
 }
 
+#[derive(Clone)]
 pub struct AudioConfigBuilder {
     bit_depth: usize,
     sampling_rate: f64,
@@ -32,6 +33,10 @@ impl MelLayer for DefaultMelLayer {
     }
     fn mel_frame_stream_receiver(&self) -> Receiver<MelFrame> {
         let receiver = self.pipeline.as_ref().unwrap().mel_rx();
+        receiver
+    }
+    fn vad_rx_stream_receiver(&self) -> Receiver<VadResult> {
+        let receiver = self.pipeline.as_ref().unwrap().vad_rx();
         receiver
     }
     fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
@@ -90,8 +95,7 @@ impl DefaultMelLayer {
             ..
         } = self;
 
-
-        let audio_config = audio_config.take().unwrap();
+        let audio_config = audio_config.clone().unwrap();
 
         let config = PipelineConfig::new(
             AudioConfig::new(audio_config.bit_depth, audio_config.sampling_rate),
@@ -109,12 +113,28 @@ impl DefaultMelLayer {
 
         let (sender, receiver) = crossbeam_channel::unbounded();
         self.sender = Some(sender);
+
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: self.audio_config.as_ref().unwrap().sampling_rate as u32,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create("sine.wav", spec).unwrap();
+
         let handle = std::thread::spawn(move || loop {
             let data = receiver.recv().unwrap();
-            trace_dbg!(data.len());
+            // trace_dbg!(data.len());
             if data.len() == 0 {
                 continue;
             }
+
+            trace_dbg!(&data);
+            for sample in &data {
+                let amplitude = i16::MAX as f32;
+                writer.write_sample((*sample * amplitude) as i16).unwrap();
+            }
+
             match pipeline.send_pcm(data.as_slice()) {
                 Ok(_) => {}
                 Err(e) => {
