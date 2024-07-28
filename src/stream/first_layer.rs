@@ -54,7 +54,8 @@ impl DefaultMelLayer {
     pub fn new() -> Self {
         DefaultMelLayer {
             mel_config: Some(MelConfig::new(400, 160, 80, 16000.0)),
-            detection_settings: Some(DetectionSettings::new(1.0, 3, 6, 0)),
+            detection_settings: Some(DetectionSettings::new(0., 3, 5, 0)),
+            // detection_settings: Some(DetectionSettings::new(0., 3, 5, 0)),
             audio_config: Some(AudioConfigBuilder { bit_depth: 32, sampling_rate: 16000.0 }),
             pipeline: None,
             handles: None,
@@ -117,7 +118,7 @@ impl DefaultMelLayer {
         let spec = hound::WavSpec {
             channels: 1,
             sample_rate: self.audio_config.as_ref().unwrap().sampling_rate as u32,
-            bits_per_sample: 16,
+            bits_per_sample: 32,
             sample_format: hound::SampleFormat::Int,
         };
         let mut writer = hound::WavWriter::create("sine.wav", spec).unwrap();
@@ -129,16 +130,20 @@ impl DefaultMelLayer {
                 continue;
             }
 
-            trace_dbg!(&data);
+            // trace_dbg!(&data);
+            let amplitude = i32::MAX as f32;
             for sample in &data {
-                let amplitude = i16::MAX as f32;
-                writer.write_sample((*sample * amplitude) as i16).unwrap();
+                writer.write_sample((*sample * amplitude) as i32).unwrap();
             }
+
+            // amplification
+            let data = data.into_iter().map(|x| x * amplitude).collect::<Vec<_>>();
 
             match pipeline.send_pcm(data.as_slice()) {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!("Error sending data to pipeline: {}", e);
+                    let error = format!("Error sending data to pipeline: {}", e);
+                    trace_dbg!(error);
                 }
             }
         });

@@ -37,8 +37,8 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    let raw_data_layer = Device::new();
-    // let raw_data_layer = TestData::new(TestDataType::TestData1);
+    // let raw_data_layer = Device::new();
+    let raw_data_layer = TestData::new(TestDataType::TestData1);
 
     let mel_layer = {
         let mut mel_layer = DefaultMelLayer::new();

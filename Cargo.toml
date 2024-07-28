@@ -28,9 +28,9 @@ symphonia = { version = "0.5.4", default-features = false, features = ["all-form
 # mel_spec_pipeline = { git = "https://github.com/wavey-ai/mel-spec" }
 # mel_spec_audio = { git = "https://github.com/wavey-ai/mel-spec" }
 
-mel_spec = { git = "https://github.com/oligamiq/mel-spec", branch = "debug" }
-mel_spec_pipeline = { git = "https://github.com/oligamiq/mel-spec", branch = "debug" }
-mel_spec_audio = { git = "https://github.com/oligamiq/mel-spec", branch = "debug" }
+mel_spec = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
+mel_spec_pipeline = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
+mel_spec_audio = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
 
 # debugging
 color-eyre = "0.6.3"

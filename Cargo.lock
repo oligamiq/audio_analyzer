@@ -1301,7 +1301,7 @@ dependencies = [
 [[package]]
 name = "mel_spec"
 version = "0.2.3"
-source = "git+https://github.com/oligamiq/mel-spec?branch=debug#aaff3194852a580f1b9aa810e794282d808f85d3"
+source = "git+https://github.com/oligamiq/mel-spec?branch=patch-1#3cdf104cee6b1996159e495277e9e3080c5a7991"
 dependencies = [
  "image",
  "js-sys",
@@ -1314,7 +1314,7 @@ dependencies = [
 [[package]]
 name = "mel_spec_audio"
 version = "0.2.2"
-source = "git+https://github.com/oligamiq/mel-spec?branch=debug#aaff3194852a580f1b9aa810e794282d808f85d3"
+source = "git+https://github.com/oligamiq/mel-spec?branch=patch-1#3cdf104cee6b1996159e495277e9e3080c5a7991"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -1324,7 +1324,7 @@ dependencies = [
 [[package]]
 name = "mel_spec_pipeline"
 version = "0.2.2"
-source = "git+https://github.com/oligamiq/mel-spec?branch=debug#aaff3194852a580f1b9aa810e794282d808f85d3"
+source = "git+https://github.com/oligamiq/mel-spec?branch=patch-1#3cdf104cee6b1996159e495277e9e3080c5a7991"
 dependencies = [
  "crossbeam-channel",
  "image",

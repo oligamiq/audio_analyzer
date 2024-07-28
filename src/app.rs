@@ -42,7 +42,9 @@ where
         let mut last_tick = Instant::now();
 
         self.raw_data_layer.start();
-        self.mel_layer.set_sampling_rate(self.raw_data_layer.sample_rate() as f64);
+        let sampling_rate = self.raw_data_layer.sample_rate();
+        trace_dbg!(sampling_rate);
+        self.mel_layer.set_sampling_rate(sampling_rate as f64);
         self.mel_layer.start();
         {
             let sender = self.mel_layer.voice_stream_sender();
@@ -55,6 +57,7 @@ where
         }
 
         let receiver = self.mel_layer.mel_frame_stream_receiver();
+        let vad_receiver = self.mel_layer.vad_rx_stream_receiver();
 
         loop {
             terminal.draw(|frame| self.ui(frame))?;
@@ -80,6 +83,9 @@ where
             }
 
             if let Ok(data) = receiver.try_recv() {
+                trace_dbg!(data);
+            }
+            if let Ok(data) = vad_receiver.try_recv() {
                 trace_dbg!(data);
             }
         }
