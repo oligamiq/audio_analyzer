@@ -11,6 +11,7 @@ use crossterm::terminal::{
 use crossterm::ExecutableCommand as _;
 use data::test_data::{TestData, TestDataType};
 use layer::layers::{layer, MultipleLayers};
+use layer::Layer as _;
 use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
 use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
 use mel_spec::config::MelConfig;
@@ -42,14 +43,16 @@ fn main() -> Result<()> {
 
     // layer config
     // let raw_data_layer = Device::new();
-    let raw_data_layer = TestData::new(TestDataType::TestData1);
+    let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
-    let fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
+    raw_data_layer.start();
+
+    let mut fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
+    fft_layer.set_input_stream(raw_data_layer.voice_stream_receiver());
     let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, 16000.0));
 
     let layers = layer(fft_layer);
     let layers = layers.add_layer(mel_layer);
-
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);

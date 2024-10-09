@@ -87,10 +87,22 @@ impl ToSpectrogramLayer {
             let fft_handle = thread::spawn(move || {
                 let mut fft = Spectrogram::new(fft_size, hop_size);
 
+                let mut kept_data = Vec::new();
                 while let Ok(data) = input_receiver.recv() {
-                    let fft_result = fft.add(&data);
-                    if let Some(fft_result) = fft_result {
-                        result_sender.send(fft_result).unwrap();
+                    kept_data.extend(data);
+
+                    if kept_data.len() < hop_size {
+                        continue;
+                    }
+
+                    while kept_data.len() >= hop_size {
+                        // hop_sizeと一緒のサイズに調整する
+                        let kept_data = kept_data.drain(..hop_size).collect::<Vec<_>>();
+
+                        let fft_result = fft.add(&kept_data);
+                        if let Some(fft_result) = fft_result {
+                            result_sender.send(fft_result).unwrap();
+                        }
                     }
                 }
             });

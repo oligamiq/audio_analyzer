@@ -3,8 +3,8 @@ use std::any::Any;
 
 use super::Layer;
 
-pub struct MultipleLayers<Input, Output, Tail: TailTrait<Input, Output>, NOutput> {
-    head: MultipleLayersHead<Input, Output, Tail, NOutput>,
+pub struct MultipleLayers<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NOutput> {
+    head: MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
 }
 
 pub fn layer<
@@ -27,28 +27,34 @@ pub fn layer<
 
 impl<
         Input: 'static,
-        Output: 'static,
-        Tail: TailTrait<Input, Output> + 'static,
+        OldOutput: 'static,
+        Tail: TailTrait<Input, OldOutput> + 'static,
         NOutput: 'static,
-    > MultipleLayers<Input, Output, Tail, NOutput>
+    > MultipleLayers<Input, OldOutput, Tail, NOutput>
 {
     pub fn add_layer<
         NewOutput: 'static,
         T: Layer<InputType = NOutput, OutputType = NewOutput> + 'static,
     >(
         self,
-        layer: T,
-    ) -> MultipleLayers<Input, NOutput, MultipleLayersHead<Input, Output, Tail, NOutput>, NewOutput>
+        mut layer: T,
+    ) -> MultipleLayers<
+        Input,
+        NOutput,
+        MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
+        NewOutput,
+    >
     where
         Tail: TailTrait<Input, NOutput>,
     {
-        let tail: MultipleLayersHead<Input, Output, Tail, NOutput> = self.head;
-        // let tail = &tail as &dyn TailTrait<Input, NOutput, LayerOutputType = NOutput>;
+        layer.set_input_stream(self.get_result_stream());
+
+        let tail: MultipleLayersHead<Input, OldOutput, Tail, NOutput> = self.head;
 
         let new_head: MultipleLayersHead<
             Input,
             NOutput,
-            MultipleLayersHead<Input, Output, Tail, NOutput>,
+            MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
             NewOutput,
         > = MultipleLayersHead {
             tail: tail,
@@ -88,8 +94,8 @@ pub trait TailTrait<Input, Output> {
     fn __get_length(&self) -> i32;
 }
 
-impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 'static>
-    TailTrait<Input, NewOutput> for MultipleLayersHead<Input, Output, T, NewOutput>
+impl<Input: 'static, OldOutput: 'static, T: TailTrait<Input, OldOutput>, NewOutput: 'static>
+    TailTrait<Input, NewOutput> for MultipleLayersHead<Input, OldOutput, T, NewOutput>
 {
     type LayerOutputType = NewOutput;
 
@@ -112,7 +118,6 @@ impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 's
         }
         handles
     }
-
     fn __get_nth<P: 'static>(&self, n: i32) -> Option<&P>
     where
         Self: Sized,
@@ -136,7 +141,6 @@ impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 's
             return self.tail.__get_nth(n - 1);
         }
     }
-
     fn __get_length(&self) -> i32 {
         if let Some(_) = &self.layer {
             return 1 + self.tail.__get_length();
@@ -146,9 +150,9 @@ impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 's
     }
 }
 
-pub struct MultipleLayersHead<Input, Output, Tail: TailTrait<Input, Output>, NewOutput> {
+pub struct MultipleLayersHead<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NewOutput> {
     tail: Tail,
-    layer: Option<Box<dyn Layer<InputType = Output, OutputType = NewOutput> + 'static>>,
+    layer: Option<Box<dyn Layer<InputType = OldOutput, OutputType = NewOutput> + 'static>>,
     __marker: std::marker::PhantomData<Input>,
 }
 
