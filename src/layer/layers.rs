@@ -1,39 +1,35 @@
 use super::Layer;
 
-pub struct MultipleLayers<Input, Output, Tail: TailTrait<Input, Output>, NOutput> {
-    head: MultipleLayersHead<Input, Output, Tail, NOutput>,
+pub struct MultipleLayers<Input, Output, NOutput> {
+    head: MultipleLayersHead<Input, Output, NOutput>,
 }
 
 pub fn layer<Input, Output, T: Layer<InputType = Input, OutputType = Output> + 'static>(
     layer: T,
-) -> MultipleLayers<Input, Output, MultipleLayersTail<Input, Output>, Output> {
+) -> MultipleLayers<Input, Output, Output> {
     MultipleLayers {
         head: MultipleLayersHead {
-            tail: MultipleLayersTail {
-                layer: Box::new(layer),
-            },
+            tail: None,
             layer: None,
-            __marker: std::marker::PhantomData,
+            tail_layer: Some(Box::new(layer)),
         },
     }
 }
 
-impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput>
-    MultipleLayers<Input, Output, Tail, NOutput>
+impl<Input, Output, NOutput>
+    MultipleLayers<Input, Output, NOutput>
 {
     pub fn add_layer<NewOutput, T: Layer<InputType = Output, OutputType = NewOutput> + 'static>(
         self,
         layer: T,
-    ) -> MultipleLayers<Input, Output, MultipleLayersHead<Input, Output, Tail, NOutput>, NewOutput>
-    where
-        Tail: TailTrait<Input, Output>,
+    ) -> MultipleLayers<Input, Output, NewOutput>
     {
-        let tail: MultipleLayersHead<Input, Output, Tail, NOutput> = self.head;
+        let tail: MultipleLayersHead<Input, Output, NOutput> = self.head;
 
         let new_head = MultipleLayersHead {
             tail: tail,
             layer: Some(Box::new(layer)),
-            __marker: std::marker::PhantomData,
+            tail_layer: None,
         };
 
         return MultipleLayers { head: new_head };
@@ -45,32 +41,14 @@ impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput>
             layer.start();
         }
 
-        
+
 
         head.layer = Some(layer);
     }
 }
 
-pub trait TailTrait<Input, Output> {}
-
-impl<Input, Output, T: TailTrait<Input, Output>, NewOutput> TailTrait<Input, Output>
-    for MultipleLayersHead<Input, Output, T, NewOutput>
-{
-}
-
-pub struct MultipleLayersHead<Input, Output, Tail: TailTrait<Input, Output>, NewOutput> {
-    tail: Tail,
+pub struct MultipleLayersHead<Input, Output, NewOutput> {
+    tail: Option<Box<MultipleLayersHead<Input, Output, NewOutput>>>,
     layer: Option<Box<dyn Layer<InputType = Output, OutputType = NewOutput>>>,
-    __marker: std::marker::PhantomData<(Input, Output)>,
+    tail_layer: Option<Box<dyn Layer<InputType = Input, OutputType = Output>>>,
 }
-
-impl<Input, Output, Tail: TailTrait<Input, Output>, NewOutput>
-    MultipleLayersHead<Input, Output, Tail, NewOutput>
-{
-}
-
-pub struct MultipleLayersTail<Input, Output> {
-    layer: Box<dyn Layer<InputType = Input, OutputType = Output>>,
-}
-
-impl<Input, Output> TailTrait<Input, Output> for MultipleLayersTail<Input, Output> {}
