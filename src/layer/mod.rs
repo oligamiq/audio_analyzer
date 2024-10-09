@@ -10,4 +10,5 @@ pub trait Layer {
     fn set_input_stream(&mut self, input_stream: Receiver<Self::InputType>);
     fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>>;
     fn start(&mut self);
+    fn as_any(&self) -> &dyn std::any::Any;
 }

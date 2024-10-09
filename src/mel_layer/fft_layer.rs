@@ -1,6 +1,6 @@
 // stft layer
 
-use std::thread;
+use std::{fmt::Debug, thread};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use mel_spec::stft::Spectrogram;
@@ -35,6 +35,17 @@ pub struct ToSpectrogramLayer {
     result_sender: Option<Sender<Array1<Complex<f64>>>>,
     input_receiver: Option<Receiver<Vec<f32>>>,
     result_receiver: Receiver<Array1<Complex<f64>>>,
+}
+
+impl Debug for ToSpectrogramLayer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ToSpectrogramLayer")
+            .field("handles", &self.handles)
+            .field("result_sender", &self.result_sender)
+            .field("input_receiver", &self.input_receiver)
+            .field("result_receiver", &self.result_receiver)
+            .finish()
+    }
 }
 
 impl Default for ToSpectrogramLayer {
@@ -110,5 +121,9 @@ impl Layer for ToSpectrogramLayer {
 
     fn start(&mut self) {
         self.start();
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

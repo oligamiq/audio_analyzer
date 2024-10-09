@@ -56,6 +56,25 @@ impl<
     ) -> Result<()> {
         let mut last_tick = Instant::now();
 
+        let length = self.layer.get_length();
+
+        println!("length: {}", length);
+
+        let to_mel_layer_ref = self
+            .layer
+            .get_nth::<crate::mel_layer::layer::ToMelSpectrogramLayer>(1)
+            .unwrap();
+
+        let to_spec_layer_ref = self
+            .layer
+            .get_nth::<crate::mel_layer::fft_layer::ToSpectrogramLayer>(0)
+            .unwrap();
+
+        println!("{:?}", to_mel_layer_ref);
+        println!("{:?}", to_spec_layer_ref);
+
+        let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
+
         self.layer.start();
 
         loop {

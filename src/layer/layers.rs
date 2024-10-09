@@ -1,4 +1,5 @@
-use std::any::Any;
+use core::panic;
+use std::{any::Any, boxed};
 
 use super::Layer;
 
@@ -6,7 +7,23 @@ pub struct MultipleLayers<Input, Output, Tail: TailTrait<Input, Output>, NOutput
     head: MultipleLayersHead<Input, Output, Tail, NOutput>,
 }
 
-pub fn layer<Input, Output, T: Layer<InputType = Input, OutputType = Output> + 'static>(
+pub trait Types<const N: usize> {
+    type Input;
+    type Output;
+}
+
+impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput> Types<1>
+    for MultipleLayers<Input, Output, Tail, NOutput>
+{
+    type Input = Input;
+    type Output = NOutput;
+}
+
+pub fn layer<
+    Input: 'static,
+    Output: 'static,
+    T: Layer<InputType = Input, OutputType = Output> + 'static,
+>(
     layer: T,
 ) -> MultipleLayers<Input, Output, MultipleLayersTail<Input, Output>, Output> {
     MultipleLayers {
@@ -20,8 +37,12 @@ pub fn layer<Input, Output, T: Layer<InputType = Input, OutputType = Output> + '
     }
 }
 
-impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput>
-    MultipleLayers<Input, Output, Tail, NOutput>
+impl<
+        Input: 'static,
+        Output: 'static,
+        Tail: TailTrait<Input, Output> + 'static,
+        NOutput: 'static,
+    > MultipleLayers<Input, Output, Tail, NOutput>
 {
     pub fn add_layer<NewOutput, T: Layer<InputType = Output, OutputType = NewOutput> + 'static>(
         self,
@@ -40,6 +61,14 @@ impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput>
 
         return MultipleLayers { head: new_head };
     }
+
+    pub fn get_nth<P: 'static>(&self, n: i32) -> Option<&P> {
+        self.head.__get_nth(self.get_length() - n - 1)
+    }
+
+    pub fn get_length(&self) -> i32 {
+        self.head.__get_length()
+    }
 }
 
 pub trait TailTrait<Input, Output> {
@@ -54,10 +83,16 @@ pub trait TailTrait<Input, Output> {
     fn __set_input_stream(&mut self, input_stream: crossbeam_channel::Receiver<Input>);
 
     fn __handle(&mut self) -> Vec<std::thread::JoinHandle<()>>;
+
+    fn __get_nth<P: 'static>(&self, n: i32) -> Option<&P>
+    where
+        Self: Sized;
+
+    fn __get_length(&self) -> i32;
 }
 
-impl<Input, Output, T: TailTrait<Input, Output>, NewOutput> TailTrait<Input, Output>
-    for MultipleLayersHead<Input, Output, T, NewOutput>
+impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 'static>
+    TailTrait<Input, Output> for MultipleLayersHead<Input, Output, T, NewOutput>
 {
     type LayerOutputType = NewOutput;
 
@@ -66,21 +101,57 @@ impl<Input, Output, T: TailTrait<Input, Output>, NewOutput> TailTrait<Input, Out
     }
     fn __start(&mut self) {
         self.tail.__start();
-        self.layer.as_mut().unwrap().start();
+        if let Some(layer) = &mut self.layer {
+            layer.start();
+        }
     }
     fn __set_input_stream(&mut self, input_stream: crossbeam_channel::Receiver<Input>) {
         self.tail.__set_input_stream(input_stream);
     }
     fn __handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
         let mut handles = self.tail.__handle();
-        handles.append(&mut self.layer.as_mut().unwrap().handle());
+        if let Some(layer) = &mut self.layer {
+            handles.append(&mut layer.handle());
+        }
         handles
+    }
+
+    fn __get_nth<P: 'static>(&self, n: i32) -> Option<&P>
+    where
+        Self: Sized,
+    {
+        if n == 0 {
+            if let Some(layer) = &self.layer {
+                let any_layer = layer.as_any();
+                let layer = any_layer.downcast_ref::<P>();
+                if let Some(layer) = layer {
+                    return Some(layer);
+                } else {
+                    panic!(
+                        "Layer type mismatch: expected {:?}",
+                        std::any::type_name::<P>(),
+                    );
+                }
+            } else {
+                return self.tail.__get_nth(n);
+            }
+        } else {
+            return self.tail.__get_nth(n - 1);
+        }
+    }
+
+    fn __get_length(&self) -> i32 {
+        if let Some(_) = &self.layer {
+            return 1 + self.tail.__get_length();
+        } else {
+            return self.tail.__get_length();
+        }
     }
 }
 
 pub struct MultipleLayersHead<Input, Output, Tail: TailTrait<Input, Output>, NewOutput> {
     tail: Tail,
-    layer: Option<Box<dyn Layer<InputType = Output, OutputType = NewOutput>>>,
+    layer: Option<Box<dyn Layer<InputType = Output, OutputType = NewOutput> + 'static>>,
     __marker: std::marker::PhantomData<Input>,
 }
 
@@ -88,7 +159,9 @@ pub struct MultipleLayersTail<Input, Output> {
     layer: Box<dyn Layer<InputType = Input, OutputType = Output>>,
 }
 
-impl<Input, Output> TailTrait<Input, Output> for MultipleLayersTail<Input, Output> {
+impl<Input: 'static, Output: 'static> TailTrait<Input, Output>
+    for MultipleLayersTail<Input, Output>
+{
     type LayerOutputType = Output;
 
     fn as_base(&mut self) -> &mut dyn TailTrait<Input, Output, LayerOutputType = Output> {
@@ -103,10 +176,36 @@ impl<Input, Output> TailTrait<Input, Output> for MultipleLayersTail<Input, Outpu
     fn __handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
         self.layer.handle()
     }
+    fn __get_nth<P: 'static>(&self, n: i32) -> Option<&P>
+    where
+        Self: Sized,
+    {
+        if n == 0 {
+            let any_layer = self.layer.as_any();
+            let layer = any_layer.downcast_ref::<P>();
+            if let Some(layer) = layer {
+                return Some(layer);
+            } else {
+                panic!(
+                    "Layer type mismatch: expected {:?}",
+                    std::any::type_name::<P>(),
+                );
+            }
+        } else {
+            return None;
+        }
+    }
+    fn __get_length(&self) -> i32 {
+        return 1;
+    }
 }
 
-impl<Input: 'static, Output, Tail: TailTrait<Input, Output> + 'static, NOutput: 'static> Layer
-    for MultipleLayers<Input, Output, Tail, NOutput>
+impl<
+        Input: 'static,
+        Output: 'static,
+        Tail: TailTrait<Input, Output> + 'static,
+        NOutput: 'static,
+    > Layer for MultipleLayers<Input, Output, Tail, NOutput>
 {
     type InputType = Input;
     type OutputType = NOutput;
@@ -161,5 +260,9 @@ impl<Input: 'static, Output, Tail: TailTrait<Input, Output> + 'static, NOutput: 
 
             tail.layer.start()
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

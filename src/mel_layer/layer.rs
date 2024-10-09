@@ -1,4 +1,4 @@
-use std::thread;
+use std::{fmt::Debug, thread};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use mel_spec::{config::MelConfig, mel::MelSpectrogram};
@@ -13,6 +13,17 @@ pub struct ToMelSpectrogramLayer {
     result_sender: Option<Sender<Array2<f64>>>,
     input_receiver: Option<Receiver<Array1<Complex<f64>>>>,
     result_receiver: Receiver<Array2<f64>>,
+}
+
+impl Debug for ToMelSpectrogramLayer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ToMelSpectrogramLayer")
+            .field("handles", &self.handles)
+            .field("result_sender", &self.result_sender)
+            .field("input_receiver", &self.input_receiver)
+            .field("result_receiver", &self.result_receiver)
+            .finish()
+    }
 }
 
 impl Default for ToMelSpectrogramLayer {
@@ -87,5 +98,9 @@ impl Layer for ToMelSpectrogramLayer {
 
     fn start(&mut self) {
         self.start();
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
