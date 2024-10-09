@@ -23,17 +23,14 @@ use crate::{
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
 
-pub struct App<Input, Output, Tail, NOutput>
-where
-    Tail: TailTrait<Input, Output>,
-{
+pub struct App<Input, Output, NOutput> {
     data: Vec<(f64, f64)>,
     window: [f64; 2],
-    layer: MultipleLayers<Input, Output, Tail, NOutput>,
+    layer: MultipleLayers<Input, Output, NOutput>,
 }
 
-impl<Input, Output> App<Input, Output> {
-    pub fn new(layer: MultipleLayers<Input, Output>) -> Self {
+impl<Input, Output, NOutput> App<Input, Output, NOutput> {
+    pub fn new(layer: MultipleLayers<Input, Output, NOutput>) -> Self {
         Self {
             layer,
             window: [0.0, 20.0],

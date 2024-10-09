@@ -48,17 +48,7 @@ fn main() -> Result<()> {
     let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, 16000.0));
 
     let layers = layer(fft_layer);
-    let layers: MultipleLayers<
-        Vec<f32>,
-        Array1<Complex<f64>>,
-        layer::layers::MultipleLayersHead<
-            Vec<f32>,
-            Array1<Complex<f64>>,
-            layer::layers::MultipleLayersTail<Vec<f32>, Array1<Complex<f64>>>,
-            Array1<Complex<f64>>,
-        >,
-        Array2<f64>,
-    > = layers.add_layer(mel_layer);
+    let layers = layers.add_layer(mel_layer);
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);
