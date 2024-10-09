@@ -23,14 +23,25 @@ use crate::{
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
 
-pub struct App<Input, Output, NOutput> {
+pub struct App<
+    Input: 'static,
+    Output: 'static,
+    Tail: TailTrait<Input, Output> + 'static,
+    NOutput: 'static,
+> {
     data: Vec<(f64, f64)>,
     window: [f64; 2],
-    layer: MultipleLayers<Input, Output, NOutput>,
+    layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
 
-impl<Input, Output, NOutput> App<Input, Output, NOutput> {
-    pub fn new(layer: MultipleLayers<Input, Output, NOutput>) -> Self {
+impl<
+        Input: 'static,
+        Output: 'static,
+        Tail: TailTrait<Input, Output> + 'static,
+        NOutput: 'static,
+    > App<Input, Output, Tail, NOutput>
+{
+    pub fn new(layer: MultipleLayers<Input, Output, Tail, NOutput>) -> Self {
         Self {
             layer,
             window: [0.0, 20.0],
@@ -70,12 +81,12 @@ impl<Input, Output, NOutput> App<Input, Output, NOutput> {
                 last_tick = Instant::now();
             }
 
-            if let Ok(data) = receiver.try_recv() {
-                trace_dbg!(data);
-            }
-            if let Ok(data) = vad_receiver.try_recv() {
-                trace_dbg!(data);
-            }
+            // if let Ok(data) = receiver.try_recv() {
+            //     trace_dbg!(data);
+            // }
+            // if let Ok(data) = vad_receiver.try_recv() {
+            //     trace_dbg!(data);
+            // }
         }
     }
 
