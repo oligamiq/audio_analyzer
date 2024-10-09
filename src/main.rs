@@ -9,21 +9,21 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::ExecutableCommand as _;
-use data::device_stream::Device;
 use data::test_data::{TestData, TestDataType};
-use debug_util::initialize_logging;
+use mel_layer::layer::DefaultLayer;
 use mel_spec::config::MelConfig;
 use ratatui::prelude::*;
-use stream::first_layer::DefaultMelLayer;
+use utils::debug::initialize_logging;
 
 // pub mod console;
 // pub mod plot;
 pub mod app;
 pub mod command;
 pub mod data;
-pub mod debug_util;
-pub mod stream;
+pub mod layer;
+pub mod mel_layer;
 pub mod tui;
+pub mod utils;
 
 fn main() -> Result<()> {
     initialize_logging()?;
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
     let raw_data_layer = TestData::new(TestDataType::TestData1);
 
     let mel_layer = {
-        let mut mel_layer = DefaultMelLayer::new();
+        let mut mel_layer = DefaultLayer::new();
         std::mem::swap(
             mel_layer.borrow_mel_config(),
             &mut MelConfig::new(400, 160, args.mels, 16000.0),

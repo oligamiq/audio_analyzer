@@ -28,9 +28,7 @@ symphonia = { version = "0.5.4", default-features = false, features = ["all-form
 # mel_spec_pipeline = { git = "https://github.com/wavey-ai/mel-spec" }
 # mel_spec_audio = { git = "https://github.com/wavey-ai/mel-spec" }
 
-mel_spec = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
-mel_spec_pipeline = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
-mel_spec_audio = { git = "https://github.com/oligamiq/mel-spec", branch = "patch-1" }
+mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 
 # debugging
 color-eyre = "0.6.3"
@@ -51,8 +49,14 @@ crossbeam-channel = "0.5.13"
 compact_str = "0.8.0"
 parking_lot = "0.12.3"
 smallvec = "1.13.2"
-ndarray = "0.15.6"
+ndarray = "0.16.1"
 hound = "3.5.1"
+
+# patch
+image = { version = "*", default-features = false }
+heapless = "0.8.0"
+const_struct = "0.5.3"
+num-complex = "0.4.6"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/

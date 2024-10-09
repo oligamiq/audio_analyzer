@@ -10,7 +10,7 @@ use tracing::warn;
 
 use crate::trace_dbg;
 
-use super::RawDataLayer;
+use super::RawDataStreamLayer;
 
 #[derive(Debug, Clone, Copy)]
 pub enum TestDataType {
@@ -130,7 +130,7 @@ impl TestData {
     }
 }
 
-impl RawDataLayer for TestData {
+impl RawDataStreamLayer for TestData {
     fn voice_stream_receiver(&self) -> Receiver<Vec<f32>> {
         self.voice_stream_receiver()
     }

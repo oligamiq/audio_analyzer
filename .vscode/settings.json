@@ -5,6 +5,7 @@
         "fundsp",
         "LOGLEVEL",
         "mels",
+        "ndarray",
         "ratatui"
     ]
 }

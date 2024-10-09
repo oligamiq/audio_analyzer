@@ -5,7 +5,7 @@ use crossbeam_channel::Receiver;
 
 use crate::trace_dbg;
 
-use super::RawDataLayer;
+use super::RawDataStreamLayer;
 
 pub struct Device {
     _host: cpal::Host,
@@ -27,6 +27,10 @@ impl Device {
             voice_stream_receiver: None,
             handles: None,
         }
+    }
+
+    pub fn get_sample_rate(&self) -> Option<u32> {
+        self.sample_rate
     }
 
     pub fn run(&mut self) {
@@ -91,7 +95,7 @@ impl Device {
     }
 }
 
-impl RawDataLayer for Device {
+impl RawDataStreamLayer for Device {
     fn voice_stream_receiver(&self) -> crossbeam_channel::Receiver<Vec<f32>> {
         self.voice_stream_receiver.as_ref().unwrap().clone()
     }

@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     thread,
     time::{Duration, Instant},
 };
@@ -10,25 +11,21 @@ use ratatui::{
     widgets::{Axis, Block, Chart, Dataset},
 };
 
-use crate::{data::RawDataLayer, stream::MelLayer, trace_dbg};
+use crate::{data::RawDataStreamLayer, layer::{layers::MultipleLayers, Layer}, trace_dbg};
 
-#[derive(Clone)]
-pub struct App<R: RawDataLayer, T: MelLayer> {
+//   Vec<f32>
+// 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
+
+pub struct App<Input, Output> {
     data: Vec<(f64, f64)>,
     window: [f64; 2],
-    mel_layer: T,
-    raw_data_layer: R,
+    layer: MultipleLayers<Input, Output>,
 }
 
-impl<R, T> App<R, T>
-where
-    R: RawDataLayer,
-    T: MelLayer,
-{
-    pub fn new(raw_data_layer: R, mel_layer: T) -> Self {
+impl<Input, Output> App<Input, Output> {
+    pub fn new(layer: MultipleLayers<Input, Output>) -> Self {
         Self {
-            raw_data_layer,
-            mel_layer,
+            layer,
             window: [0.0, 20.0],
             data: vec![(0.0, 0.0)],
         }
@@ -41,23 +38,7 @@ where
     ) -> Result<()> {
         let mut last_tick = Instant::now();
 
-        self.raw_data_layer.start();
-        let sampling_rate = self.raw_data_layer.sample_rate();
-        trace_dbg!(sampling_rate);
-        self.mel_layer.set_sampling_rate(sampling_rate as f64);
-        self.mel_layer.start();
-        {
-            let sender = self.mel_layer.voice_stream_sender();
-            let receiver = self.raw_data_layer.voice_stream_receiver();
-            thread::spawn(move || loop {
-                if let Ok(data) = receiver.recv() {
-                    sender.send(data).unwrap();
-                }
-            });
-        }
-
-        let receiver = self.mel_layer.mel_frame_stream_receiver();
-        let vad_receiver = self.mel_layer.vad_rx_stream_receiver();
+        self.layer.start();
 
         loop {
             terminal.draw(|frame| self.ui(frame))?;
