@@ -10,8 +10,12 @@ use crossterm::terminal::{
 };
 use crossterm::ExecutableCommand as _;
 use data::test_data::{TestData, TestDataType};
-use mel_layer::layer::DefaultLayer;
+use layer::layers::{layer, MultipleLayers};
+use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
+use mel_layer::layer::ToMelSpectrogramLayer;
 use mel_spec::config::MelConfig;
+use ndarray::{Array1, Array2};
+use num_complex::Complex;
 use ratatui::prelude::*;
 use utils::debug::initialize_logging;
 
@@ -40,19 +44,26 @@ fn main() -> Result<()> {
     // let raw_data_layer = Device::new();
     let raw_data_layer = TestData::new(TestDataType::TestData1);
 
-    let mel_layer = {
-        let mut mel_layer = DefaultLayer::new();
-        std::mem::swap(
-            mel_layer.borrow_mel_config(),
-            &mut MelConfig::new(400, 160, args.mels, 16000.0),
-        );
-        mel_layer
-    };
+    let fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
+    let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, 16000.0));
+
+    let layers = layer(fft_layer);
+    let layers: MultipleLayers<
+        Vec<f32>,
+        Array1<Complex<f64>>,
+        layer::layers::MultipleLayersHead<
+            Vec<f32>,
+            Array1<Complex<f64>>,
+            layer::layers::MultipleLayersTail<Vec<f32>, Array1<Complex<f64>>>,
+            Array1<Complex<f64>>,
+        >,
+        Array2<f64>,
+    > = layers.add_layer(mel_layer);
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);
 
-    let app = App::new(raw_data_layer, mel_layer);
+    let app = App::new(layers);
     app.run(&mut terminal, tick_rate)?;
 
     // let host = cpal::default_host();

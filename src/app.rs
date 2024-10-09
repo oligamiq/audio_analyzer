@@ -11,15 +11,25 @@ use ratatui::{
     widgets::{Axis, Block, Chart, Dataset},
 };
 
-use crate::{data::RawDataStreamLayer, layer::{layers::MultipleLayers, Layer}, trace_dbg};
+use crate::{
+    data::RawDataStreamLayer,
+    layer::{
+        layers::{MultipleLayers, TailTrait},
+        Layer,
+    },
+    trace_dbg,
+};
 
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
 
-pub struct App<Input, Output> {
+pub struct App<Input, Output, Tail, NOutput>
+where
+    Tail: TailTrait<Input, Output>,
+{
     data: Vec<(f64, f64)>,
     window: [f64; 2],
-    layer: MultipleLayers<Input, Output>,
+    layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
 
 impl<Input, Output> App<Input, Output> {

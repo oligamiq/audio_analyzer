@@ -14,6 +14,12 @@ pub struct FftConfig {
     pub hop_size: usize,
 }
 
+impl FftConfig {
+    pub fn new(fft_size: usize, hop_size: usize) -> Self {
+        Self { fft_size, hop_size }
+    }
+}
+
 impl Default for FftConfig {
     fn default() -> Self {
         Self {
