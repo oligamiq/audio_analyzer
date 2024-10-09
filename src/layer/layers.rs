@@ -45,7 +45,7 @@ impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput>
             layer.start();
         }
 
-        layer.start();
+        
 
         head.layer = Some(layer);
     }
