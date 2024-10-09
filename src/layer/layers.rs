@@ -7,18 +7,6 @@ pub struct MultipleLayers<Input, Output, Tail: TailTrait<Input, Output>, NOutput
     head: MultipleLayersHead<Input, Output, Tail, NOutput>,
 }
 
-pub trait Types<const N: usize> {
-    type Input;
-    type Output;
-}
-
-impl<Input, Output, Tail: TailTrait<Input, Output>, NOutput> Types<1>
-    for MultipleLayers<Input, Output, Tail, NOutput>
-{
-    type Input = Input;
-    type Output = NOutput;
-}
-
 pub fn layer<
     Input: 'static,
     Output: 'static,
