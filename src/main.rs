@@ -12,7 +12,7 @@ use crossterm::ExecutableCommand as _;
 use data::test_data::{TestData, TestDataType};
 use layer::layers::{layer, MultipleLayers};
 use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
-use mel_layer::layer::ToMelSpectrogramLayer;
+use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
 use mel_spec::config::MelConfig;
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
@@ -49,6 +49,7 @@ fn main() -> Result<()> {
 
     let layers = layer(fft_layer);
     let layers = layers.add_layer(mel_layer);
+
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);

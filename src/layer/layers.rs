@@ -1,5 +1,5 @@
 use core::panic;
-use std::{any::Any, boxed};
+use std::any::Any;
 
 use super::Layer;
 
@@ -32,16 +32,25 @@ impl<
         NOutput: 'static,
     > MultipleLayers<Input, Output, Tail, NOutput>
 {
-    pub fn add_layer<NewOutput, T: Layer<InputType = Output, OutputType = NewOutput> + 'static>(
+    pub fn add_layer<
+        NewOutput: 'static,
+        T: Layer<InputType = NOutput, OutputType = NewOutput> + 'static,
+    >(
         self,
         layer: T,
-    ) -> MultipleLayers<Input, Output, MultipleLayersHead<Input, Output, Tail, NOutput>, NewOutput>
+    ) -> MultipleLayers<Input, NOutput, MultipleLayersHead<Input, Output, Tail, NOutput>, NewOutput>
     where
-        Tail: TailTrait<Input, Output>,
+        Tail: TailTrait<Input, NOutput>,
     {
         let tail: MultipleLayersHead<Input, Output, Tail, NOutput> = self.head;
+        // let tail = &tail as &dyn TailTrait<Input, NOutput, LayerOutputType = NOutput>;
 
-        let new_head = MultipleLayersHead {
+        let new_head: MultipleLayersHead<
+            Input,
+            NOutput,
+            MultipleLayersHead<Input, Output, Tail, NOutput>,
+            NewOutput,
+        > = MultipleLayersHead {
             tail: tail,
             layer: Some(Box::new(layer)),
             __marker: std::marker::PhantomData,
@@ -80,11 +89,11 @@ pub trait TailTrait<Input, Output> {
 }
 
 impl<Input: 'static, Output: 'static, T: TailTrait<Input, Output>, NewOutput: 'static>
-    TailTrait<Input, Output> for MultipleLayersHead<Input, Output, T, NewOutput>
+    TailTrait<Input, NewOutput> for MultipleLayersHead<Input, Output, T, NewOutput>
 {
     type LayerOutputType = NewOutput;
 
-    fn as_base(&mut self) -> &mut dyn TailTrait<Input, Output, LayerOutputType = NewOutput> {
+    fn as_base(&mut self) -> &mut dyn TailTrait<Input, NewOutput, LayerOutputType = NewOutput> {
         self
     }
     fn __start(&mut self) {

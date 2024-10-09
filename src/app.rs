@@ -62,7 +62,7 @@ impl<
 
         let to_mel_layer_ref = self
             .layer
-            .get_nth::<crate::mel_layer::layer::ToMelSpectrogramLayer>(1)
+            .get_nth::<crate::mel_layer::to_mel_layer::ToMelSpectrogramLayer>(1)
             .unwrap();
 
         let to_spec_layer_ref = self
