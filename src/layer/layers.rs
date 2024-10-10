@@ -31,7 +31,7 @@ pub fn layer<
 impl<
         Input: 'static + Debug,
         OldOutput: 'static + Debug,
-        Tail: TailTrait<Input, OldOutput> + 'static + Debug,
+        Tail: TailTrait<Input, OldOutput> + 'static + Debug + AsAny,
         NOutput: 'static + Debug,
     > MultipleLayers<Input, OldOutput, Tail, NOutput>
 {
@@ -80,105 +80,27 @@ impl<
         self.head.__get_layer()
     }
 
-    pub fn print_type(&self) {
-        println!(
-            "A: {:?}",
-            std::any::type_name::<<Tail as TailTrait<Input, OldOutput>>::Next>()
-        );
-        println!(
-            "B: {:?}",
-            std::any::type_name::<<Tail as TailTrait<Input, OldOutput>>::NextLayerInputType>()
-        );
-        println!(
-            "C: {:?}",
-            std::any::type_name::<<Tail as TailTrait<Input, OldOutput>>::LayerInputType>()
-        );
+    pub fn get_tail(&self) -> &Tail {
+        &self.head.tail
     }
-
-    pub fn get_1th_layer(
-        &self,
-    ) -> Option<
-        &dyn Layer<
-            InputType = <<Tail as TailTrait<Input, OldOutput>>::Next as TailTrait<
-                <Tail as TailTrait<Input, OldOutput>>::NextLayerInputType,
-                <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-            >>::LayerInputType,
-            OutputType = <<Tail as TailTrait<Input, OldOutput>>::Next as TailTrait<
-                <Tail as TailTrait<Input, OldOutput>>::NextLayerInputType,
-                <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-            >>::LayerOutputType,
-        >,
-    >
-    where
-        <Tail as TailTrait<Input, OldOutput>>::Next: TailTrait<
-            <Tail as TailTrait<Input, OldOutput>>::NextLayerInputType,
-            <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-        >,
-    {
-        self.head.__get_nth_layer(2)
-    }
-
-    pub fn get_2th_layer(
-        &self,
-    ) -> Option<
-        &dyn Layer<
-            InputType = <<Tail as TailTrait<Input, OldOutput>>::Next as TailTrait<
-                <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-                <Tail as TailTrait<Input, OldOutput>>::LayerOutputType,
-            >>::LayerInputType,
-            OutputType = <<Tail as TailTrait<Input, OldOutput>>::Next as TailTrait<
-                <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-                <Tail as TailTrait<Input, OldOutput>>::LayerOutputType,
-            >>::LayerOutputType,
-        >,
-    >
-    where
-        <Tail as TailTrait<Input, OldOutput>>::Next: TailTrait<
-            <Tail as TailTrait<Input, OldOutput>>::LayerInputType,
-            <Tail as TailTrait<Input, OldOutput>>::LayerOutputType,
-        >,
-    {
-        self.head.tail.__get_nth_layer(1)
-    }
-}
-
-pub trait LayerTypeTrait {
-    type InputType;
-    type OutputType;
-}
-
-pub struct LayerTypeKeep<N: Integer> {
-    __marker: std::marker::PhantomData<N>,
-}
-
-impl<
-        Input: 'static + Debug,
-        OldOutput: 'static + Debug,
-        Tail: TailTrait<Input, OldOutput> + 'static + Debug,
-        NOutput: 'static + Debug,
-    > LayerTypeTrait for MultipleLayers<Input, OldOutput, Tail, NOutput>
-{
-    type InputType = Input;
-
-    type OutputType = NOutput;
 }
 
 pub trait TailTrait<Input, Output>: Debug {
     type LayerInputType: Debug;
     type LayerOutputType: Debug;
-    type Next: Debug;
+    type Next: Debug + AsAny + TailTrait<Self::NextLayerInputType, Self::LayerInputType>;
     type NextLayerInputType: Debug;
 
-    fn as_base(
-        &mut self,
-    ) -> &mut dyn TailTrait<
-        Input,
-        Output,
-        LayerInputType = Self::LayerInputType,
-        LayerOutputType = Self::LayerOutputType,
-        Next = Self::Next,
-        NextLayerInputType = Self::NextLayerInputType,
-    >;
+    // fn as_base(
+    //     &mut self,
+    // ) -> &mut dyn TailTrait<
+    //     Input,
+    //     Output,
+    //     LayerInputType = Self::LayerInputType,
+    //     LayerOutputType = Self::LayerOutputType,
+    //     Next = Self::Next,
+    //     NextLayerInputType = Self::NextLayerInputType,
+    // >;
 
     fn __start(&mut self);
 
@@ -190,44 +112,39 @@ pub trait TailTrait<Input, Output>: Debug {
     where
         Self: Sized;
 
-    fn __get_nth_layer<InputType: 'static + Debug, OutputType: 'static + Debug>(
-        &self,
-        n: i32,
-    ) -> Option<&dyn Layer<InputType = InputType, OutputType = OutputType>>
-    where
-        Self: Sized;
-
     fn __get_length(&self) -> i32;
 
     fn __get_layer(
         &self,
     ) -> Option<&dyn Layer<InputType = Self::LayerInputType, OutputType = Self::LayerOutputType>>;
+
+    fn __get_tail(&self) -> Option<&Self::Next>;
 }
 
 impl<
         Input: 'static + Debug,
         OldOutput: 'static + Debug,
-        T: TailTrait<Input, OldOutput> + Debug,
+        T: TailTrait<Input, OldOutput> + Debug + AsAny,
         NewOutput: 'static + Debug,
     > TailTrait<Input, NewOutput> for MultipleLayersHead<Input, OldOutput, T, NewOutput>
 {
     type LayerInputType = OldOutput;
     type LayerOutputType = NewOutput;
     type Next = T;
-    type NextLayerInputType = T::LayerInputType;
+    type NextLayerInputType = OldInput;
 
-    fn as_base(
-        &mut self,
-    ) -> &mut dyn TailTrait<
-        Input,
-        NewOutput,
-        LayerInputType = OldOutput,
-        LayerOutputType = NewOutput,
-        Next = T,
-        NextLayerInputType = T::LayerInputType,
-    > {
-        self
-    }
+    // fn as_base(
+    //     &mut self,
+    // ) -> &mut dyn TailTrait<
+    //     Input,
+    //     NewOutput,
+    //     LayerInputType = OldOutput,
+    //     LayerOutputType = NewOutput,
+    //     Next = T,
+    //     NextLayerInputType = T::LayerInputType,
+    // > {
+    //     self
+    // }
     fn __start(&mut self) {
         self.tail.__start();
         if let Some(layer) = &mut self.layer {
@@ -267,37 +184,6 @@ impl<
             return self.tail.__get_nth(n - 1);
         }
     }
-    fn __get_nth_layer<InputType: 'static + Debug, OutputType: 'static + Debug>(
-        &self,
-        n: i32,
-    ) -> Option<&dyn Layer<InputType = InputType, OutputType = OutputType>>
-    where
-        Self: Sized,
-    {
-        if n == 0 {
-            // if let Some(layer) = &self.layer {
-            //     let layer_any = layer.as_any();
-            //     let layer = layer_any
-            //         .downcast_ref::<&dyn Layer<InputType = InputType, OutputType = OutputType>>();
-            //     if let Some(layer) = layer {
-            //         return Some(*layer);
-            //     } else {
-            //         panic!(
-            //             "Layer type mismatch: expected {:?}",
-            //             std::any::type_name::<
-            //                 &dyn Layer<InputType = InputType, OutputType = OutputType>,
-            //             >(),
-            //         );
-            //     }
-            // } else {
-            //     return self.tail.__get_nth_layer(n);
-            // }
-
-            todo!()
-        } else {
-            return self.tail.__get_nth_layer(n - 1);
-        }
-    }
     fn __get_length(&self) -> i32 {
         if let Some(_) = &self.layer {
             return 1 + self.tail.__get_length();
@@ -316,6 +202,10 @@ impl<
             return None;
         }
     }
+
+    fn __get_tail(&self) -> Option<&Self::Next> {
+        return Some(&self.tail);
+    }
 }
 
 #[derive(Debug)]
@@ -325,9 +215,27 @@ pub struct MultipleLayersHead<Input, OldOutput, Tail: TailTrait<Input, OldOutput
     __marker: std::marker::PhantomData<Input>,
 }
 
+impl<
+        Input: 'static + Debug,
+        OldOutput: 'static + Debug,
+        T: TailTrait<Input, OldOutput> + Debug + AsAny + 'static,
+        NewOutput: 'static + Debug,
+    > AsAny for MultipleLayersHead<Input, OldOutput, T, NewOutput>
+{
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
 #[derive(Debug)]
 pub struct MultipleLayersTail<Input, Output> {
     layer: Box<dyn Layer<InputType = Input, OutputType = Output>>,
+}
+
+impl<Input: 'static + Debug, Output: 'static + Debug> AsAny for MultipleLayersTail<Input, Output> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
@@ -387,55 +295,8 @@ impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
     {
         return Some(self.layer.as_ref());
     }
-
-    fn __get_nth_layer<InputType: 'static + Debug, OutputType: 'static + Debug>(
-        &self,
-        n: i32,
-    ) -> Option<&dyn Layer<InputType = InputType, OutputType = OutputType>>
-    where
-        Self: Sized,
-    {
-        if n == 0 {
-            // println!("layer: {:?}", self.layer);
-            println!("got: {:?}", std::any::type_name_of_val(&self.layer));
-            println!(
-                "got: {:?}",
-                std::any::type_name::<
-                    &dyn Layer<
-                        InputType = Self::LayerInputType,
-                        OutputType = Self::LayerOutputType,
-                    >,
-                >()
-            );
-            println!(
-                "expected: {:?}",
-                std::any::type_name::<
-                    &Box<dyn Layer<InputType = InputType, OutputType = OutputType>>,
-                >()
-            );
-            assert!(self
-                .layer
-                .as_ref()
-                .as_any()
-                .is::<&dyn Layer<InputType = InputType, OutputType = OutputType>>());
-            // unsafe {
-            //     let raw = Box::into_raw(self);
-            //     Box::from_raw(raw as *mut T)
-            // }
-            // if let Some(layer) = layer {
-            //     todo!();
-            //     // return Some(*layer);
-            // } else {
-            //     panic!(
-            //         "Layer type mismatch: expected {:?}",
-            //         std::any::type_name::<&dyn Layer<InputType = InputType, OutputType = OutputType>>(
-            //         ),
-            //     );
-            // }
-            todo!()
-        } else {
-            return None;
-        }
+    fn __get_tail(&self) -> Option<&Self::Next> {
+        return None;
     }
 }
 
@@ -501,6 +362,16 @@ impl<
         }
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+pub trait AsAny {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl AsAny for () {
     fn as_any(&self) -> &dyn Any {
         self
     }

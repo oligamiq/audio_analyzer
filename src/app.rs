@@ -14,7 +14,7 @@ use std::{
 use crate::{
     data::RawDataStreamLayer,
     layer::{
-        layers::{MultipleLayers, TailTrait},
+        layers::{AsAny, MultipleLayers, TailTrait},
         Layer,
     },
     trace_dbg,
@@ -37,7 +37,7 @@ pub struct App<
 impl<
         Input: 'static + Debug,
         Output: 'static + Debug,
-        Tail: TailTrait<Input, Output> + 'static + Debug,
+        Tail: TailTrait<Input, Output> + 'static + Debug + AsAny,
         NOutput: 'static + Debug,
     > App<Input, Output, Tail, NOutput>
 {
@@ -76,10 +76,21 @@ impl<
         let layer = self.layer.get_0th_layer();
         println!("{:?}", layer);
 
-        let layer2 = self.layer.get_1th_layer();
-        // println!("{:?}", layer2);
-
-        self.layer.print_type();
+        {
+            let mut tail = self.layer.get_tail();
+            let layer = tail.__get_layer();
+            println!("{:?}", layer);
+            while let Some(tail) = tail.__get_tail() {
+                let any = tail.as_any();
+                if let Some(_) = any.downcast_ref::<()>() {
+                    break;
+                } else if let Some(next_tail) = any.downcast_ref::<TailTrait>() {
+                    let layer = next_tail.__get_layer();
+                    println!("{:?}", layer);
+                }
+                println!("{:?}", layer);
+            }
+        }
 
         // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 

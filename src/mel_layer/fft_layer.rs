@@ -7,7 +7,7 @@ use mel_spec::stft::Spectrogram;
 use ndarray::Array1;
 use num_complex::Complex;
 
-use crate::layer::Layer;
+use crate::layer::{layers::AsAny, Layer};
 
 pub struct FftConfig {
     pub fft_size: usize,

@@ -5,7 +5,7 @@ use mel_spec::{config::MelConfig, mel::MelSpectrogram};
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
 
-use crate::layer::Layer;
+use crate::layer::{layers::AsAny, Layer};
 
 pub struct ToMelSpectrogramLayer {
     mel_settings: MelConfig,
