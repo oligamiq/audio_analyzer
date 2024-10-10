@@ -7,15 +7,15 @@ edition = "2021"
 cpal = "0.15.3"
 
 # graphing and plotting
-plotters = "0.3.6"
+plotters = "0.3.7"
 
 # command args
-clap = { version = "4.5.10", features = ["derive", "unicode", "wrap_help"] }
+clap = { version = "4.5.20", features = ["derive", "unicode", "wrap_help"] }
 
 # console
 console = { version = "0.15.8", features = ["windows-console-colors"] }
-ratatui = "0.27.0"
-crossterm = "0.27.0"
+ratatui = "0.28.1"
+crossterm = "0.28.1"
 indicatif = "0.17.8"
 billboard = "0.2.0"
 atty = "0.2.14"
