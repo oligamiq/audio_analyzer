@@ -1,16 +1,17 @@
 use core::panic;
-use std::any::Any;
+use std::{any::Any, fmt::Debug};
 
 use super::Layer;
 
+#[derive(Debug)]
 pub struct MultipleLayers<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NOutput> {
     head: MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
 }
 
 pub fn layer<
-    Input: 'static,
-    Output: 'static,
-    T: Layer<InputType = Input, OutputType = Output> + 'static,
+    Input: 'static + Debug,
+    Output: 'static + Debug,
+    T: Layer<InputType = Input, OutputType = Output> + 'static + Debug,
 >(
     layer: T,
 ) -> MultipleLayers<Input, Output, MultipleLayersTail<Input, Output>, Output> {
@@ -26,10 +27,10 @@ pub fn layer<
 }
 
 impl<
-        Input: 'static,
-        OldOutput: 'static,
-        Tail: TailTrait<Input, OldOutput> + 'static,
-        NOutput: 'static,
+        Input: 'static + Debug,
+        OldOutput: 'static + Debug,
+        Tail: TailTrait<Input, OldOutput> + 'static + Debug,
+        NOutput: 'static + Debug,
     > MultipleLayers<Input, OldOutput, Tail, NOutput>
 {
     pub fn add_layer<
@@ -72,10 +73,19 @@ impl<
     pub fn get_length(&self) -> i32 {
         self.head.__get_length()
     }
+
+    pub fn get_0th_layer(&self) -> &dyn Layer<InputType = Input, OutputType = OldOutput> {
+        let any = &self.head.tail as &dyn Any;
+        let tail = any
+            .downcast_ref::<MultipleLayersTail<Input, OldOutput>>()
+            .unwrap();
+
+        tail.layer.as_ref()
+    }
 }
 
-pub trait TailTrait<Input, Output> {
-    type LayerOutputType;
+pub trait TailTrait<Input, Output>: Debug {
+    type LayerOutputType: Debug;
 
     fn as_base(
         &mut self,
@@ -94,8 +104,12 @@ pub trait TailTrait<Input, Output> {
     fn __get_length(&self) -> i32;
 }
 
-impl<Input: 'static, OldOutput: 'static, T: TailTrait<Input, OldOutput>, NewOutput: 'static>
-    TailTrait<Input, NewOutput> for MultipleLayersHead<Input, OldOutput, T, NewOutput>
+impl<
+        Input: 'static + Debug,
+        OldOutput: 'static + Debug,
+        T: TailTrait<Input, OldOutput> + Debug,
+        NewOutput: 'static + Debug,
+    > TailTrait<Input, NewOutput> for MultipleLayersHead<Input, OldOutput, T, NewOutput>
 {
     type LayerOutputType = NewOutput;
 
@@ -150,17 +164,19 @@ impl<Input: 'static, OldOutput: 'static, T: TailTrait<Input, OldOutput>, NewOutp
     }
 }
 
+#[derive(Debug)]
 pub struct MultipleLayersHead<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NewOutput> {
     tail: Tail,
     layer: Option<Box<dyn Layer<InputType = OldOutput, OutputType = NewOutput> + 'static>>,
     __marker: std::marker::PhantomData<Input>,
 }
 
+#[derive(Debug)]
 pub struct MultipleLayersTail<Input, Output> {
     layer: Box<dyn Layer<InputType = Input, OutputType = Output>>,
 }
 
-impl<Input: 'static, Output: 'static> TailTrait<Input, Output>
+impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
     for MultipleLayersTail<Input, Output>
 {
     type LayerOutputType = Output;
@@ -202,10 +218,10 @@ impl<Input: 'static, Output: 'static> TailTrait<Input, Output>
 }
 
 impl<
-        Input: 'static,
-        Output: 'static,
-        Tail: TailTrait<Input, Output> + 'static,
-        NOutput: 'static,
+        Input: 'static + Debug,
+        Output: 'static + Debug,
+        Tail: TailTrait<Input, Output> + 'static + Debug,
+        NOutput: 'static + Debug,
     > Layer for MultipleLayers<Input, Output, Tail, NOutput>
 {
     type InputType = Input;

@@ -1,8 +1,9 @@
 pub mod layers;
 
 use crossbeam_channel::Receiver;
+use std::fmt::Debug;
 
-pub trait Layer {
+pub trait Layer: Debug {
     type InputType;
     type OutputType;
 
