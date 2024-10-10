@@ -1,11 +1,15 @@
-use core::panic;
-use std::{any::Any, fmt::Debug};
-
 use super::Layer;
+use core::panic;
+use std::ops::Add;
+use std::{any::Any, fmt::Debug};
+use typenum::bit::B1;
+use typenum::{Integer, PInt, Sum, UInt, UTerm, P1, Z0};
 
 #[derive(Debug)]
-pub struct MultipleLayers<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NOutput> {
+pub struct MultipleLayers<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NOutput, N: Integer>
+{
     head: MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
+    __marker: std::marker::PhantomData<N>,
 }
 
 pub fn layer<
@@ -14,7 +18,7 @@ pub fn layer<
     T: Layer<InputType = Input, OutputType = Output> + 'static + Debug,
 >(
     layer: T,
-) -> MultipleLayers<Input, Output, MultipleLayersTail<Input, Output>, Output> {
+) -> MultipleLayers<Input, Output, MultipleLayersTail<Input, Output>, Output, Z0> {
     MultipleLayers {
         head: MultipleLayersHead {
             tail: MultipleLayersTail {
@@ -23,6 +27,7 @@ pub fn layer<
             layer: None,
             __marker: std::marker::PhantomData,
         },
+        __marker: std::marker::PhantomData,
     }
 }
 
@@ -31,7 +36,10 @@ impl<
         OldOutput: 'static + Debug,
         Tail: TailTrait<Input, OldOutput> + 'static + Debug,
         NOutput: 'static + Debug,
-    > MultipleLayers<Input, OldOutput, Tail, NOutput>
+        N: Integer + Add<PInt<UInt<UTerm, B1>>> + Debug,
+    > MultipleLayers<Input, OldOutput, Tail, NOutput, N>
+where
+    <N as Add<PInt<UInt<UTerm, B1>>>>::Output: Integer,
 {
     pub fn add_layer<
         NewOutput: 'static,
@@ -44,6 +52,7 @@ impl<
         NOutput,
         MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
         NewOutput,
+        Sum<N, P1>,
     >
     where
         Tail: TailTrait<Input, NOutput>,
@@ -63,7 +72,10 @@ impl<
             __marker: std::marker::PhantomData,
         };
 
-        return MultipleLayers { head: new_head };
+        return MultipleLayers {
+            head: new_head,
+            __marker: std::marker::PhantomData,
+        };
     }
 
     pub fn get_nth<P: 'static>(&self, n: i32) -> Option<&P> {
@@ -82,11 +94,17 @@ impl<
 }
 
 pub trait TailTrait<Input, Output>: Debug {
+    type LayerInputType: Debug;
     type LayerOutputType: Debug;
 
     fn as_base(
         &mut self,
-    ) -> &mut dyn TailTrait<Input, Output, LayerOutputType = Self::LayerOutputType>;
+    ) -> &mut dyn TailTrait<
+        Input,
+        Output,
+        LayerInputType = Self::LayerInputType,
+        LayerOutputType = Self::LayerOutputType,
+    >;
 
     fn __start(&mut self);
 
@@ -99,6 +117,10 @@ pub trait TailTrait<Input, Output>: Debug {
         Self: Sized;
 
     fn __get_length(&self) -> i32;
+
+    fn __get_layer(
+        &self,
+    ) -> Option<&dyn Layer<InputType = Self::LayerInputType, OutputType = Self::LayerOutputType>>;
 }
 
 impl<
@@ -108,9 +130,13 @@ impl<
         NewOutput: 'static + Debug,
     > TailTrait<Input, NewOutput> for MultipleLayersHead<Input, OldOutput, T, NewOutput>
 {
+    type LayerInputType = OldOutput;
     type LayerOutputType = NewOutput;
 
-    fn as_base(&mut self) -> &mut dyn TailTrait<Input, NewOutput, LayerOutputType = NewOutput> {
+    fn as_base(
+        &mut self,
+    ) -> &mut dyn TailTrait<Input, NewOutput, LayerInputType = OldOutput, LayerOutputType = NewOutput>
+    {
         self
     }
     fn __start(&mut self) {
@@ -159,6 +185,17 @@ impl<
             return self.tail.__get_length();
         }
     }
+
+    fn __get_layer(
+        &self,
+    ) -> Option<&dyn Layer<InputType = Self::LayerInputType, OutputType = Self::LayerOutputType>>
+    {
+        if let Some(layer) = &self.layer {
+            return Some(layer.as_ref());
+        } else {
+            return None;
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -176,9 +213,12 @@ pub struct MultipleLayersTail<Input, Output> {
 impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
     for MultipleLayersTail<Input, Output>
 {
+    type LayerInputType = Input;
     type LayerOutputType = Output;
 
-    fn as_base(&mut self) -> &mut dyn TailTrait<Input, Output, LayerOutputType = Output> {
+    fn as_base(
+        &mut self,
+    ) -> &mut dyn TailTrait<Input, Output, LayerInputType = Input, LayerOutputType = Output> {
         self
     }
     fn __start(&mut self) {
@@ -212,6 +252,12 @@ impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
     fn __get_length(&self) -> i32 {
         return 1;
     }
+    fn __get_layer(
+        &self,
+    ) -> Option<&dyn Layer<InputType = Self::LayerInputType, OutputType = Self::LayerOutputType>>
+    {
+        return Some(self.layer.as_ref());
+    }
 }
 
 impl<
@@ -219,7 +265,8 @@ impl<
         Output: 'static + Debug,
         Tail: TailTrait<Input, Output> + 'static + Debug,
         NOutput: 'static + Debug,
-    > Layer for MultipleLayers<Input, Output, Tail, NOutput>
+        N: Integer + Add<PInt<UInt<UTerm, B1>>> + Debug,
+    > Layer for MultipleLayers<Input, Output, Tail, NOutput, N>
 {
     type InputType = Input;
     type OutputType = NOutput;
