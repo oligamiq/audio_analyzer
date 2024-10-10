@@ -10,6 +10,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use tracing_subscriber::field::debug;
 
 use crate::{
     data::RawDataStreamLayer,
@@ -17,8 +18,8 @@ use crate::{
         layers::{AsAny, LayerCallFunc, MultipleLayers, TailTrait},
         Layer,
     },
-    trace_dbg,
 };
+use tracing::debug;
 
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
@@ -35,7 +36,7 @@ pub struct App<
 }
 
 pub fn print_ln<A, B>(obj: &(dyn Layer<InputType = A, OutputType = B>)) {
-    println!("print {:?}", obj);
+    debug!("Layer: {:?}", obj);
 }
 
 impl<
@@ -58,11 +59,9 @@ impl<
         terminal: &mut Terminal<B>,
         tick_rate: Duration,
     ) -> Result<()> {
-        let mut last_tick = Instant::now();
-
         let length = self.layer.get_length();
 
-        println!("length: {}", length);
+        debug!("length: {}", length);
 
         let to_mel_layer_ref = self
             .layer
@@ -74,11 +73,11 @@ impl<
             .get_nth::<crate::mel_layer::fft_layer::ToSpectrogramLayer>(0)
             .unwrap();
 
-        println!("{:?}", to_mel_layer_ref);
-        println!("{:?}", to_spec_layer_ref);
+        debug!("{:?}", to_mel_layer_ref);
+        debug!("{:?}", to_spec_layer_ref);
 
         let layer = self.layer.get_0th_layer();
-        println!("{:?}", layer);
+        debug!("{:?}", layer);
 
         LayerCallFunc!(self.layer, print_ln);
 
@@ -90,8 +89,7 @@ impl<
 
         self.layer.start();
 
-        // 100ms
-        let mut timeout = Duration::from_millis(100);
+        let mut timeout = tick_rate.clone();
 
         loop {
             terminal.draw(|frame| self.ui(frame))?;
@@ -111,22 +109,19 @@ impl<
                     // }
                 }
             }
-            if last_tick.elapsed() >= tick_rate {
-                last_tick = Instant::now();
-            }
 
             if let Ok(data) = to_mel_layer_ref_receiver.try_recv() {
                 // 0ms
-                // trace_dbg!(data);
+                // debug!(data);
 
                 // average
                 let ave = data.iter().sum::<f64>() / data.len() as f64;
 
-                trace_dbg!(ave);
+                debug!(ave);
                 timeout = Duration::from_millis(0);
             } else {
                 // 100ms
-                timeout = Duration::from_millis(100);
+                timeout = tick_rate.clone();
             }
         }
     }

@@ -1,19 +1,18 @@
-use std::{fmt::Debug, thread};
+use std::{fmt::Debug, sync::Arc, thread};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use mel_spec::{config::MelConfig, mel::MelSpectrogram};
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
-use tracing::{debug, trace};
+use parking_lot::Mutex;
 
-use crate::layer::{layers::AsAny, Layer};
+use crate::layer::Layer;
 
 pub struct ToMelSpectrogramLayer {
     mel_settings: MelConfig,
     handles: Option<Vec<std::thread::JoinHandle<()>>>,
-    result_sender: Option<Sender<Array2<f64>>>,
+    result_sender: Arc<Mutex<Vec<Sender<Array2<f64>>>>>,
     input_receiver: Option<Receiver<Array1<Complex<f64>>>>,
-    result_receiver: Receiver<Array2<f64>>,
 }
 
 impl Debug for ToMelSpectrogramLayer {
@@ -22,20 +21,16 @@ impl Debug for ToMelSpectrogramLayer {
             .field("handles", &self.handles)
             .field("result_sender", &self.result_sender)
             .field("input_receiver", &self.input_receiver)
-            .field("result_receiver", &self.result_receiver)
             .finish()
     }
 }
 
 impl Default for ToMelSpectrogramLayer {
     fn default() -> Self {
-        let (sender, receiver) = unbounded();
-
         Self {
             mel_settings: MelConfig::new(400, 160, 80, 16000.0),
             handles: Some(Vec::new()),
-            result_sender: Some(sender),
-            result_receiver: receiver,
+            result_sender: Arc::new(Mutex::new(Vec::new())),
             input_receiver: None,
         }
     }
@@ -43,13 +38,10 @@ impl Default for ToMelSpectrogramLayer {
 
 impl ToMelSpectrogramLayer {
     pub fn new(mel_config: MelConfig) -> Self {
-        let (sender, receiver) = unbounded();
-
         Self {
             mel_settings: mel_config,
             handles: Some(Vec::new()),
-            result_sender: Some(sender),
-            result_receiver: receiver,
+            result_sender: Arc::new(Mutex::new(Vec::new())),
             input_receiver: None,
         }
     }
@@ -61,7 +53,7 @@ impl ToMelSpectrogramLayer {
         let n_mels = mel_settings.n_mels();
         let sampling_rate = mel_settings.sampling_rate();
 
-        let result_sender = self.result_sender.take().expect("Result sender not set");
+        let result_sender = self.result_sender.clone();
 
         if let Some(input_receiver) = self.input_receiver.take() {
             let mel_handle = thread::spawn(move || {
@@ -69,7 +61,9 @@ impl ToMelSpectrogramLayer {
 
                 while let Ok(fft_result) = input_receiver.recv() {
                     let mel_spec = mel.add(&fft_result);
-                    result_sender.send(mel_spec).unwrap();
+                    result_sender
+                        .lock()
+                        .retain(|s| s.send(mel_spec.clone()).is_ok());
                 }
             });
 
@@ -86,7 +80,9 @@ impl Layer for ToMelSpectrogramLayer {
     type OutputType = Array2<f64>;
 
     fn get_result_stream(&self) -> Receiver<Self::OutputType> {
-        self.result_receiver.clone()
+        let (sender, receiver) = unbounded();
+        self.result_sender.lock().push(sender);
+        receiver
     }
 
     fn set_input_stream(&mut self, input_stream: Receiver<Self::InputType>) {

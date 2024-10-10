@@ -1,7 +1,7 @@
-use std::thread;
+use std::{sync::Arc, thread};
 
-use color_eyre::eyre::ContextCompat as _;
 use crossbeam_channel::Receiver;
+use parking_lot::Mutex;
 use symphonia::core::{
     audio::Signal, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
     meta::MetadataOptions, probe,
@@ -20,7 +20,7 @@ pub enum TestDataType {
 pub struct TestData {
     pub test_data_type: TestDataType,
     sample_rate: Option<u32>,
-    voice_stream_receiver: Option<Receiver<Vec<f32>>>,
+    sender: Arc<Mutex<Vec<crossbeam_channel::Sender<Vec<f32>>>>>,
     handles: Option<Vec<thread::JoinHandle<()>>>,
 }
 
@@ -29,25 +29,21 @@ impl TestData {
         TestData {
             test_data_type,
             sample_rate: None,
-            voice_stream_receiver: None,
+            sender: Arc::new(Mutex::new(Vec::new())),
             handles: None,
         }
     }
 
     pub fn voice_stream_receiver(&self) -> Receiver<Vec<f32>> {
-        self.voice_stream_receiver
-            .clone()
-            .wrap_err("Sender is not initialized")
-            .unwrap()
+        let (sender, receiver) = crossbeam_channel::unbounded();
+        self.sender.lock().push(sender);
+        receiver
     }
 
     pub fn start(&mut self) {
         let file_path = match self.test_data_type {
             TestDataType::TestData1 => "test_data/jfk_f32le.wav",
         };
-        let (sender, receiver) = crossbeam_channel::unbounded();
-
-        self.voice_stream_receiver = Some(receiver);
 
         let file = Box::new(std::fs::File::open(file_path).unwrap());
 
@@ -79,6 +75,8 @@ impl TestData {
 
         // Store the track identifier, we'll use it to filter packets.
         let track_id = track.id;
+
+        let sender = self.sender.clone();
 
         let handle = thread::spawn(move || {
             loop {
@@ -114,7 +112,8 @@ impl TestData {
                             }
                         };
 
-                        sender.send(buf.planes().planes()[0].to_vec()).unwrap();
+                        let vec = buf.planes().planes()[0].to_vec();
+                        sender.lock().retain(|x| x.send(vec.clone()).is_ok());
                     }
                     Err(symphonia::core::errors::Error::DecodeError(_)) => (),
                     Err(_) => break,

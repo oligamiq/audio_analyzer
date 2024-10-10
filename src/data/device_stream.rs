@@ -1,7 +1,7 @@
-use std::thread;
+use std::{sync::Arc, thread};
 
 use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
-use crossbeam_channel::Receiver;
+use parking_lot::Mutex;
 
 use crate::trace_dbg;
 
@@ -11,7 +11,7 @@ pub struct Device {
     _host: cpal::Host,
     device: Option<cpal::Device>,
     sample_rate: Option<u32>,
-    voice_stream_receiver: Option<Receiver<Vec<f32>>>,
+    sender: Arc<Mutex<Vec<crossbeam_channel::Sender<Vec<f32>>>>>,
     handles: Option<Vec<thread::JoinHandle<()>>>,
 }
 
@@ -24,7 +24,7 @@ impl Device {
             _host: host,
             device: Some(device),
             sample_rate: None,
-            voice_stream_receiver: None,
+            sender: Arc::new(Mutex::new(Vec::new())),
             handles: None,
         }
     }
@@ -53,17 +53,15 @@ impl Device {
 
         let config = device.default_input_config().unwrap();
 
-        dbg!(&config);
+        // dbg!(&config);
 
         self.sample_rate = Some(config.sample_rate().0);
-
-        let (sender, receiver) = crossbeam_channel::unbounded();
-
-        self.voice_stream_receiver = Some(receiver);
 
         let err_fn = move |err| {
             eprintln!("an error occurred on stream: {}", err);
         };
+
+        let sender = self.sender.clone();
 
         let handle = thread::spawn(move || {
             let stream = match config.sample_format() {
@@ -75,7 +73,7 @@ impl Device {
                             return;
                         }
                         // trace_dbg!(data.len());
-                        sender.send(data).unwrap();
+                        sender.lock().retain(|x| x.send(data.clone()).is_ok());
                     },
                     err_fn,
                     None,
@@ -90,14 +88,14 @@ impl Device {
         });
 
         self.handles = Some(vec![handle]);
-
-        println!("Device started");
     }
 }
 
 impl RawDataStreamLayer for Device {
     fn voice_stream_receiver(&self) -> crossbeam_channel::Receiver<Vec<f32>> {
-        self.voice_stream_receiver.as_ref().unwrap().clone()
+        let (sender, receiver) = crossbeam_channel::unbounded();
+        self.sender.lock().push(sender);
+        receiver
     }
 
     fn sample_rate(&self) -> u32 {

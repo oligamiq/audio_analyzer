@@ -1,13 +1,14 @@
 // stft layer
 
-use std::{fmt::Debug, thread};
+use std::{fmt::Debug, sync::Arc, thread};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use mel_spec::stft::Spectrogram;
 use ndarray::Array1;
 use num_complex::Complex;
+use parking_lot::Mutex;
 
-use crate::layer::{layers::AsAny, Layer};
+use crate::layer::Layer;
 
 pub struct FftConfig {
     pub fft_size: usize,
@@ -32,9 +33,8 @@ impl Default for FftConfig {
 pub struct ToSpectrogramLayer {
     mel_config: FftConfig,
     handles: Option<Vec<std::thread::JoinHandle<()>>>,
-    result_sender: Option<Sender<Array1<Complex<f64>>>>,
+    result_sender: Arc<Mutex<Vec<Sender<Array1<Complex<f64>>>>>>,
     input_receiver: Option<Receiver<Vec<f32>>>,
-    result_receiver: Receiver<Array1<Complex<f64>>>,
 }
 
 impl Debug for ToSpectrogramLayer {
@@ -43,35 +43,28 @@ impl Debug for ToSpectrogramLayer {
             .field("handles", &self.handles)
             .field("result_sender", &self.result_sender)
             .field("input_receiver", &self.input_receiver)
-            .field("result_receiver", &self.result_receiver)
             .finish()
     }
 }
 
 impl Default for ToSpectrogramLayer {
     fn default() -> Self {
-        let (sender, receiver) = unbounded();
-
         Self {
             mel_config: FftConfig::default(),
             handles: Some(Vec::new()),
-            result_sender: Some(sender),
+            result_sender: Arc::new(Mutex::new(Vec::new())),
             input_receiver: None,
-            result_receiver: receiver,
         }
     }
 }
 
 impl ToSpectrogramLayer {
     pub fn new(mel_config: FftConfig) -> Self {
-        let (sender, receiver) = unbounded();
-
         Self {
             mel_config,
             handles: Some(Vec::new()),
-            result_sender: Some(sender),
+            result_sender: Arc::new(Mutex::new(Vec::new())),
             input_receiver: None,
-            result_receiver: receiver,
         }
     }
 
@@ -81,7 +74,7 @@ impl ToSpectrogramLayer {
         let fft_size = mel_config.fft_size;
         let hop_size = mel_config.hop_size;
 
-        let result_sender = self.result_sender.take().expect("Result sender not set");
+        let result_sender = self.result_sender.clone();
 
         if let Some(input_receiver) = self.input_receiver.take() {
             let fft_handle = thread::spawn(move || {
@@ -101,7 +94,7 @@ impl ToSpectrogramLayer {
 
                         let fft_result = fft.add(&kept_data);
                         if let Some(fft_result) = fft_result {
-                            result_sender.send(fft_result).unwrap();
+                            result_sender.lock().retain(|x| x.send(fft_result.clone()).is_ok());
                         }
                     }
                 }
@@ -120,7 +113,9 @@ impl Layer for ToSpectrogramLayer {
     type OutputType = Array1<Complex<f64>>;
 
     fn get_result_stream(&self) -> Receiver<Self::OutputType> {
-        self.result_receiver.clone()
+        let (sender, receiver) = unbounded();
+        self.result_sender.lock().push(sender);
+        receiver
     }
 
     fn set_input_stream(&mut self, input_stream: Receiver<Self::InputType>) {
