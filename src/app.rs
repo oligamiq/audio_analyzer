@@ -74,10 +74,14 @@ impl<
         println!("{:?}", to_spec_layer_ref);
 
         let layer = self.layer.get_0th_layer();
-
         println!("{:?}", layer);
 
-        let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
+        let layer2 = self.layer.get_1th_layer();
+        // println!("{:?}", layer2);
+
+        self.layer.print_type();
+
+        // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 
         self.layer.start();
 
