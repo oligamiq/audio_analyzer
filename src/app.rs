@@ -1,14 +1,14 @@
-use std::{
-    any::Any,
-    thread,
-    time::{Duration, Instant},
-};
-
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     prelude::*,
     widgets::{Axis, Block, Chart, Dataset},
+};
+use std::fmt::Debug;
+use std::{
+    any::Any,
+    thread,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -24,10 +24,10 @@ use crate::{
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
 
 pub struct App<
-    Input: 'static,
-    Output: 'static,
-    Tail: TailTrait<Input, Output> + 'static,
-    NOutput: 'static,
+    Input: 'static + Debug,
+    Output: 'static + Debug,
+    Tail: TailTrait<Input, Output> + 'static + Debug,
+    NOutput: 'static + Debug,
 > {
     data: Vec<(f64, f64)>,
     window: [f64; 2],
@@ -35,10 +35,10 @@ pub struct App<
 }
 
 impl<
-        Input: 'static,
-        Output: 'static,
-        Tail: TailTrait<Input, Output> + 'static,
-        NOutput: 'static,
+        Input: 'static + Debug,
+        Output: 'static + Debug,
+        Tail: TailTrait<Input, Output> + 'static + Debug,
+        NOutput: 'static + Debug,
     > App<Input, Output, Tail, NOutput>
 {
     pub fn new(layer: MultipleLayers<Input, Output, Tail, NOutput>) -> Self {
