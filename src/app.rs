@@ -14,7 +14,7 @@ use std::{
 use crate::{
     data::RawDataStreamLayer,
     layer::{
-        layers::{AsAny, MultipleLayers, TailTrait},
+        layers::{AsAny, LayerCallFunc, MultipleLayers, TailTrait},
         Layer,
     },
     trace_dbg,
@@ -32,6 +32,10 @@ pub struct App<
     data: Vec<(f64, f64)>,
     window: [f64; 2],
     layer: MultipleLayers<Input, Output, Tail, NOutput>,
+}
+
+pub fn print_ln<A, B>(obj: &(dyn Layer<InputType = A, OutputType = B>)) {
+    println!("print {:?}", obj);
 }
 
 impl<
@@ -76,26 +80,7 @@ impl<
         let layer = self.layer.get_0th_layer();
         println!("{:?}", layer);
 
-        // {
-        //     let mut tail = self.layer.get_tail();
-        //     let layer = tail.__get_layer();
-        //     println!("## {:?}", layer);
-        //     let mut first_tail = Box::new(tail.__get_tail().unwrap() as &dyn Any);
-        //     while let Some(__tail) = first_tail.__get_tail() {
-        //         println!("{:?}", __tail);
-        //         let any = __tail.as_any();
-        //         if let Some(_) = any.downcast_ref::<()>() {
-        //             break;
-        //         } else {
-        //             first_tail = __tail;
-        //             if let Some(layer) = tail.__get_layer() {
-        //                 println!("{:?}", layer);
-        //             } else {
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
+        LayerCallFunc!(self.layer, print_ln);
 
         // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 

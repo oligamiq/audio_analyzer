@@ -1,9 +1,6 @@
 use super::Layer;
 use core::panic;
-use std::ops::Add;
 use std::{any::Any, fmt::Debug};
-use typenum::bit::B1;
-use typenum::{Integer, PInt, Sum, UInt, UTerm, P1, Z0};
 
 #[derive(Debug)]
 pub struct MultipleLayers<Input, OldOutput, Tail: TailTrait<Input, OldOutput>, NOutput> {
@@ -412,3 +409,79 @@ impl<Input, Output> TailTrait<Input, Output> for () {
         None
     }
 }
+
+macro_rules! LayerCallFunc {
+    (
+        @loop_inner,
+        $multi_layers:expr,
+        $func:ident,
+        $tail:ident
+    ) => {
+        let tail = $tail.__get_tail().unwrap();
+        let layer = tail.__get_layer();
+        if layer.is_none() {
+            let layer = tail.__get_tail().unwrap().__get_layer().unwrap();
+            $func(layer);
+
+            return;
+        }
+        let layer = layer.unwrap();
+
+        $func(layer);
+    };
+    (
+        $multi_layers:expr,
+        $func:ident
+    ) => {
+        {
+            LayerCallFunc!($multi_layers, $func, 10)
+        }
+    };
+    (
+        $multi_layers:expr,
+        $func:ident,
+        10
+    ) => {
+        {
+            let _____func = || {
+                let layer = $multi_layers.get_0th_layer();
+                if layer.is_none() {
+                    let layer = $multi_layers.get_tail().__get_layer().unwrap();
+
+                    $func(layer);
+
+                    return;
+                }
+                let layer = layer.unwrap();
+
+                $func(layer);
+
+                let tail = $multi_layers.get_tail();
+                let layer = tail.__get_layer();
+                if layer.is_none() {
+                    let layer = tail.__get_tail().unwrap().__get_layer().unwrap();
+                    $func(layer);
+
+                    return;
+                }
+                let layer = layer.unwrap();
+
+                $func(layer);
+
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+                LayerCallFunc!(@loop_inner, $multi_layers, $func, tail);
+            };
+            _____func();
+        }
+    };
+}
+
+pub(crate) use LayerCallFunc;
