@@ -74,13 +74,10 @@ impl<
         self.head.__get_length()
     }
 
-    pub fn get_0th_layer(&self) -> &dyn Layer<InputType = Input, OutputType = OldOutput> {
-        let any = &self.head.tail as &dyn Any;
-        let tail = any
-            .downcast_ref::<MultipleLayersTail<Input, OldOutput>>()
-            .unwrap();
+    pub fn get_0th_layer(&self) -> &dyn Layer<InputType = OldOutput, OutputType = NOutput> {
+        let layer = self.head.layer.as_ref().unwrap().as_ref();
 
-        tail.layer.as_ref()
+        layer
     }
 }
 
