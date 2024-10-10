@@ -76,21 +76,26 @@ impl<
         let layer = self.layer.get_0th_layer();
         println!("{:?}", layer);
 
-        {
-            let mut tail = self.layer.get_tail();
-            let layer = tail.__get_layer();
-            println!("{:?}", layer);
-            while let Some(tail) = tail.__get_tail() {
-                let any = tail.as_any();
-                if let Some(_) = any.downcast_ref::<()>() {
-                    break;
-                } else if let Some(next_tail) = any.downcast_ref::<TailTrait>() {
-                    let layer = next_tail.__get_layer();
-                    println!("{:?}", layer);
-                }
-                println!("{:?}", layer);
-            }
-        }
+        // {
+        //     let mut tail = self.layer.get_tail();
+        //     let layer = tail.__get_layer();
+        //     println!("## {:?}", layer);
+        //     let mut first_tail = Box::new(tail.__get_tail().unwrap() as &dyn Any);
+        //     while let Some(__tail) = first_tail.__get_tail() {
+        //         println!("{:?}", __tail);
+        //         let any = __tail.as_any();
+        //         if let Some(_) = any.downcast_ref::<()>() {
+        //             break;
+        //         } else {
+        //             first_tail = __tail;
+        //             if let Some(layer) = tail.__get_layer() {
+        //                 println!("{:?}", layer);
+        //             } else {
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
 
         // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 

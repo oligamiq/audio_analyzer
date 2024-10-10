@@ -85,10 +85,10 @@ impl<
     }
 }
 
-pub trait TailTrait<Input, Output>: Debug {
+pub trait TailTrait<Input, Output>: Debug + Sized {
     type LayerInputType: Debug;
     type LayerOutputType: Debug;
-    type Next: Debug + AsAny + TailTrait<Self::NextLayerInputType, Self::LayerInputType>;
+    type Next: Debug + AsAny + TailTrait<Input, Self::LayerInputType>;
     type NextLayerInputType: Debug;
 
     // fn as_base(
@@ -131,7 +131,7 @@ impl<
     type LayerInputType = OldOutput;
     type LayerOutputType = NewOutput;
     type Next = T;
-    type NextLayerInputType = OldInput;
+    type NextLayerInputType = T::LayerInputType;
 
     // fn as_base(
     //     &mut self,
@@ -246,18 +246,18 @@ impl<Input: 'static + Debug, Output: 'static + Debug> TailTrait<Input, Output>
     type Next = ();
     type NextLayerInputType = ();
 
-    fn as_base(
-        &mut self,
-    ) -> &mut dyn TailTrait<
-        Input,
-        Output,
-        LayerInputType = Input,
-        LayerOutputType = Output,
-        Next = (),
-        NextLayerInputType = (),
-    > {
-        self
-    }
+    // fn as_base(
+    //     &mut self,
+    // ) -> &mut dyn TailTrait<
+    //     Input,
+    //     Output,
+    //     LayerInputType = Input,
+    //     LayerOutputType = Output,
+    //     Next = (),
+    //     NextLayerInputType = (),
+    // > {
+    //     self
+    // }
     fn __start(&mut self) {
         self.layer.start();
     }
@@ -374,5 +374,41 @@ pub trait AsAny {
 impl AsAny for () {
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl<Input, Output> TailTrait<Input, Output> for () {
+    type LayerInputType = ();
+    type LayerOutputType = ();
+    type Next = ();
+    type NextLayerInputType = ();
+
+    // fn as_base(
+    //     &mut self,
+    // ) -> &mut dyn TailTrait<(), (), LayerInputType = (), LayerOutputType = (), Next = (), NextLayerInputType = ()> {
+    //     self
+    // }
+    fn __start(&mut self) {}
+    fn __set_input_stream(&mut self, _input_stream: crossbeam_channel::Receiver<Input>) {}
+    fn __handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
+        Vec::new()
+    }
+    fn __get_nth<P: 'static>(&self, _n: i32) -> Option<&P>
+    where
+        Self: Sized,
+    {
+        None
+    }
+    fn __get_length(&self) -> i32 {
+        0
+    }
+    fn __get_layer(
+        &self,
+    ) -> Option<&dyn Layer<InputType = Self::LayerInputType, OutputType = Self::LayerOutputType>>
+    {
+        None
+    }
+    fn __get_tail(&self) -> Option<&Self::Next> {
+        None
     }
 }
