@@ -31,8 +31,7 @@ pub struct App<
     Tail: TailTrait<Input, Output> + 'static + Debug,
     NOutput: 'static + Debug,
 > {
-    spec_data: Vec<f64>,
-    mel_data: Vec<Vec<f64>>,
+    mel_psd_data: Vec<(f64, f64)>,
     window: [f64; 2],
     layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
@@ -52,8 +51,7 @@ impl<
         Self {
             layer,
             window: [0.0, 20.0],
-            spec_data: vec![],
-            mel_data: vec![],
+            mel_psd_data: vec![],
         }
     }
 
@@ -66,14 +64,19 @@ impl<
 
         debug!("length: {}", length);
 
+        let to_spec_layer_ref = self
+            .layer
+            .get_nth::<crate::mel_layer::fft_layer::ToSpectrogramLayer>(0)
+            .unwrap();
+
         let to_mel_layer_ref = self
             .layer
             .get_nth::<crate::mel_layer::to_mel_layer::ToMelSpectrogramLayer>(1)
             .unwrap();
 
-        let to_spec_layer_ref = self
+        let to_psd_layer_ref = self
             .layer
-            .get_nth::<crate::mel_layer::fft_layer::ToSpectrogramLayer>(0)
+            .get_nth::<crate::mel_layer::spectral_density::ToPowerSpectralDensityLayer>(2)
             .unwrap();
 
         debug!("{:?}", to_mel_layer_ref);
@@ -87,8 +90,9 @@ impl<
         // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 
         // let receiver = self.layer.get_result_stream();
-        let to_mel_layer_ref_receiver = to_mel_layer_ref.get_result_stream();
-        let to_spec_layer_receiver = to_spec_layer_ref.get_result_stream();
+        // let to_mel_layer_ref_receiver = to_mel_layer_ref.get_result_stream();
+        // let to_spec_layer_receiver = to_spec_layer_ref.get_result_stream();
+        let to_psd_layer_receiver = to_psd_layer_ref.get_result_stream();
 
         self.layer.start();
 
@@ -113,20 +117,13 @@ impl<
                 }
             }
 
-            if let Ok(data) = to_mel_layer_ref_receiver.try_recv() {
+            if let Ok(data) = to_psd_layer_receiver.try_recv() {
                 // 0ms
                 // debug!(data);
 
-                // average
-                let ave = data.iter().sum::<f64>() / data.len() as f64;
+                self.mel_psd_data = data.to_vec();
 
-                // to [(f64, f64)]
-                let mel_data = data
-                    .axis_iter(npAxis(0))
-                    .map(|x| x.into_iter().cloned().collect::<Vec<f64>>())
-                    .collect::<Vec<_>>();
-
-                self.mel_data = mel_data;
+                debug!("{:?}", self.mel_psd_data);
 
                 // debug!(ave);
                 timeout = Duration::from_millis(0);
@@ -167,12 +164,13 @@ impl<
                 .name("data2")
                 .graph_type(GraphType::Line)
                 .marker(symbols::Marker::Dot)
-                .style(Style::default().fg(Color::Cyan)), // .data(&self.mel_data),
-                                                          // Dataset::default()
-                                                          //     .name("data3")
-                                                          //     .marker(symbols::Marker::Braille)
-                                                          //     .style(Style::default().fg(Color::Yellow))
-                                                          //     .data(&self.data2),
+                .style(Style::default().fg(Color::Cyan))
+                .data(&self.mel_psd_data),
+            // Dataset::default()
+            //     .name("data3")
+            //     .marker(symbols::Marker::Braille)
+            //     .style(Style::default().fg(Color::Yellow))
+            //     .data(&self.data2),
         ];
 
         let chart = Chart::new(datasets)

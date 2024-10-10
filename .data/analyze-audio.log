@@ -1,61 +1,374 @@
-2024-10-10T16:59:33.989247Z DEBUG src\data\device_stream.rs:39: device.name().unwrap() value="マイク配列 (Realtek(R) Audio)"
-2024-10-10T16:59:33.994253Z DEBUG src/main.rs:82: MultipleLayers { head: MultipleLayersHead { tail: MultipleLayersHead { tail: MultipleLayersHead { tail: MultipleLayersTail { layer: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) } }, layer: None, __marker: PhantomData<alloc::vec::Vec<f32>> }, layer: Some(ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }), __marker: PhantomData<alloc::vec::Vec<f32>> }, layer: Some(ToPowerSpectralDensityLayer { handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) }), __marker: PhantomData<alloc::vec::Vec<f32>> } }
-2024-10-10T16:59:33.994301Z DEBUG src\app.rs:67: length: 3
-2024-10-10T16:59:33.994310Z DEBUG src\app.rs:79: ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
-2024-10-10T16:59:33.994317Z DEBUG src\app.rs:80: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
-2024-10-10T16:59:33.994325Z DEBUG src\app.rs:83: Some(ToPowerSpectralDensityLayer { handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) })
-2024-10-10T16:59:33.994329Z DEBUG src\app.rs:41: Layer: ToPowerSpectralDensityLayer { handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) }
-2024-10-10T16:59:33.994334Z DEBUG src\app.rs:41: Layer: ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
-2024-10-10T16:59:33.994340Z DEBUG src\app.rs:41: Layer: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
-2024-10-10T16:59:34.354614Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.364592Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.374606Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.384654Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.394594Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.404630Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.414719Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.424557Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.434670Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.444510Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.454944Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.464634Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.474668Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.484631Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.494608Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.504556Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.514466Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.524493Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.534554Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.544540Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.554615Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.564630Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.574626Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.584633Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.594684Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.604626Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.614626Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.624622Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.634630Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.644633Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.654629Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.664712Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.674637Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.684633Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.694643Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.704636Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.714659Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.724623Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.734623Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.744621Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.754669Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.764625Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.774630Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.784541Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.794579Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.804491Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.814532Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.824519Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.834492Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.844553Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.854644Z DEBUG src/main.rs:67: writing to file: 0
-2024-10-10T16:59:34.864720Z DEBUG src/main.rs:67: writing to file: 0
+2024-10-10T17:42:56.846493Z DEBUG src/main.rs:56: sample rate: 16000
+2024-10-10T17:42:56.846693Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846734Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846741Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846754Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846761Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846768Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846783Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846790Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846796Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846803Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846809Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846816Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846822Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846831Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846846Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846853Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846860Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846866Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846873Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846879Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846886Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846900Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846915Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846924Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846931Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846941Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846949Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846971Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.846956Z DEBUG src/main.rs:89: MultipleLayers { head: MultipleLayersHead { tail: MultipleLayersHead { tail: MultipleLayersHead { tail: MultipleLayersTail { layer: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) } }, layer: None, __marker: PhantomData<alloc::vec::Vec<f32>> }, layer: Some(ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }), __marker: PhantomData<alloc::vec::Vec<f32>> }, layer: Some(ToPowerSpectralDensityLayer { config: ToPowerSpectralDensityLayerConfig { sample_rate: 16000.0, time_range: 20, n_mels: 80 }, handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) }), __marker: PhantomData<alloc::vec::Vec<f32>> } }
+2024-10-10T17:42:56.846996Z DEBUG src\app.rs:65: length: 3
+2024-10-10T17:42:56.847003Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847004Z DEBUG src\app.rs:82: ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
+2024-10-10T17:42:56.847028Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847029Z DEBUG src\app.rs:83: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
+2024-10-10T17:42:56.847050Z DEBUG src\app.rs:86: Some(ToPowerSpectralDensityLayer { config: ToPowerSpectralDensityLayerConfig { sample_rate: 16000.0, time_range: 20, n_mels: 80 }, handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) })
+2024-10-10T17:42:56.847039Z DEBUG src/main.rs:70: writing to file: -1335585.8
+2024-10-10T17:42:56.847058Z DEBUG src\app.rs:40: Layer: ToPowerSpectralDensityLayer { config: ToPowerSpectralDensityLayerConfig { sample_rate: 16000.0, time_range: 20, n_mels: 80 }, handles: Some([]), result_sender: Mutex { data: [] }, input_receiver: Some(Receiver { .. }) }
+2024-10-10T17:42:56.847086Z DEBUG src\app.rs:40: Layer: ToMelSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
+2024-10-10T17:42:56.847090Z DEBUG src/main.rs:70: writing to file: -5415032
+2024-10-10T17:42:56.847088Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847093Z DEBUG src\app.rs:40: Layer: ToSpectrogramLayer { handles: Some([]), result_sender: Mutex { data: [Sender { .. }] }, input_receiver: Some(Receiver { .. }) }
+2024-10-10T17:42:56.847130Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847147Z DEBUG src/main.rs:70: writing to file: 474098.13
+2024-10-10T17:42:56.847152Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847159Z DEBUG src/main.rs:70: writing to file: -1163888.1
+2024-10-10T17:42:56.847165Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847175Z DEBUG src/main.rs:70: writing to file: 3963945.3
+2024-10-10T17:42:56.847178Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847198Z DEBUG src/main.rs:70: writing to file: -73133.336
+2024-10-10T17:42:56.847226Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847234Z DEBUG src/main.rs:70: writing to file: 1277231.8
+2024-10-10T17:42:56.847263Z DEBUG src/main.rs:70: writing to file: 372633.7
+2024-10-10T17:42:56.847302Z DEBUG src/main.rs:70: writing to file: 314420.56
+2024-10-10T17:42:56.847302Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847329Z DEBUG src/main.rs:70: writing to file: -171533.38
+2024-10-10T17:42:56.847337Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847347Z DEBUG src/main.rs:70: writing to file: -674221.3
+2024-10-10T17:42:56.847349Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847369Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847370Z DEBUG src/main.rs:70: writing to file: 742645.25
+2024-10-10T17:42:56.847388Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847400Z DEBUG src/main.rs:70: writing to file: -304734.88
+2024-10-10T17:42:56.847425Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847441Z DEBUG src/main.rs:70: writing to file: 141822.86
+2024-10-10T17:42:56.847452Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847458Z DEBUG src/main.rs:70: writing to file: 373162.66
+2024-10-10T17:42:56.847466Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847476Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847486Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847498Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847484Z DEBUG src/main.rs:70: writing to file: -186198.95
+2024-10-10T17:42:56.847513Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847535Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847537Z DEBUG src/main.rs:70: writing to file: 439644.13
+2024-10-10T17:42:56.847553Z DEBUG src/main.rs:70: writing to file: -539341.44
+2024-10-10T17:42:56.847554Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847578Z DEBUG src/main.rs:70: writing to file: -597902.9
+2024-10-10T17:42:56.847581Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847595Z DEBUG src/main.rs:70: writing to file: 836456.25
+2024-10-10T17:42:56.847606Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847635Z DEBUG src/main.rs:70: writing to file: -208868.67
+2024-10-10T17:42:56.847640Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847657Z DEBUG src/main.rs:70: writing to file: -108174.76
+2024-10-10T17:42:56.847667Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847690Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847693Z DEBUG src/main.rs:70: writing to file: 305972.97
+2024-10-10T17:42:56.847725Z DEBUG src/main.rs:70: writing to file: -360766.5
+2024-10-10T17:42:56.847750Z DEBUG src/main.rs:70: writing to file: -599.80554
+2024-10-10T17:42:56.847703Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847774Z DEBUG src/main.rs:70: writing to file: 1616987.1
+2024-10-10T17:42:56.847809Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847812Z DEBUG src/main.rs:70: writing to file: -1790976.4
+2024-10-10T17:42:56.847826Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847854Z DEBUG src/main.rs:70: writing to file: -376665
+2024-10-10T17:42:56.847859Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847824Z DEBUG src\mel_layer\spectral_density.rs:51: Data: [[0.2286474200643488],
+ [0.4011516492446283],
+ [0.660591363357578],
+ [0.7179827851276438],
+ [0.7531323308295307],
+ [0.9121952087704306],
+ [0.9183557938445364],
+ [0.8031035742577228],
+ [0.4049001382829207],
+ [0.4715983281356142],
+ [0.7773745735500792],
+ [1.0283264929154157],
+ [1.195866631210207],
+ [1.1361996590153418],
+ [0.6657657428609931],
+ [0.6855059442430048],
+ [0.6956917544830735],
+ [1.007344713451437],
+ [1.2659100707973998],
+ [1.271405547628568],
+ [1.1665815407724216],
+ [0.7624252118159927],
+ [0.4708459700079911],
+ [0.586433574204974],
+ [0.9044831943939105],
+ [1.047805560065123],
+ [1.0438403256445128],
+ [0.7347010487491016],
+ [0.3489217356491555],
+ [0.5272924913953141],
+ [0.987810558714873],
+ [1.1088862137296527],
+ [1.0268739770902817],
+ [0.6882173632601736],
+ [0.7396191125706502],
+ [1.1389817764345849],
+ [1.2442844233318766],
+ [1.0010037842236312],
+ [0.4978109878719559],
+ [1.0177341439621408],
+ [1.1576332741451154],
+ [0.8793570207575379],
+ [0.7215645718709678],
+ [0.9252580126374048],
+ [0.8632050659918027],
+ [0.328246070032187],
+ [0.660534081610439],
+ [0.6288840226646308],
+ [0.2602142013634725],
+ [0.6348829256642923],
+ [0.49955808168494586],
+ [0.47751507201489796],
+ [0.5126563279196685],
+ [0.08062585654009313],
+ [0.2820150628392093],
+ [0.2141985240730091],
+ [0.34769752224783035],
+ [0.09075927056496147],
+ [0.157177279816477],
+ [0.08780990053630244],
+ [-0.18886056991134814],
+ [0.17649219981032982],
+ [0.13420207829265618],
+ [0.05277465798551029],
+ [-0.20286975656933914],
+ [-0.10536172003946742],
+ [-0.10340640043119032],
+ [-0.16940030779752768],
+ [-0.2374834510065238],
+ [-0.35863981966157765],
+ [-0.44327997263400754],
+ [-0.3371921072927335],
+ [-0.44833898728634325],
+ [-0.6169012110763561],
+ [-0.48856819179930167],
+ [-0.4592386139435558],
+ [-0.49198198261932125],
+ [-0.4996649034388232],
+ [-0.5227182852631187],
+ [-0.728594452371432]], shape=[80, 1], strides=[1, 1], layout=CFcf (0xf), const ndim=2
+2024-10-10T17:42:56.847872Z DEBUG src/main.rs:70: writing to file: 5507623.5
+2024-10-10T17:42:56.847890Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847934Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847945Z DEBUG src/main.rs:70: writing to file: -3249241.5
+2024-10-10T17:42:56.847950Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.847982Z DEBUG src/main.rs:70: writing to file: 571276.75
+2024-10-10T17:42:56.848043Z DEBUG src/main.rs:70: writing to file: -625103.7
+2024-10-10T17:42:56.848102Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848136Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848155Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848173Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848185Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848134Z DEBUG src/main.rs:70: writing to file: -361348.88
+2024-10-10T17:42:56.848209Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848232Z DEBUG src/main.rs:70: writing to file: -419223.22
+2024-10-10T17:42:56.848257Z DEBUG src/main.rs:70: writing to file: 1624424
+2024-10-10T17:42:56.848279Z DEBUG src/main.rs:70: writing to file: -408114.44
+2024-10-10T17:42:56.848302Z DEBUG src/main.rs:70: writing to file: -2245609
+2024-10-10T17:42:56.848319Z DEBUG src/main.rs:70: writing to file: 619047.7
+2024-10-10T17:42:56.848340Z DEBUG src/main.rs:70: writing to file: -443701.13
+2024-10-10T17:42:56.848358Z DEBUG src/main.rs:70: writing to file: 718153.25
+2024-10-10T17:42:56.848404Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848431Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848443Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848454Z DEBUG src/main.rs:70: writing to file: -401306.5
+2024-10-10T17:42:56.848498Z DEBUG src/main.rs:70: writing to file: -490.3264
+2024-10-10T17:42:56.848553Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848568Z DEBUG src/main.rs:70: writing to file: 31506.852
+2024-10-10T17:42:56.848572Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848598Z DEBUG src/main.rs:70: writing to file: -297181.84
+2024-10-10T17:42:56.848613Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848667Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848647Z DEBUG src/main.rs:70: writing to file: 452138.72
+2024-10-10T17:42:56.848687Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848738Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848752Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848738Z DEBUG src/main.rs:70: writing to file: -115590.34
+2024-10-10T17:42:56.848794Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848810Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848805Z DEBUG src/main.rs:70: writing to file: -289387.34
+2024-10-10T17:42:56.848827Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848851Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848869Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848869Z DEBUG src/main.rs:70: writing to file: 43496.703
+2024-10-10T17:42:56.848887Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848921Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848927Z DEBUG src/main.rs:70: writing to file: 1042.6528
+2024-10-10T17:42:56.848951Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848959Z DEBUG src/main.rs:70: writing to file: -216287.08
+2024-10-10T17:42:56.848967Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848982Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849002Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849036Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.848985Z DEBUG src/main.rs:70: writing to file: -547071.56
+2024-10-10T17:42:56.849069Z DEBUG src/main.rs:70: writing to file: -417376.72
+2024-10-10T17:42:56.849051Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849104Z DEBUG src/main.rs:70: writing to file: 524659.1
+2024-10-10T17:42:56.849118Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849124Z DEBUG src/main.rs:70: writing to file: -380831.1
+2024-10-10T17:42:56.849195Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849197Z DEBUG src/main.rs:70: writing to file: 1684567
+2024-10-10T17:42:56.849218Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849249Z DEBUG src/main.rs:70: writing to file: -187421
+2024-10-10T17:42:56.849265Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849292Z DEBUG src/main.rs:70: writing to file: -2334997
+2024-10-10T17:42:56.849302Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849317Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849321Z DEBUG src/main.rs:70: writing to file: -1310687.8
+2024-10-10T17:42:56.849331Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849339Z DEBUG src/main.rs:70: writing to file: 3001002
+2024-10-10T17:42:56.849392Z DEBUG src/main.rs:70: writing to file: -1599770.3
+2024-10-10T17:42:56.849405Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849427Z DEBUG src/main.rs:70: writing to file: 25115.498
+2024-10-10T17:42:56.849461Z DEBUG src/main.rs:70: writing to file: -601214.75
+2024-10-10T17:42:56.849466Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849510Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849482Z DEBUG src/main.rs:70: writing to file: 8732584
+2024-10-10T17:42:56.849529Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849570Z DEBUG src/main.rs:70: writing to file: -268403.66
+2024-10-10T17:42:56.849571Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849611Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849629Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849677Z DEBUG src/main.rs:70: writing to file: -1056233.4
+2024-10-10T17:42:56.849700Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849716Z DEBUG src/main.rs:70: writing to file: 3398302.3
+2024-10-10T17:42:56.849769Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849772Z DEBUG src/main.rs:70: writing to file: -510105.22
+2024-10-10T17:42:56.849785Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849814Z DEBUG src/main.rs:70: writing to file: -744654.9
+2024-10-10T17:42:56.849819Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849851Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849871Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849854Z DEBUG src/main.rs:70: writing to file: -799901.25
+2024-10-10T17:42:56.849892Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849913Z DEBUG src/main.rs:70: writing to file: 953119.3
+2024-10-10T17:42:56.849939Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849950Z DEBUG src/main.rs:70: writing to file: -1780072.1
+2024-10-10T17:42:56.849998Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.849998Z DEBUG src/main.rs:70: writing to file: 1677802.4
+2024-10-10T17:42:56.850020Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850059Z DEBUG src/main.rs:70: writing to file: 191129.67
+2024-10-10T17:42:56.850067Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850094Z DEBUG src/main.rs:70: writing to file: -1024233.9
+2024-10-10T17:42:56.850096Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850131Z DEBUG src/main.rs:70: writing to file: -93643.69
+2024-10-10T17:42:56.850132Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850198Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850206Z DEBUG src/main.rs:70: writing to file: -645452.25
+2024-10-10T17:42:56.850219Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850226Z DEBUG src/main.rs:70: writing to file: -532742.25
+2024-10-10T17:42:56.850251Z DEBUG src/main.rs:70: writing to file: 1172155.4
+2024-10-10T17:42:56.850268Z DEBUG src/main.rs:70: writing to file: -3600707.8
+2024-10-10T17:42:56.850293Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850293Z DEBUG src/main.rs:70: writing to file: -899584.44
+2024-10-10T17:42:56.850352Z DEBUG src/main.rs:70: writing to file: 2275311
+2024-10-10T17:42:56.850361Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850371Z DEBUG src/main.rs:70: writing to file: 1675506.4
+2024-10-10T17:42:56.850416Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850524Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850525Z DEBUG src/main.rs:70: writing to file: -983609.3
+2024-10-10T17:42:56.850547Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850581Z DEBUG src/main.rs:70: writing to file: 266301.38
+2024-10-10T17:42:56.850592Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850622Z DEBUG src/main.rs:70: writing to file: -73618.94
+2024-10-10T17:42:56.850627Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850639Z DEBUG src/main.rs:70: writing to file: 401538.9
+2024-10-10T17:42:56.850673Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850698Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850710Z DEBUG src/main.rs:70: writing to file: 173955.28
+2024-10-10T17:42:56.850721Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850745Z DEBUG src/main.rs:70: writing to file: -538403.7
+2024-10-10T17:42:56.850781Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850839Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850812Z DEBUG src/main.rs:70: writing to file: 657697.9
+2024-10-10T17:42:56.850855Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850898Z DEBUG src/main.rs:70: writing to file: -175734.86
+2024-10-10T17:42:56.850946Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850962Z DEBUG src/main.rs:70: writing to file: -776338.3
+2024-10-10T17:42:56.850965Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.850996Z DEBUG src/main.rs:70: writing to file: -137305.31
+2024-10-10T17:42:56.851014Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851031Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851051Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851037Z DEBUG src/main.rs:70: writing to file: -769658.44
+2024-10-10T17:42:56.851063Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851097Z DEBUG src/main.rs:70: writing to file: -1381222.3
+2024-10-10T17:42:56.851118Z DEBUG src/main.rs:70: writing to file: 3345996
+2024-10-10T17:42:56.851146Z DEBUG src/main.rs:70: writing to file: -3986448
+2024-10-10T17:42:56.851221Z DEBUG src/main.rs:70: writing to file: 2119237
+2024-10-10T17:42:56.851128Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851250Z DEBUG src/main.rs:70: writing to file: -84847.484
+2024-10-10T17:42:56.851394Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851406Z DEBUG src/main.rs:70: writing to file: 980035
+2024-10-10T17:42:56.851436Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851451Z DEBUG src/main.rs:70: writing to file: -453532.06
+2024-10-10T17:42:56.851515Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851556Z DEBUG src/main.rs:70: writing to file: -888172.3
+2024-10-10T17:42:56.851796Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851841Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851923Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851942Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.851983Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.852005Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.852037Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.852039Z DEBUG src/main.rs:70: writing to file: 187098.42
+2024-10-10T17:42:56.852196Z DEBUG src/main.rs:70: writing to file: 488112.78
+2024-10-10T17:42:56.852239Z DEBUG src/main.rs:70: writing to file: -2160532
+2024-10-10T17:42:56.852265Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.852282Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 1152 samples"
+2024-10-10T17:42:56.852310Z DEBUG src\data\test_data.rs:106: frames value="###Decoded packet with 896 samples"
+2024-10-10T17:42:56.852457Z DEBUG src/main.rs:70: writing to file: 4084537
+2024-10-10T17:42:56.852556Z DEBUG src/main.rs:70: writing to file: -4830307
+2024-10-10T17:42:56.852583Z DEBUG src/main.rs:70: writing to file: 927933.7
+2024-10-10T17:42:56.852627Z DEBUG src/main.rs:70: writing to file: -1005176
+2024-10-10T17:42:56.852650Z DEBUG src/main.rs:70: writing to file: 1228682.8
+2024-10-10T17:42:56.852764Z DEBUG src/main.rs:70: writing to file: -691771.1
+2024-10-10T17:42:56.852786Z DEBUG src/main.rs:70: writing to file: -46250.668
+2024-10-10T17:42:56.852810Z DEBUG src/main.rs:70: writing to file: -11831.723
+2024-10-10T17:42:56.852835Z DEBUG src/main.rs:70: writing to file: -1560211.6
+2024-10-10T17:42:56.852871Z DEBUG src/main.rs:70: writing to file: 132276.17
+2024-10-10T17:42:56.852939Z DEBUG src/main.rs:70: writing to file: -1440764.1
+2024-10-10T17:42:56.852963Z DEBUG src/main.rs:70: writing to file: 3035790.5
+2024-10-10T17:42:56.852994Z DEBUG src/main.rs:70: writing to file: -4536756.5
+2024-10-10T17:42:56.853010Z DEBUG src/main.rs:70: writing to file: 5654291.5
+2024-10-10T17:42:56.853032Z DEBUG src/main.rs:70: writing to file: -1201019.9
+2024-10-10T17:42:56.853047Z DEBUG src/main.rs:70: writing to file: 1774912.9
+2024-10-10T17:42:56.853109Z DEBUG src/main.rs:70: writing to file: -557183.8
+2024-10-10T17:42:56.853148Z DEBUG src/main.rs:70: writing to file: -1416089.5
+2024-10-10T17:42:56.853165Z DEBUG src/main.rs:70: writing to file: 332778
+2024-10-10T17:42:56.853192Z DEBUG src/main.rs:70: writing to file: 1472721.6
+2024-10-10T17:42:56.853209Z DEBUG src/main.rs:70: writing to file: -229961.06
+2024-10-10T17:42:56.853237Z DEBUG src/main.rs:70: writing to file: -669304.25
+2024-10-10T17:42:56.853257Z DEBUG src/main.rs:70: writing to file: 1551555.9
+2024-10-10T17:42:56.853290Z DEBUG src/main.rs:70: writing to file: 94600.4
+2024-10-10T17:42:56.853314Z DEBUG src/main.rs:70: writing to file: -322104.88
+2024-10-10T17:42:56.853333Z DEBUG src/main.rs:70: writing to file: 803684.8
+2024-10-10T17:42:56.853356Z DEBUG src/main.rs:70: writing to file: -1550253.3
+2024-10-10T17:42:56.853373Z DEBUG src/main.rs:70: writing to file: 935527.9

@@ -14,12 +14,13 @@ use data::RawDataStreamLayer as _;
 use layer::layers::{layer, MultipleLayers};
 use layer::Layer as _;
 use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
-use mel_layer::spectral_density::ToPowerSpectralDensityLayer;
+use mel_layer::spectral_density::{ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig};
 use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
 use mel_spec::config::MelConfig;
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
 use ratatui::prelude::*;
+use symphonia::core::sample;
 use tracing::debug;
 use utils::debug::initialize_logging;
 
@@ -45,16 +46,18 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    let mut raw_data_layer = data::device_stream::Device::new();
-    // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
+    // let mut raw_data_layer = data::device_stream::Device::new();
+    let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
     raw_data_layer.start();
 
-    // println!("sample rate: {}", raw_data_layer.sample_rate());
+    let sample_rate = raw_data_layer.sample_rate();
+
+    debug!("sample rate: {}", sample_rate);
 
     let spec = hound::WavSpec {
         channels: 1,
-        sample_rate: raw_data_layer.sample_rate(),
+        sample_rate,
         bits_per_sample: 32,
         sample_format: hound::SampleFormat::Int,
     };
@@ -72,8 +75,12 @@ fn main() -> Result<()> {
 
     let mut fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
     fft_layer.set_input_stream(raw_data_layer.voice_stream_receiver());
-    let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, 16000.0));
-    let psd_layer = ToPowerSpectralDensityLayer::new();
+    let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, sample_rate.into()));
+    let psd_layer = ToPowerSpectralDensityLayer::new(ToPowerSpectralDensityLayerConfig {
+        sample_rate: sample_rate.into(),
+        time_range: 20,
+        n_mels: 80,
+    });
 
     let layers = layer(fft_layer);
     let layers = layers.add_layer(mel_layer);
