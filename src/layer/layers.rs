@@ -347,8 +347,11 @@ impl<
     }
 
     fn start(&mut self) {
-        if let Some(_) = &self.head.layer {
-            self.head.tail.__start()
+        if let Some(layer) = &mut self.head.layer {
+            trace!("Starting layer");
+
+            layer.start();
+            self.head.tail.__start();
         } else {
             let any = &mut self.head.tail as &mut dyn Any;
             let tail = any
@@ -484,4 +487,5 @@ macro_rules! LayerCallFunc {
     };
 }
 
+use tracing::trace;
 pub(crate) use LayerCallFunc;

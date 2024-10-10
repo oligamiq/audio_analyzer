@@ -4,6 +4,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use mel_spec::{config::MelConfig, mel::MelSpectrogram};
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
+use tracing::{debug, trace};
 
 use crate::layer::{layers::AsAny, Layer};
 

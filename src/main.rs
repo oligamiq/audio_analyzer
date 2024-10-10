@@ -10,6 +10,7 @@ use crossterm::terminal::{
 };
 use crossterm::ExecutableCommand as _;
 use data::test_data::{TestData, TestDataType};
+use data::RawDataStreamLayer as _;
 use layer::layers::{layer, MultipleLayers};
 use layer::Layer as _;
 use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
@@ -42,8 +43,9 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    // let raw_data_layer = Device::new();
-    let mut raw_data_layer = TestData::new(TestDataType::TestData1);
+    let mut raw_data_layer = data::device_stream::Device::new();
+
+    // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
     raw_data_layer.start();
 

@@ -84,12 +84,18 @@ impl<
 
         // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
 
+        // let receiver = self.layer.get_result_stream();
+        let to_mel_layer_ref_receiver = to_mel_layer_ref.get_result_stream();
+        let to_spec_layer_receiver = to_spec_layer_ref.get_result_stream();
+
         self.layer.start();
+
+        // 100ms
+        let mut timeout = Duration::from_millis(100);
 
         loop {
             terminal.draw(|frame| self.ui(frame))?;
 
-            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
             if crossterm::event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
                     if key.modifiers == crossterm::event::KeyModifiers::CONTROL {
@@ -109,12 +115,19 @@ impl<
                 last_tick = Instant::now();
             }
 
-            // if let Ok(data) = receiver.try_recv() {
-            //     trace_dbg!(data);
-            // }
-            // if let Ok(data) = vad_receiver.try_recv() {
-            //     trace_dbg!(data);
-            // }
+            if let Ok(data) = to_mel_layer_ref_receiver.try_recv() {
+                // 0ms
+                // trace_dbg!(data);
+
+                // average
+                let ave = data.iter().sum::<f64>() / data.len() as f64;
+
+                trace_dbg!(ave);
+                timeout = Duration::from_millis(0);
+            } else {
+                // 100ms
+                timeout = Duration::from_millis(100);
+            }
         }
     }
 
