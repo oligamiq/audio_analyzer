@@ -8,6 +8,7 @@ use parking_lot::Mutex;
 
 use crate::layer::Layer;
 
+// 今までのFFTの結果を受け取り、新たなメルスペクトログラムを生成する
 pub struct ToMelSpectrogramLayer {
     mel_settings: MelConfig,
     handles: Option<Vec<std::thread::JoinHandle<()>>>,

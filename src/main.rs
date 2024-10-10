@@ -14,6 +14,7 @@ use data::RawDataStreamLayer as _;
 use layer::layers::{layer, MultipleLayers};
 use layer::Layer as _;
 use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
+use mel_layer::spectral_density::ToPowerSpectralDensityLayer;
 use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
 use mel_spec::config::MelConfig;
 use ndarray::{Array1, Array2};
@@ -72,9 +73,13 @@ fn main() -> Result<()> {
     let mut fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
     fft_layer.set_input_stream(raw_data_layer.voice_stream_receiver());
     let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, 16000.0));
+    let psd_layer = ToPowerSpectralDensityLayer::new();
 
     let layers = layer(fft_layer);
     let layers = layers.add_layer(mel_layer);
+    let layers = layers.add_layer(psd_layer);
+    // debug!("{:?}", std::any::type_name_of_val(&layers));
+    debug!("{:?}", layers);
 
     // create app and run it
     let tick_rate = Duration::from_millis(250);

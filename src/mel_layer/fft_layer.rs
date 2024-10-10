@@ -30,6 +30,7 @@ impl Default for FftConfig {
     }
 }
 
+// To FFT Frame
 pub struct ToSpectrogramLayer {
     mel_config: FftConfig,
     handles: Option<Vec<std::thread::JoinHandle<()>>>,
@@ -94,7 +95,9 @@ impl ToSpectrogramLayer {
 
                         let fft_result = fft.add(&kept_data);
                         if let Some(fft_result) = fft_result {
-                            result_sender.lock().retain(|x| x.send(fft_result.clone()).is_ok());
+                            result_sender
+                                .lock()
+                                .retain(|x| x.send(fft_result.clone()).is_ok());
                         }
                     }
                 }

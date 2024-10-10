@@ -43,10 +43,7 @@ impl<
         NOutput,
         MultipleLayersHead<Input, OldOutput, Tail, NOutput>,
         NewOutput,
-    >
-    where
-        Tail: TailTrait<Input, NOutput>,
-    {
+    > {
         layer.set_input_stream(self.get_result_stream());
 
         let tail: MultipleLayersHead<Input, OldOutput, Tail, NOutput> = self.head;

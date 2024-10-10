@@ -1,8 +1,9 @@
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
+use ndarray::Axis as npAxis;
 use ratatui::{
     prelude::*,
-    widgets::{Axis, Block, Chart, Dataset},
+    widgets::{Axis, Block, Chart, Dataset, GraphType},
 };
 use std::fmt::Debug;
 use std::{
@@ -30,7 +31,8 @@ pub struct App<
     Tail: TailTrait<Input, Output> + 'static + Debug,
     NOutput: 'static + Debug,
 > {
-    data: Vec<(f64, f64)>,
+    spec_data: Vec<f64>,
+    mel_data: Vec<Vec<f64>>,
     window: [f64; 2],
     layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
@@ -50,7 +52,8 @@ impl<
         Self {
             layer,
             window: [0.0, 20.0],
-            data: vec![(0.0, 0.0)],
+            spec_data: vec![],
+            mel_data: vec![],
         }
     }
 
@@ -117,7 +120,15 @@ impl<
                 // average
                 let ave = data.iter().sum::<f64>() / data.len() as f64;
 
-                debug!(ave);
+                // to [(f64, f64)]
+                let mel_data = data
+                    .axis_iter(npAxis(0))
+                    .map(|x| x.into_iter().cloned().collect::<Vec<f64>>())
+                    .collect::<Vec<_>>();
+
+                self.mel_data = mel_data;
+
+                // debug!(ave);
                 timeout = Duration::from_millis(0);
             } else {
                 // 100ms
@@ -127,7 +138,7 @@ impl<
     }
 
     fn ui(&self, frame: &mut Frame) {
-        let area = frame.size();
+        let area = frame.area();
 
         let vertical = Layout::vertical([Constraint::Percentage(40), Constraint::Percentage(60)]);
         let horizontal = Layout::horizontal([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)]);
@@ -154,14 +165,14 @@ impl<
         let datasets = vec![
             Dataset::default()
                 .name("data2")
+                .graph_type(GraphType::Line)
                 .marker(symbols::Marker::Dot)
-                .style(Style::default().fg(Color::Cyan))
-                .data(&self.data),
-            // Dataset::default()
-            //     .name("data3")
-            //     .marker(symbols::Marker::Braille)
-            //     .style(Style::default().fg(Color::Yellow))
-            //     .data(&self.data2),
+                .style(Style::default().fg(Color::Cyan)), // .data(&self.mel_data),
+                                                          // Dataset::default()
+                                                          //     .name("data3")
+                                                          //     .marker(symbols::Marker::Braille)
+                                                          //     .style(Style::default().fg(Color::Yellow))
+                                                          //     .data(&self.data2),
         ];
 
         let chart = Chart::new(datasets)
