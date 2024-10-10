@@ -19,6 +19,7 @@ use mel_spec::config::MelConfig;
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
 use ratatui::prelude::*;
+use tracing::debug;
 use utils::debug::initialize_logging;
 
 // pub mod console;
@@ -47,6 +48,26 @@ fn main() -> Result<()> {
     // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
     raw_data_layer.start();
+
+    // println!("sample rate: {}", raw_data_layer.sample_rate());
+
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: raw_data_layer.sample_rate(),
+        bits_per_sample: 32,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut writer = hound::WavWriter::create(".data/voice.wav", spec).unwrap();
+    let receiver = raw_data_layer.voice_stream_receiver();
+    let amplitude = i32::MAX as f32;
+    let handle = std::thread::spawn(move || loop {
+        let data = receiver.recv().unwrap();
+        let ave = data.iter().sum::<f32>() / data.len() as f32;
+        debug!("writing to file: {}", ave * amplitude);
+        data.iter().for_each(|&sample| {
+            writer.write_sample((sample * amplitude) as i32).unwrap();
+        });
+    });
 
     let mut fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
     fft_layer.set_input_stream(raw_data_layer.voice_stream_receiver());
