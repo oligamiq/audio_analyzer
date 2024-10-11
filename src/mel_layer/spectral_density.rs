@@ -3,7 +3,7 @@
 use std::{collections::VecDeque, fmt::Debug, sync::Arc, thread};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use ndarray::{Array1, Array2, Axis};
+use ndarray::{s, Array1, Array2, AssignElem as _, Axis, Slice};
 use parking_lot::Mutex;
 use tracing::debug;
 
@@ -45,47 +45,61 @@ impl ToPowerSpectralDensityLayer {
 
         if let Some(input_receiver) = self.input_receiver.take() {
             let fft_handle = thread::spawn(move || {
-                let mut holder: Array2<f64> = Array2::zeros((0, config.n_mels));
+                let mut holder: Array2<f64> = Array2::zeros((config.n_mels, 0));
 
                 while let Ok(data) = input_receiver.recv() {
-                    debug!("Data: {:?}", data);
+                    // debug!("Data: {:?}", data);
 
-                    assert!(data.len() == 1);
+                    assert!(data.shape()[1] == 1);
+                    assert!(data.shape()[0] == config.n_mels);
 
-                    holder = Array2::from_shape_vec(
-                        (holder.len() + 1, config.n_mels),
-                        data.outer_iter().map(|x| x[0]).collect(),
-                    )
-                    .unwrap();
+                    // dataから取り出す
+                    // let data = data.t()
 
-                    if holder.len() < config.time_range {
+                    // holder.assign_elem(data);
+
+                    assert!(holder.shape()[0] == config.n_mels);
+
+                    holder = ndarray::concatenate(Axis(1), &[holder.view(), data.view()]).unwrap();
+
+                    // holder.axis_iter_mut(Axis(1)).for_each(|mut x| {
+                    //     debug!("$$ X 1: {:?}", x);
+
+                    //     debug!("$$ X 2: {:?}", x);
+                    // });
+
+                    // debug!("$$ Holder: {:?}", holder.shape());
+
+                    // holder = ndarray::arr2(&[holder.to_owned(), data.t().to_owned()])
+                    //     .concatenate(Axis(0));
+
+                    if holder.shape()[1] < config.time_range {
                         continue;
                     }
 
-                    for _ in 0..holder.len() - config.time_range {
-                        holder.swap_axes(0, 1);
-                        holder
-                            .slice_axis_mut(Axis(0), (0..config.time_range).into())
-                            .fill(0.0);
-                        holder.swap_axes(0, 1);
+                    // remove first element if holder is too long
+
+                    if holder.shape()[1] > config.time_range {
+                        holder = holder.slice(s![.., 1..]).to_owned();
                     }
 
-                    debug!("Holder: {:?}", holder);
+                    // debug!("Holder: {:?}", holder);
+
+                    assert!(holder.shape()[1] == config.time_range);
+                    assert!(holder.shape()[0] == config.n_mels);
 
                     // use holder to calculate PSD
-                    let mut psd = Array1::default(config.n_mels);
-                    for i in 0..holder.len() {
-                        let mut sum = 0.0;
-                        for j in 0..holder.shape()[1] {
-                            sum += holder[[i, j]].powi(2);
-                        }
-                        let sum = sum / holder.shape()[1] as f64;
-                        let freq = i as f64 * config.sample_rate / holder.len() as f64;
+                    let psd = holder
+                        .axis_iter(Axis(0))
+                        .enumerate()
+                        .map(|(i, x)| {
+                            let sum = x.mapv(|x| x.powi(2)).sum() / config.time_range as f64;
+                            let freq = i as f64 * config.sample_rate / config.n_mels as f64;
+                            (freq, sum)
+                        })
+                        .collect::<Array1<_>>();
 
-                        debug!("Freq: {}, Sum: {}", freq, sum);
-
-                        psd[i] = (freq, sum);
-                    }
+                    debug!("PSD: {:?}", psd);
 
                     // let mut psd = Vec::new();
                     // for i in 0..holder[0].len() {

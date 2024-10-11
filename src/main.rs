@@ -46,8 +46,8 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    // let mut raw_data_layer = data::device_stream::Device::new();
-    let mut raw_data_layer = TestData::new(TestDataType::TestData1);
+    let mut raw_data_layer = data::device_stream::Device::new();
+    // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
     raw_data_layer.start();
 
@@ -89,7 +89,7 @@ fn main() -> Result<()> {
     debug!("{:?}", layers);
 
     // create app and run it
-    let tick_rate = Duration::from_millis(250);
+    let tick_rate = Duration::from_millis(50);
 
     let app = App::new(layers);
     app.run(&mut terminal, tick_rate)?;

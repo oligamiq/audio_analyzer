@@ -1,4 +1,5 @@
 use color_eyre::Result;
+use crossbeam_channel::bounded;
 use crossterm::event::{self, Event, KeyCode};
 use ndarray::Axis as npAxis;
 use ratatui::{
@@ -32,7 +33,6 @@ pub struct App<
     NOutput: 'static + Debug,
 > {
     mel_psd_data: Vec<(f64, f64)>,
-    window: [f64; 2],
     layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
 
@@ -50,7 +50,6 @@ impl<
     pub fn new(layer: MultipleLayers<Input, Output, Tail, NOutput>) -> Self {
         Self {
             layer,
-            window: [0.0, 20.0],
             mel_psd_data: vec![],
         }
     }
@@ -137,7 +136,7 @@ impl<
     fn ui(&self, frame: &mut Frame) {
         let area = frame.area();
 
-        let vertical = Layout::vertical([Constraint::Percentage(40), Constraint::Percentage(60)]);
+        let vertical = Layout::vertical([Constraint::Percentage(70), Constraint::Percentage(30)]);
         let horizontal = Layout::horizontal([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)]);
         let [chart1, bottom] = vertical.areas(area);
         let [line_chart, scatter] = horizontal.areas(bottom);
@@ -148,22 +147,22 @@ impl<
     }
 
     fn render_chart1(&self, f: &mut Frame, area: Rect) {
-        let x_labels = vec![
-            Span::styled(
-                format!("{}", self.window[0]),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!("{}", (self.window[0] + self.window[1]) / 2.0)),
-            Span::styled(
-                format!("{}", self.window[1]),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-        ];
+        // let x_labels = vec![
+        //     Span::styled(
+        //         format!("{}", self.window[0]),
+        //         Style::default().add_modifier(Modifier::BOLD),
+        //     ),
+        //     Span::raw(format!("{}", (self.window[0] + self.window[1]) / 2.0)),
+        //     Span::styled(
+        //         format!("{}", self.window[1]),
+        //         Style::default().add_modifier(Modifier::BOLD),
+        //     ),
+        // ];
         let datasets = vec![
             Dataset::default()
                 .name("data2")
                 .graph_type(GraphType::Line)
-                .marker(symbols::Marker::Dot)
+                .marker(symbols::Marker::Bar)
                 .style(Style::default().fg(Color::Cyan))
                 .data(&self.mel_psd_data),
             // Dataset::default()
@@ -173,21 +172,48 @@ impl<
             //     .data(&self.data2),
         ];
 
+        let data_x_range_min = self
+            .mel_psd_data
+            .iter()
+            .map(|x| x.0)
+            .reduce(f64::min)
+            .unwrap_or_default();
+
+        let data_x_range_max = self
+            .mel_psd_data
+            .iter()
+            .map(|x| x.0)
+            .reduce(f64::max)
+            .unwrap_or_default();
+
+        let data_y_range_min = self
+            .mel_psd_data
+            .iter()
+            .map(|x| x.1)
+            .reduce(f64::min)
+            .unwrap_or_default();
+
+        let data_y_range_max = self
+            .mel_psd_data
+            .iter()
+            .map(|x| x.1)
+            .reduce(f64::max)
+            .unwrap_or_default();
+
         let chart = Chart::new(datasets)
-            .block(Block::bordered().title("Chart 1".cyan().bold()))
+            .block(Block::bordered().title("Chart".cyan().bold()))
             .x_axis(
                 Axis::default()
                     .title("X Axis")
-                    .style(Style::default().fg(Color::Gray))
-                    .labels(x_labels)
-                    .bounds(self.window),
+                    .style(Style::default().fg(Color::Gray)) // .labels(x_labels)
+                    .bounds([data_x_range_min, data_x_range_max]),
             )
             .y_axis(
                 Axis::default()
                     .title("Y Axis")
                     .style(Style::default().fg(Color::Gray))
-                    .labels(vec!["-20".bold(), "0".into(), "20".bold()])
-                    .bounds([-20.0, 20.0]),
+                    // .labels(vec!["-20".bold(), "0".into(), "20".bold()])
+                    .bounds([data_y_range_min, data_y_range_max]),
             );
 
         f.render_widget(chart, area);

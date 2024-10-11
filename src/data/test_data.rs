@@ -99,11 +99,11 @@ impl TestData {
                     Ok(audio_buf) => {
                         let buf = match audio_buf {
                             symphonia::core::audio::AudioBufferRef::F32(buf) => {
-                                let frames = String::from(format!(
-                                    "###Decoded packet with {} samples",
-                                    buf.frames()
-                                ));
-                                trace_dbg!(frames);
+                                // let frames = String::from(format!(
+                                //     "###Decoded packet with {} samples",
+                                //     buf.frames()
+                                // ));
+                                // trace_dbg!(frames);
                                 buf
                             }
                             _ => {
