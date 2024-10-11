@@ -1,6 +1,12 @@
 {
     "cSpell.words": [
         "Calibri",
-        "crossterm"
+        "crossterm",
+        "Deque",
+        "fundsp",
+        "LOGLEVEL",
+        "mels",
+        "ndarray",
+        "ratatui"
     ]
 }

@@ -1,96 +1,109 @@
-#![allow(clippy::precedence)]
+use std::io::stdout;
+use std::time::Duration;
 
-#[cfg(debug_assertions)] // required when disable_release is set (default)
-#[global_allocator]
-static A: AllocDisabler = AllocDisabler;
+use app::App;
+use clap::Parser as _;
+use color_eyre::Result;
+use command::Args;
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use crossterm::ExecutableCommand as _;
+use data::test_data::{TestData, TestDataType};
+use data::RawDataStreamLayer as _;
+use layer::layers::{layer, MultipleLayers};
+use layer::Layer as _;
+use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
+use mel_layer::spectral_density::{ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig};
+use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
+use mel_spec::config::MelConfig;
+use ndarray::{Array1, Array2};
+use num_complex::Complex;
+use ratatui::prelude::*;
+use symphonia::core::sample;
+use tracing::debug;
+use utils::debug::initialize_logging;
 
-use anyhow::Result;
-use assert_no_alloc::*;
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{FromSample, SizedSample};
-use fundsp::hacker::*;
-
-pub mod console;
-pub mod plot;
+// pub mod console;
+// pub mod plot;
+pub mod app;
+pub mod command;
+pub mod data;
+pub mod layer;
+pub mod mel_layer;
+pub mod tui;
+pub mod utils;
 
 fn main() -> Result<()> {
-    let host = cpal::default_host();
+    initialize_logging()?;
 
-    let device = host
-        .default_output_device()
-        .expect("Failed to find a default output device");
+    let args = Args::parse();
 
-    let config = device.default_output_config().unwrap();
+    // setup terminal
+    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode()?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.clear()?;
 
-    plot::plot().unwrap();
+    // layer config
+    let mut raw_data_layer = data::device_stream::Device::new();
+    // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
-    match config.sample_format() {
-        cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()).unwrap(),
-        cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()).unwrap(),
-        cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()).unwrap(),
-        _ => panic!("Unsupported format"),
-    }
+    raw_data_layer.start();
 
+    let sample_rate = raw_data_layer.sample_rate();
+
+    debug!("sample rate: {}", sample_rate);
+
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate,
+        bits_per_sample: 32,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut writer = hound::WavWriter::create(".data/voice.wav", spec).unwrap();
+    let receiver = raw_data_layer.voice_stream_receiver();
+    let amplitude = i32::MAX as f32;
+    let handle = std::thread::spawn(move || loop {
+        let data = receiver.recv().unwrap();
+        let ave = data.iter().sum::<f32>() / data.len() as f32;
+        debug!("writing to file: {}", ave * amplitude);
+        data.iter().for_each(|&sample| {
+            writer.write_sample((sample * amplitude) as i32).unwrap();
+        });
+    });
+
+    let mut fft_layer = ToSpectrogramLayer::new(FftConfig::new(400, 160));
+    fft_layer.set_input_stream(raw_data_layer.voice_stream_receiver());
+    let mel_layer = ToMelSpectrogramLayer::new(MelConfig::new(400, 160, 80, sample_rate.into()));
+    let psd_layer = ToPowerSpectralDensityLayer::new(ToPowerSpectralDensityLayerConfig {
+        sample_rate: sample_rate.into(),
+        time_range: 20,
+        n_mels: 80,
+    });
+
+    let layers = layer(fft_layer);
+    let layers = layers.add_layer(mel_layer);
+    let layers = layers.add_layer(psd_layer);
+    // debug!("{:?}", std::any::type_name_of_val(&layers));
+    debug!("{:?}", layers);
+
+    // create app and run it
+    let tick_rate = Duration::from_millis(50);
+
+    let app = App::new(layers);
+    app.run(&mut terminal, tick_rate)?;
+
+    // plot::plot().unwrap();
+
+    // match config.sample_format() {
+    //     cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()).unwrap(),
+    //     cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()).unwrap(),
+    //     cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()).unwrap(),
+    //     _ => panic!("Unsupported format"),
+    // }
+
+    stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
     Ok(())
-}
-
-fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> Result<()>
-where
-    T: SizedSample + FromSample<f64>,
-{
-    let sample_rate = config.sample_rate.0 as f64;
-    let channels = config.channels as usize;
-
-    let c = 0.2 * (organ_hz(midi_hz(57.0)) + organ_hz(midi_hz(61.0)) + organ_hz(midi_hz(64.0)));
-
-    let c = c >> pan(0.0);
-
-    // Add chorus.
-    let c = c >> (chorus(0, 0.0, 0.01, 0.2) | chorus(1, 0.0, 0.01, 0.2));
-
-    let mut c = c
-        >> (declick() | declick())
-        >> (dcblock() | dcblock())
-        //>> (multipass() & 0.2 * reverb_stereo(10.0, 3.0, 1.0))
-        >> limiter_stereo(1.0, 5.0);
-
-    c.set_sample_rate(sample_rate);
-    c.allocate();
-
-    let mut next_value = move || assert_no_alloc(|| c.get_stereo());
-
-    let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
-
-    let stream = device.build_output_stream(
-        config,
-        move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-            write_data(data, channels, &mut next_value)
-        },
-        err_fn,
-        None,
-    )?;
-    stream.play()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50000));
-
-    Ok(())
-}
-
-fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> (f32, f32))
-where
-    T: SizedSample + FromSample<f64>,
-{
-    for frame in output.chunks_mut(channels) {
-        let sample = next_sample();
-        let left = T::from_sample(sample.0 as f64);
-        let right: T = T::from_sample(sample.1 as f64);
-
-        for (channel, sample) in frame.iter_mut().enumerate() {
-            if channel & 1 == 0 {
-                *sample = left;
-            } else {
-                *sample = right;
-            }
-        }
-    }
 }
