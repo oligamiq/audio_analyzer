@@ -56,7 +56,7 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   │   ├── cfg-if v1.0.0
 │   │   └── rustc-demangle v0.1.24
 │   │   [build-dependencies]
-│   │   └── cc v1.1.28
+│   │   └── cc v1.1.29
 │   │       └── shlex v1.3.0
 │   ├── color-spantrace v0.2.1
 │   │   ├── once_cell v1.20.2
@@ -116,6 +116,17 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   ├── ryu v1.0.18
 │   └── static_assertions v1.1.0
 ├── console v0.15.8 (*)
+├── const_struct v0.5.3
+│   ├── const_struct_derive v0.5.3 (proc-macro)
+│   │   ├── convert_case v0.6.0
+│   │   │   └── unicode-segmentation v1.12.0
+│   │   ├── crc v3.2.1
+│   │   │   └── crc-catalog v2.4.0
+│   │   ├── proc-macro2 v1.0.87 (*)
+│   │   ├── quote v1.0.37 (*)
+│   │   └── syn v2.0.79 (*)
+│   ├── crc v3.2.1 (*)
+│   └── paste v1.0.15 (proc-macro)
 ├── cpal v0.15.3
 │   ├── dasp_sample v0.11.0
 │   └── windows v0.54.0
@@ -126,7 +137,7 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │       └── windows-targets v0.52.6 (*)
 ├── crossbeam-channel v0.5.13
 │   └── crossbeam-utils v0.8.20
-├── crossterm v0.27.0
+├── crossterm v0.28.1
 │   ├── bitflags v2.6.0
 │   ├── crossterm_winapi v0.9.1
 │   │   └── winapi v0.3.9
@@ -146,6 +157,36 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │       └── windows-sys v0.48.0
 │           └── windows-targets v0.48.5
 │               └── windows_x86_64_msvc v0.48.5
+├── egui v0.29.1
+│   ├── ahash v0.8.11
+│   │   ├── cfg-if v1.0.0
+│   │   ├── once_cell v1.20.2
+│   │   └── zerocopy v0.7.35
+│   │       ├── byteorder v1.5.0
+│   │       └── zerocopy-derive v0.7.35 (proc-macro)
+│   │           ├── proc-macro2 v1.0.87 (*)
+│   │           ├── quote v1.0.37 (*)
+│   │           └── syn v2.0.79 (*)
+│   │   [build-dependencies]
+│   │   └── version_check v0.9.5
+│   ├── emath v0.29.1
+│   ├── epaint v0.29.1
+│   │   ├── ab_glyph v0.2.29
+│   │   │   ├── ab_glyph_rasterizer v0.1.8
+│   │   │   └── owned_ttf_parser v0.25.0
+│   │   │       └── ttf-parser v0.25.0
+│   │   ├── ahash v0.8.11 (*)
+│   │   ├── ecolor v0.29.1
+│   │   │   └── emath v0.29.1
+│   │   ├── emath v0.29.1
+│   │   ├── epaint_default_fonts v0.29.1
+│   │   ├── nohash-hasher v0.2.0
+│   │   └── parking_lot v0.12.3 (*)
+│   └── nohash-hasher v0.2.0
+├── heapless v0.8.0
+│   ├── hash32 v0.3.1
+│   │   └── byteorder v1.5.0
+│   └── stable_deref_trait v1.2.0
 ├── hound v3.5.1
 ├── image v0.25.2
 │   ├── bytemuck v1.18.0
@@ -262,12 +303,317 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │           └── strength_reduce v0.2.4
 │       [build-dependencies]
 │       └── version_check v0.9.5
-├── ndarray v0.15.6
-│   ├── matrixmultiply v0.3.9 (*)
-│   ├── num-complex v0.4.6 (*)
-│   ├── num-integer v0.1.46 (*)
-│   ├── num-traits v0.2.19 (*)
-│   └── rawpointer v0.2.1
+├── nannou v0.19.0
+│   ├── find_folder v0.3.0
+│   ├── futures v0.3.31
+│   │   ├── futures-channel v0.3.31
+│   │   │   ├── futures-core v0.3.31
+│   │   │   └── futures-sink v0.3.31
+│   │   ├── futures-core v0.3.31
+│   │   ├── futures-executor v0.3.31
+│   │   │   ├── futures-core v0.3.31
+│   │   │   ├── futures-task v0.3.31
+│   │   │   └── futures-util v0.3.31
+│   │   │       ├── futures-channel v0.3.31 (*)
+│   │   │       ├── futures-core v0.3.31
+│   │   │       ├── futures-io v0.3.31
+│   │   │       ├── futures-macro v0.3.31 (proc-macro)
+│   │   │       │   ├── proc-macro2 v1.0.87 (*)
+│   │   │       │   ├── quote v1.0.37 (*)
+│   │   │       │   └── syn v2.0.79 (*)
+│   │   │       ├── futures-sink v0.3.31
+│   │   │       ├── futures-task v0.3.31
+│   │   │       ├── memchr v2.7.4
+│   │   │       ├── pin-project-lite v0.2.14
+│   │   │       ├── pin-utils v0.1.0
+│   │   │       └── slab v0.4.9
+│   │   │           [build-dependencies]
+│   │   │           └── autocfg v1.4.0
+│   │   ├── futures-io v0.3.31
+│   │   ├── futures-sink v0.3.31
+│   │   ├── futures-task v0.3.31
+│   │   └── futures-util v0.3.31 (*)
+│   ├── getrandom v0.2.15
+│   │   └── cfg-if v1.0.0
+│   ├── image v0.23.14
+│   │   ├── bytemuck v1.18.0
+│   │   ├── byteorder v1.5.0
+│   │   ├── color_quant v1.1.0
+│   │   ├── gif v0.11.4
+│   │   │   ├── color_quant v1.1.0
+│   │   │   └── weezl v0.1.8
+│   │   ├── jpeg-decoder v0.1.22
+│   │   │   └── rayon v1.10.0
+│   │   │       ├── either v1.13.0
+│   │   │       └── rayon-core v1.12.1
+│   │   │           ├── crossbeam-deque v0.8.5
+│   │   │           │   ├── crossbeam-epoch v0.9.18
+│   │   │           │   │   └── crossbeam-utils v0.8.20
+│   │   │           │   └── crossbeam-utils v0.8.20
+│   │   │           └── crossbeam-utils v0.8.20
+│   │   ├── num-iter v0.1.45 (*)
+│   │   ├── num-rational v0.3.2
+│   │   │   ├── num-integer v0.1.46 (*)
+│   │   │   └── num-traits v0.2.19 (*)
+│   │   │   [build-dependencies]
+│   │   │   └── autocfg v1.4.0
+│   │   ├── num-traits v0.2.19 (*)
+│   │   ├── png v0.16.8
+│   │   │   ├── bitflags v1.3.2
+│   │   │   ├── crc32fast v1.4.2 (*)
+│   │   │   ├── deflate v0.8.6
+│   │   │   │   ├── adler32 v1.2.0
+│   │   │   │   └── byteorder v1.5.0
+│   │   │   └── miniz_oxide v0.3.7
+│   │   │       └── adler32 v1.2.0
+│   │   ├── scoped_threadpool v0.1.9
+│   │   └── tiff v0.6.1
+│   │       ├── jpeg-decoder v0.1.22 (*)
+│   │       ├── miniz_oxide v0.4.4
+│   │       │   └── adler v1.0.2
+│   │       │   [build-dependencies]
+│   │       │   └── autocfg v1.4.0
+│   │       └── weezl v0.1.8
+│   ├── instant v0.1.13
+│   │   └── cfg-if v1.0.0
+│   ├── lyon v0.17.10
+│   │   ├── lyon_algorithms v0.17.7
+│   │   │   ├── lyon_path v0.17.7
+│   │   │   │   └── lyon_geom v0.17.7
+│   │   │   │       ├── arrayvec v0.5.2
+│   │   │   │       ├── euclid v0.22.11
+│   │   │   │       │   └── num-traits v0.2.19 (*)
+│   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   └── sid v0.6.1
+│   │   │       └── num-traits v0.2.19 (*)
+│   │   └── lyon_tessellation v0.17.10
+│   │       ├── float_next_after v0.1.5
+│   │       │   └── num-traits v0.2.19 (*)
+│   │       └── lyon_path v0.17.7 (*)
+│   ├── nannou_core v0.19.0
+│   │   ├── glam v0.17.3
+│   │   │   ├── num-traits v0.2.19 (*)
+│   │   │   ├── rand v0.8.5
+│   │   │   │   ├── rand_chacha v0.3.1
+│   │   │   │   │   ├── ppv-lite86 v0.2.20
+│   │   │   │   │   │   └── zerocopy v0.7.35 (*)
+│   │   │   │   │   └── rand_core v0.6.4
+│   │   │   │   │       └── getrandom v0.2.15 (*)
+│   │   │   │   └── rand_core v0.6.4 (*)
+│   │   │   └── serde v1.0.210
+│   │   │       └── serde_derive v1.0.210 (proc-macro)
+│   │   │           ├── proc-macro2 v1.0.87 (*)
+│   │   │           ├── quote v1.0.37 (*)
+│   │   │           └── syn v2.0.79 (*)
+│   │   ├── num-traits v0.2.19 (*)
+│   │   ├── palette v0.5.0
+│   │   │   ├── approx v0.3.2
+│   │   │   │   └── num-traits v0.2.19 (*)
+│   │   │   ├── num-traits v0.2.19 (*)
+│   │   │   ├── palette_derive v0.5.0 (proc-macro)
+│   │   │   │   ├── proc-macro2 v1.0.87 (*)
+│   │   │   │   ├── quote v1.0.37 (*)
+│   │   │   │   └── syn v1.0.109
+│   │   │   │       ├── proc-macro2 v1.0.87 (*)
+│   │   │   │       ├── quote v1.0.37 (*)
+│   │   │   │       └── unicode-ident v1.0.13
+│   │   │   └── serde v1.0.210 (*)
+│   │   └── rand v0.8.5 (*)
+│   ├── nannou_mesh v0.19.0
+│   │   ├── nannou_core v0.19.0 (*)
+│   │   └── serde v1.0.210 (*)
+│   ├── nannou_wgpu v0.19.0
+│   │   ├── futures v0.3.31 (*)
+│   │   ├── image v0.23.14 (*)
+│   │   ├── instant v0.1.13 (*)
+│   │   ├── num_cpus v1.16.0
+│   │   ├── tokio v1.40.0
+│   │   │   ├── bytes v1.7.2
+│   │   │   ├── mio v1.0.2
+│   │   │   │   └── windows-sys v0.52.0 (*)
+│   │   │   ├── parking_lot v0.12.3 (*)
+│   │   │   ├── pin-project-lite v0.2.14
+│   │   │   ├── socket2 v0.5.7
+│   │   │   │   └── windows-sys v0.52.0 (*)
+│   │   │   ├── tokio-macros v2.4.0 (proc-macro)
+│   │   │   │   ├── proc-macro2 v1.0.87 (*)
+│   │   │   │   ├── quote v1.0.37 (*)
+│   │   │   │   └── syn v2.0.79 (*)
+│   │   │   └── windows-sys v0.52.0 (*)
+│   │   └── wgpu v0.17.2
+│   │       ├── arrayvec v0.7.6
+│   │       ├── cfg-if v1.0.0
+│   │       ├── log v0.4.22
+│   │       ├── parking_lot v0.12.3 (*)
+│   │       ├── profiling v1.0.15
+│   │       ├── raw-window-handle v0.5.2
+│   │       ├── smallvec v1.13.2
+│   │       ├── static_assertions v1.1.0
+│   │       ├── wgpu-core v0.17.1
+│   │       │   ├── arrayvec v0.7.6
+│   │       │   ├── bit-vec v0.6.3
+│   │       │   ├── bitflags v2.6.0
+│   │       │   ├── codespan-reporting v0.11.1
+│   │       │   │   ├── termcolor v1.4.1
+│   │       │   │   │   └── winapi-util v0.1.9
+│   │       │   │   │       └── windows-sys v0.59.0 (*)
+│   │       │   │   └── unicode-width v0.1.14
+│   │       │   ├── log v0.4.22
+│   │       │   ├── naga v0.13.0
+│   │       │   │   ├── bit-set v0.5.3
+│   │       │   │   │   └── bit-vec v0.6.3
+│   │       │   │   ├── bitflags v2.6.0
+│   │       │   │   ├── codespan-reporting v0.11.1 (*)
+│   │       │   │   ├── hexf-parse v0.2.1
+│   │       │   │   ├── indexmap v1.9.3
+│   │       │   │   │   └── hashbrown v0.12.3
+│   │       │   │   │   [build-dependencies]
+│   │       │   │   │   └── autocfg v1.4.0
+│   │       │   │   ├── log v0.4.22
+│   │       │   │   ├── num-traits v0.2.19 (*)
+│   │       │   │   ├── rustc-hash v1.1.0
+│   │       │   │   ├── spirv v0.2.0+1.5.4
+│   │       │   │   │   ├── bitflags v1.3.2
+│   │       │   │   │   └── num-traits v0.2.19 (*)
+│   │       │   │   ├── termcolor v1.4.1 (*)
+│   │       │   │   ├── thiserror v1.0.64 (*)
+│   │       │   │   └── unicode-xid v0.2.6
+│   │       │   ├── parking_lot v0.12.3 (*)
+│   │       │   ├── profiling v1.0.15
+│   │       │   ├── raw-window-handle v0.5.2
+│   │       │   ├── rustc-hash v1.1.0
+│   │       │   ├── smallvec v1.13.2
+│   │       │   ├── thiserror v1.0.64 (*)
+│   │       │   ├── wgpu-hal v0.17.2
+│   │       │   │   ├── arrayvec v0.7.6
+│   │       │   │   ├── ash v0.37.3+1.3.251
+│   │       │   │   │   └── libloading v0.7.4
+│   │       │   │   │       └── winapi v0.3.9
+│   │       │   │   ├── bit-set v0.5.3 (*)
+│   │       │   │   ├── bitflags v2.6.0
+│   │       │   │   ├── d3d12 v0.7.0
+│   │       │   │   │   ├── bitflags v2.6.0
+│   │       │   │   │   ├── libloading v0.8.5
+│   │       │   │   │   │   └── windows-targets v0.52.6 (*)
+│   │       │   │   │   └── winapi v0.3.9
+│   │       │   │   ├── glow v0.12.3
+│   │       │   │   ├── gpu-alloc v0.6.0
+│   │       │   │   │   ├── bitflags v2.6.0
+│   │       │   │   │   └── gpu-alloc-types v0.3.0
+│   │       │   │   │       └── bitflags v2.6.0
+│   │       │   │   ├── gpu-allocator v0.22.0
+│   │       │   │   │   ├── backtrace v0.3.71 (*)
+│   │       │   │   │   ├── log v0.4.22
+│   │       │   │   │   ├── thiserror v1.0.64 (*)
+│   │       │   │   │   ├── winapi v0.3.9
+│   │       │   │   │   └── windows v0.44.0
+│   │       │   │   │       └── windows-targets v0.42.2
+│   │       │   │   │           └── windows_x86_64_msvc v0.42.2
+│   │       │   │   ├── gpu-descriptor v0.2.4
+│   │       │   │   │   ├── bitflags v2.6.0
+│   │       │   │   │   ├── gpu-descriptor-types v0.1.2
+│   │       │   │   │   │   └── bitflags v2.6.0
+│   │       │   │   │   └── hashbrown v0.14.5
+│   │       │   │   │       ├── ahash v0.8.11 (*)
+│   │       │   │   │       └── allocator-api2 v0.2.18
+│   │       │   │   ├── hassle-rs v0.10.0
+│   │       │   │   │   ├── bitflags v1.3.2
+│   │       │   │   │   ├── com-rs v0.2.1
+│   │       │   │   │   ├── libloading v0.7.4 (*)
+│   │       │   │   │   ├── thiserror v1.0.64 (*)
+│   │       │   │   │   ├── widestring v1.1.0
+│   │       │   │   │   └── winapi v0.3.9
+│   │       │   │   ├── khronos-egl v4.1.0
+│   │       │   │   │   ├── libc v0.2.159
+│   │       │   │   │   └── libloading v0.7.4 (*)
+│   │       │   │   ├── libloading v0.8.5 (*)
+│   │       │   │   ├── log v0.4.22
+│   │       │   │   ├── naga v0.13.0 (*)
+│   │       │   │   ├── parking_lot v0.12.3 (*)
+│   │       │   │   ├── profiling v1.0.15
+│   │       │   │   ├── range-alloc v0.1.3
+│   │       │   │   ├── raw-window-handle v0.5.2
+│   │       │   │   ├── renderdoc-sys v1.1.0
+│   │       │   │   ├── rustc-hash v1.1.0
+│   │       │   │   ├── smallvec v1.13.2
+│   │       │   │   ├── thiserror v1.0.64 (*)
+│   │       │   │   ├── wgpu-types v0.17.0
+│   │       │   │   │   └── bitflags v2.6.0
+│   │       │   │   └── winapi v0.3.9
+│   │       │   └── wgpu-types v0.17.0 (*)
+│   │       ├── wgpu-hal v0.17.2 (*)
+│   │       └── wgpu-types v0.17.0 (*)
+│   ├── noise v0.7.0
+│   │   ├── image v0.23.14 (*)
+│   │   ├── rand v0.7.3
+│   │   │   ├── getrandom v0.1.16
+│   │   │   │   └── cfg-if v1.0.0
+│   │   │   ├── rand_chacha v0.2.2
+│   │   │   │   ├── ppv-lite86 v0.2.20 (*)
+│   │   │   │   └── rand_core v0.5.1
+│   │   │   │       └── getrandom v0.1.16 (*)
+│   │   │   └── rand_core v0.5.1 (*)
+│   │   └── rand_xorshift v0.2.0
+│   │       └── rand_core v0.5.1 (*)
+│   ├── notosans v0.1.0
+│   ├── num_cpus v1.16.0
+│   ├── pennereq v0.3.1
+│   │   └── num-traits v0.2.19 (*)
+│   ├── rusttype v0.8.3
+│   │   ├── approx v0.3.2 (*)
+│   │   ├── crossbeam-deque v0.7.4
+│   │   │   ├── crossbeam-epoch v0.8.2
+│   │   │   │   ├── cfg-if v0.1.10
+│   │   │   │   ├── crossbeam-utils v0.7.2
+│   │   │   │   │   ├── cfg-if v0.1.10
+│   │   │   │   │   └── lazy_static v1.5.0
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── autocfg v1.4.0
+│   │   │   │   ├── lazy_static v1.5.0
+│   │   │   │   ├── maybe-uninit v2.0.0
+│   │   │   │   ├── memoffset v0.5.6
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── autocfg v1.4.0
+│   │   │   │   └── scopeguard v1.2.0
+│   │   │   │   [build-dependencies]
+│   │   │   │   └── autocfg v1.4.0
+│   │   │   ├── crossbeam-utils v0.7.2 (*)
+│   │   │   └── maybe-uninit v2.0.0
+│   │   ├── crossbeam-utils v0.7.2 (*)
+│   │   ├── linked-hash-map v0.5.6
+│   │   ├── num_cpus v1.16.0
+│   │   ├── ordered-float v1.1.1
+│   │   │   └── num-traits v0.2.19 (*)
+│   │   ├── rustc-hash v1.1.0
+│   │   └── stb_truetype v0.3.1
+│   │       └── byteorder v1.5.0
+│   ├── serde v1.0.210 (*)
+│   ├── serde_derive v1.0.210 (proc-macro) (*)
+│   ├── serde_json v1.0.128
+│   │   ├── itoa v1.0.11
+│   │   ├── memchr v2.7.4
+│   │   ├── ryu v1.0.18
+│   │   └── serde v1.0.210 (*)
+│   ├── tokio v1.40.0 (*)
+│   ├── toml v0.5.11
+│   │   └── serde v1.0.210 (*)
+│   ├── walkdir v2.5.0
+│   │   ├── same-file v1.0.6
+│   │   │   └── winapi-util v0.1.9 (*)
+│   │   └── winapi-util v0.1.9 (*)
+│   ├── wgpu v0.17.2 (*)
+│   └── winit v0.28.7
+│       ├── bitflags v1.3.2
+│       ├── instant v0.1.13 (*)
+│       ├── log v0.4.22
+│       ├── once_cell v1.20.2
+│       ├── raw-window-handle v0.5.2
+│       └── windows-sys v0.45.0
+│           └── windows-targets v0.42.2 (*)
+│       [build-dependencies]
+│       └── cfg_aliases v0.1.1
+├── ndarray v0.16.1 (*)
+├── num-complex v0.4.6 (*)
 ├── number_prefix v0.4.0
 ├── parking_lot v0.12.3 (*)
 ├── plotters v0.3.7
@@ -277,7 +623,7 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   ├── font-kit v0.14.2
 │   │   ├── bitflags v2.6.0
 │   │   ├── byteorder v1.5.0
-│   │   ├── dwrote v0.11.1
+│   │   ├── dwrote v0.11.2
 │   │   │   ├── lazy_static v1.5.0
 │   │   │   ├── libc v0.2.159
 │   │   │   ├── winapi v0.3.9
@@ -294,11 +640,7 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   │   │       └── rustc_version v0.4.1
 │   │   │           └── semver v1.0.23
 │   │   ├── pathfinder_simd v0.5.4 (*)
-│   │   ├── walkdir v2.5.0
-│   │   │   ├── same-file v1.0.6
-│   │   │   │   └── winapi-util v0.1.9
-│   │   │   │       └── windows-sys v0.59.0 (*)
-│   │   │   └── winapi-util v0.1.9 (*)
+│   │   ├── walkdir v2.5.0 (*)
 │   │   └── winapi v0.3.9
 │   ├── image v0.24.9
 │   │   ├── bytemuck v1.18.0
@@ -334,24 +676,19 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   ├── normalize-line-endings v0.3.0
 │   ├── predicates-core v1.0.8
 │   └── regex v1.11.0 (*)
-├── ratatui v0.27.0
+├── ratatui v0.28.1
 │   ├── bitflags v2.6.0
 │   ├── cassowary v0.3.0
-│   ├── compact_str v0.7.1
-│   │   ├── castaway v0.2.3 (*)
-│   │   ├── cfg-if v1.0.0
-│   │   ├── itoa v1.0.11
-│   │   ├── ryu v1.0.18
-│   │   └── static_assertions v1.1.0
-│   ├── crossterm v0.27.0 (*)
+│   ├── compact_str v0.8.0 (*)
+│   ├── crossterm v0.28.1 (*)
+│   ├── instability v0.3.2 (proc-macro)
+│   │   ├── quote v1.0.37 (*)
+│   │   └── syn v2.0.79 (*)
 │   ├── itertools v0.13.0
 │   │   └── either v1.13.0
 │   ├── lru v0.12.5
 │   │   └── hashbrown v0.15.0 (*)
 │   ├── paste v1.0.15 (proc-macro)
-│   ├── stability v0.2.1 (proc-macro)
-│   │   ├── quote v1.0.37 (*)
-│   │   └── syn v2.0.79 (*)
 │   ├── strum v0.26.3
 │   │   └── strum_macros v0.26.4 (proc-macro)
 │   │       ├── heck v0.5.0
@@ -439,4 +776,5 @@ analyze-audio v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 │   └── symphonia-metadata v0.5.4 (*)
 ├── tracing v0.1.40 (*)
 ├── tracing-error v0.2.0 (*)
-└── tracing-subscriber v0.3.18 (*)
+├── tracing-subscriber v0.3.18 (*)
+└── typenum v1.17.0

@@ -1,7 +1,6 @@
-use color_eyre::Result;
 use crossbeam_channel::bounded;
 use crossterm::event::{self, Event, KeyCode};
-use ndarray::Axis as npAxis;
+use ndarray::{Array1, Axis as npAxis};
 use ratatui::{
     prelude::*,
     widgets::{Axis, Block, Chart, Dataset, GraphType},
@@ -14,41 +13,26 @@ use std::{
 };
 use tracing_subscriber::field::debug;
 
+use crate::Result;
 use crate::{
     data::RawDataStreamLayer,
-    layer::{
-        layers::{AsAny, LayerCallFunc, MultipleLayers, TailTrait},
-        Layer,
-    },
+    layer::{layers::MultipleLayers, Layer},
 };
 use tracing::debug;
 
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム
 
-pub struct App<
-    Input: 'static + Debug,
-    Output: 'static + Debug,
-    Tail: TailTrait<Input, Output> + 'static + Debug,
-    NOutput: 'static + Debug,
-> {
+pub struct App {
+    input_stream: Box<dyn RawDataStreamLayer>,
+    layer: MultipleLayers,
     mel_psd_data: Vec<(f64, f64)>,
-    layer: MultipleLayers<Input, Output, Tail, NOutput>,
 }
 
-pub fn print_ln<A, B>(obj: &(dyn Layer<InputType = A, OutputType = B>)) {
-    debug!("Layer: {:?}", obj);
-}
-
-impl<
-        Input: 'static + Debug,
-        Output: 'static + Debug,
-        Tail: TailTrait<Input, Output> + 'static + Debug + AsAny,
-        NOutput: 'static + Debug,
-    > App<Input, Output, Tail, NOutput>
-{
-    pub fn new(layer: MultipleLayers<Input, Output, Tail, NOutput>) -> Self {
+impl App {
+    pub fn new(input_stream: Box<dyn RawDataStreamLayer>, layer: MultipleLayers) -> Self {
         Self {
+            input_stream,
             layer,
             mel_psd_data: vec![],
         }
@@ -59,41 +43,11 @@ impl<
         terminal: &mut Terminal<B>,
         tick_rate: Duration,
     ) -> Result<()> {
+        self.layer.check_types()?;
+
         let length = self.layer.get_length();
 
         debug!("length: {}", length);
-
-        let to_spec_layer_ref = self
-            .layer
-            .get_nth::<crate::mel_layer::fft_layer::ToSpectrogramLayer>(0)
-            .unwrap();
-
-        let to_mel_layer_ref = self
-            .layer
-            .get_nth::<crate::mel_layer::to_mel_layer::ToMelSpectrogramLayer>(1)
-            .unwrap();
-
-        let to_psd_layer_ref = self
-            .layer
-            .get_nth::<crate::mel_layer::spectral_density::ToPowerSpectralDensityLayer>(2)
-            .unwrap();
-
-        debug!("{:?}", to_mel_layer_ref);
-        debug!("{:?}", to_spec_layer_ref);
-
-        let layer = self.layer.get_0th_layer();
-        debug!("{:?}", layer);
-
-        LayerCallFunc!(self.layer, print_ln);
-
-        // let t: <MultipleLayers<Input, Output, Tail, NOutput> as crate::layer::Layer>::InputType;
-
-        // let receiver = self.layer.get_result_stream();
-        // let to_mel_layer_ref_receiver = to_mel_layer_ref.get_result_stream();
-        // let to_spec_layer_receiver = to_spec_layer_ref.get_result_stream();
-        let to_psd_layer_receiver = to_psd_layer_ref.get_result_stream();
-
-        self.layer.start();
 
         let mut timeout = tick_rate.clone();
 
@@ -116,13 +70,29 @@ impl<
                 }
             }
 
-            if let Ok(data) = to_psd_layer_receiver.try_recv() {
+            if let Some(data) = self.input_stream.try_recv() {
                 // 0ms
-                // debug!(data);
+                // debug!("{:?}", data);
 
-                self.mel_psd_data = data.to_vec();
+                if let Ok(mel_data) = self.layer.through(&data as &dyn Any) {
+                    if mel_data.len() != 0 {
+                        debug!("{:?}", mel_data);
+                    }
 
-                debug!("{:?}", self.mel_psd_data);
+                    if let Some(mel_data) = mel_data
+                        .iter()
+                        .last()
+                        .map(|x| x.downcast_ref::<Array1<(f64, f64)>>().unwrap())
+                        .clone()
+                    {
+                        debug!("{:?}", mel_data);
+
+                        self.mel_psd_data = mel_data.to_vec();
+
+                        debug!("{:?}", self.mel_psd_data);
+                    }
+                    // debug!(mel_data);
+                }
 
                 // debug!(ave);
                 timeout = Duration::from_millis(0);

@@ -1,7 +1,8 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
 use parking_lot::Mutex;
+use tracing::error;
 
 use crate::trace_dbg;
 
@@ -10,9 +11,9 @@ use super::RawDataStreamLayer;
 pub struct Device {
     _host: cpal::Host,
     device: Option<cpal::Device>,
+    data: Arc<Mutex<Vec<f32>>>,
     sample_rate: Option<u32>,
-    sender: Arc<Mutex<Vec<crossbeam_channel::Sender<Vec<f32>>>>>,
-    handles: Option<Vec<thread::JoinHandle<()>>>,
+    stream: Option<cpal::Stream>,
 }
 
 impl Device {
@@ -24,8 +25,8 @@ impl Device {
             _host: host,
             device: Some(device),
             sample_rate: None,
-            sender: Arc::new(Mutex::new(Vec::new())),
-            handles: None,
+            data: Arc::new(Mutex::new(Vec::new())),
+            stream: None,
         }
     }
 
@@ -58,46 +59,40 @@ impl Device {
         self.sample_rate = Some(config.sample_rate().0);
 
         let err_fn = move |err| {
-            eprintln!("an error occurred on stream: {}", err);
+            error!("an error occurred on stream: {}", err);
         };
 
-        let sender = self.sender.clone();
+        let data = self.data.clone();
 
-        let handle = thread::spawn(move || {
-            let stream = match config.sample_format() {
-                cpal::SampleFormat::F32 => device.build_input_stream(
-                    &config.into(),
-                    move |data, _: &_| {
-                        let data = data.to_vec();
-                        if data.len() == 0 {
-                            return;
-                        }
-                        // trace_dbg!(data.len());
-                        sender.lock().retain(|x| x.send(data.clone()).is_ok());
-                    },
-                    err_fn,
-                    None,
-                ),
-                _ => panic!("Unsupported format"),
-            }
-            .unwrap();
+        let stream = match config.sample_format() {
+            cpal::SampleFormat::F32 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[f32], _: &_| {
+                    let _data = _data.to_vec();
+                    if _data.len() == 0 {
+                        return;
+                    }
 
-            stream.play().unwrap();
+                    // tracing::debug!("##data: {:?}", _data);
 
-            loop {}
-        });
+                    let mut data = data.lock();
+                    data.extend(_data);
+                    std::mem::drop(data);
+                },
+                err_fn,
+                None,
+            ),
+            _ => panic!("Unsupported format"),
+        }
+        .unwrap();
 
-        self.handles = Some(vec![handle]);
+        stream.play().unwrap();
+
+        self.stream = Some(stream);
     }
 }
 
 impl RawDataStreamLayer for Device {
-    fn voice_stream_receiver(&self) -> crossbeam_channel::Receiver<Vec<f32>> {
-        let (sender, receiver) = crossbeam_channel::unbounded();
-        self.sender.lock().push(sender);
-        receiver
-    }
-
     fn sample_rate(&self) -> u32 {
         self.sample_rate.unwrap()
     }
@@ -106,7 +101,17 @@ impl RawDataStreamLayer for Device {
         self.run();
     }
 
-    fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
-        self.handles.take().unwrap()
+    fn try_recv(&mut self) -> Option<Vec<f32>> {
+        // tracing::debug!("try_recv: {:?}", self.data);
+
+        let mut data = self.data.lock();
+        let _void = Vec::new();
+        let data = std::mem::replace(&mut *data, _void);
+
+        if data.len() == 0 {
+            return None;
+        }
+
+        Some(data)
     }
 }
