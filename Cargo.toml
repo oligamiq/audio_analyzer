@@ -62,3 +62,7 @@ typenum = "1.17.0"
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
 egui = "0.29.1"
+
+[[bin]]
+name = "analyze-audio"
+path = "src/bin/main.rs"

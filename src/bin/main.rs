@@ -1,33 +1,27 @@
 use std::io::stdout;
 use std::time::Duration;
 
-use app::App;
+use analyze_audio::data::{device_stream, RawDataStreamLayer as _};
+use analyze_audio::layer::layers::MultipleLayers;
+use analyze_audio::mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
+use analyze_audio::mel_layer::spectral_density::{
+    ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig,
+};
+use analyze_audio::mel_layer::to_mel_layer::ToMelSpectrogramLayer;
+use analyze_audio::utils::debug::initialize_logging;
 use clap::Parser as _;
 use command::Args;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::ExecutableCommand as _;
-use data::test_data::{TestData, TestDataType};
-use data::RawDataStreamLayer as _;
-use layer::layers::MultipleLayers;
-use mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
-use mel_layer::spectral_density::{ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig};
-use mel_layer::to_mel_layer::ToMelSpectrogramLayer;
+use libs::app::App;
+use libs::command;
 use mel_spec::config::MelConfig;
 use ratatui::prelude::*;
 use tracing::debug;
-use utils::debug::initialize_logging;
 
-// pub mod console;
-// pub mod plot;
-pub mod app;
-pub mod command;
-pub mod data;
-pub mod layer;
-pub mod mel_layer;
-pub mod tui;
-pub mod utils;
+pub mod libs;
 
 pub type Result<T> = color_eyre::Result<T>;
 
@@ -43,7 +37,7 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     // layer config
-    let mut raw_data_layer = data::device_stream::Device::new();
+    let mut raw_data_layer = device_stream::Device::new();
     // let mut raw_data_layer = TestData::new(TestDataType::TestData1);
 
     raw_data_layer.start();

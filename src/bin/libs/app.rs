@@ -1,3 +1,7 @@
+use analyze_audio::{
+    data::RawDataStreamLayer,
+    layer::{layers::MultipleLayers, Layer as _},
+};
 use crossbeam_channel::bounded;
 use crossterm::event::{self, Event, KeyCode};
 use ndarray::{Array1, Axis as npAxis};
@@ -14,10 +18,6 @@ use std::{
 use tracing_subscriber::field::debug;
 
 use crate::Result;
-use crate::{
-    data::RawDataStreamLayer,
-    layer::{layers::MultipleLayers, Layer},
-};
 use tracing::debug;
 
 //   Vec<f32>
