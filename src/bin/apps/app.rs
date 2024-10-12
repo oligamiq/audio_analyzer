@@ -34,9 +34,9 @@ impl App {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
-        cc.egui_ctx.tessellation_options_mut(|tess_options| {
-            tess_options.feathering = false;
-        });
+        // cc.egui_ctx.tessellation_options_mut(|tess_options| {
+        //     tess_options.feathering = false;
+        // });
 
         cc.egui_ctx.set_visuals(Visuals::light());
 
@@ -69,8 +69,6 @@ impl eframe::App for App {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        trace!("Updating app");
-
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
 
@@ -93,8 +91,6 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
-            ui.add(egui_tracing::Logs::new(self.collector.clone()));
-
             ui.heading("eframe template");
 
             ui.horizontal(|ui| {
@@ -107,10 +103,24 @@ impl eframe::App for App {
                 self.value += 1.0;
             }
 
+            // let mut ui_builder = egui::UiBuilder::new();
+
+            // ui.scope_builder(ui_builder, |ui| {
+            //     ui.label("############");
+            // });
+
+            egui::Window::new("Debug")
+                .open(&mut true)
+                .show(ui.ctx(), |ui| {
+                    ui.label("Debug");
+                    ui.label(format!("Label: {}", self.label));
+                    ui.label(format!("Value: {}", self.value));
+                });
+
             ui.separator();
 
             ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/main/",
+                "https://github.com/oligamiq/audio_analyser/tree/main/",
                 "Source code."
             ));
 
@@ -119,6 +129,25 @@ impl eframe::App for App {
                 egui::warn_if_debug_build(ui);
             });
         });
+
+        // let collector = self.collector.clone();
+
+        // ctx.show_viewport_immediate(
+        //     egui::ViewportId::from_hash_of("Logs"),
+        //     egui::ViewportBuilder::default()
+        //         .with_title("Logs")
+        //         .with_inner_size([500.0, 800.0]),
+        //     move |ctx, class| {
+        //         egui::CentralPanel::default().show(ctx, |ui| {
+        //             ui.add(egui_tracing::Logs::new(collector.clone()));
+        //         });
+
+        //         if ctx.input(|i| i.viewport().close_requested()) {
+        //             // Tell parent viewport that we should not show next frame:
+        //             // self.show_immediate_viewport = false;
+        //         }
+        //     },
+        // );
     }
 }
 
