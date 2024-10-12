@@ -2,7 +2,7 @@ use clap::builder::Str;
 use color_eyre::eyre::{eyre, ContextCompat};
 
 use super::Layer;
-use crate::{utils::debug, Result};
+use crate::Result;
 use std::{any::Any, fmt::Debug};
 
 #[derive(Debug)]

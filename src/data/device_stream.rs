@@ -4,8 +4,6 @@ use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
 use parking_lot::Mutex;
 use tracing::error;
 
-use crate::trace_dbg;
-
 use super::RawDataStreamLayer;
 
 pub struct Device {
@@ -37,7 +35,7 @@ impl Device {
     pub fn run(&mut self) {
         let device = self.device.take().unwrap();
 
-        trace_dbg!(device.name().unwrap());
+        tracing::debug!("{:?}", device.name().unwrap());
 
         // let mut supported_configs_range = device.supported_output_configs().wrap_err("cannot get supported config on audio device").unwrap();
 
