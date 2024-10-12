@@ -11,9 +11,9 @@
 
     <!-- config for our rust wasm binary. go to https://trunkrs.dev/assets/#rust for more customization -->
     
-<script type="module" nonce="ucHp+qnTfIMFLqSs+VTQ3A==">
-import init, * as bindings from '/audio_analyser-adea82d700e096e.js';
-const wasm = await init('/audio_analyser-adea82d700e096e_bg.wasm');
+<script type="module" nonce="nnivbMD3O7VHjK2lc7dZzQ==">
+import init, * as bindings from '/audio_analyser-cca9e70e9c04d6dd.js';
+const wasm = await init('/audio_analyser-cca9e70e9c04d6dd_bg.wasm');
 
 
 window.wasmBindings = bindings;
@@ -128,8 +128,8 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
         }
     </style>
 
-<link rel="modulepreload" href="/audio_analyser-adea82d700e096e.js" crossorigin=anonymous integrity="sha384-vq+e9EIXaUQdzJiY0S5bQqd6Msz1kQ/+8Jizs5w88ZRwVxUAj4kTyydHHuy2U28T">
-<link rel="preload" href="/audio_analyser-adea82d700e096e_bg.wasm" crossorigin=anonymous integrity="sha384-sFqWOZaa8av++06idlUC/N/2GR03HizgoP0vGH/afWl868rNwac39j1T5rpCbvCa" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/audio_analyser-cca9e70e9c04d6dd.js" crossorigin=anonymous integrity="sha384-6mngt4cfsFi2dtj5AkzXdtjjKSR3t2FJQ2oKpUCG4IewwQfR617OiDElFZDb2nTM">
+<link rel="preload" href="/audio_analyser-cca9e70e9c04d6dd_bg.wasm" crossorigin=anonymous integrity="sha384-UBdMEgV4Lds2YgA88c3M8pWdvtyNv5EDCh+75iyotbyKDIqVMzX4jcGsNgggKUWp" as="fetch" type="application/wasm"></head>
 
 <body>
     <!-- The WASM code will resize the canvas dynamically -->
@@ -148,11 +148,11 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     <!-- Force refresh (Ctrl + F5) to load the latest files instead of cached files  -->
     <script>
         // We disable caching during development so that we always view the latest version.
-        if ('serviceWorker' in navigator && window.location.hash !== "#dev") {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('sw.js');
-            });
-        }
+        // if ('serviceWorker' in navigator && window.location.hash !== "#dev") {
+        //     window.addEventListener('load', function () {
+        //         navigator.serviceWorker.register('sw.js');
+        //     });
+        // }
     </script>
 <script>"use strict";
 

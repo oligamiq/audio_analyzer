@@ -1,5 +1,10 @@
+use egui::{Theme, Visuals};
+use egui_tracing::tracing::collector;
+use log::{info, trace};
+use serde::de;
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
     // Example stuff:
@@ -7,6 +12,9 @@ pub struct App {
 
     #[serde(skip)] // This how you opt-out of serialization of a field
     value: f32,
+
+    #[serde(skip)]
+    collector: egui_tracing::EventCollector,
 }
 
 impl Default for App {
@@ -15,23 +23,38 @@ impl Default for App {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
+            collector: Default::default(),
         }
     }
 }
 
 impl App {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, collector: collector::EventCollector) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        cc.egui_ctx.tessellation_options_mut(|tess_options| {
+            tess_options.feathering = false;
+        });
+
+        cc.egui_ctx.set_visuals(Visuals::light());
+
+        info!("Initialized app");
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            let mut sl = eframe::get_value::<Self>(storage, eframe::APP_KEY).unwrap_or_default();
+            sl.collector = collector;
+
+            return sl;
         }
 
-        Default::default()
+        Self {
+            collector,
+            ..Default::default()
+        }
     }
 }
 
@@ -45,6 +68,8 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
+
+        trace!("Updating app");
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -67,6 +92,9 @@ impl eframe::App for App {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
+
+            ui.add(egui_tracing::Logs::new(self.collector.clone()));
+
             ui.heading("eframe template");
 
             ui.horizontal(|ui| {

@@ -2,6 +2,7 @@ use audio_analyser::{
     data::RawDataStreamLayer,
     layer::{layers::MultipleLayers, Layer as _},
 };
+use log::debug;
 use ndarray::{Array1, Axis as npAxis};
 use std::fmt::Debug;
 use std::{
@@ -9,10 +10,8 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tracing_subscriber::field::debug;
 
 use crate::Result;
-use tracing::debug;
 
 //   Vec<f32>
 // 音声ストリーム -> スペクトル -> メルスペクトル -> メルケプストラム

@@ -2,8 +2,8 @@
 
 use std::{any::Any, fmt::Debug};
 
+use log::debug;
 use ndarray::{s, Array1, Array2, Axis};
-use tracing::debug;
 
 use crate::layer::Layer;
 use crate::Result;

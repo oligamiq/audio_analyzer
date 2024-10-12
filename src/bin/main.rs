@@ -1,18 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::io::stdout;
-use std::time::Duration;
-
-use audio_analyser::data::{device_stream, RawDataStreamLayer as _};
-use audio_analyser::layer::layers::MultipleLayers;
-use audio_analyser::mel_layer::fft_layer::{FftConfig, ToSpectrogramLayer};
-use audio_analyser::mel_layer::spectral_density::{
-    ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig,
-};
-use audio_analyser::mel_layer::to_mel_layer::ToMelSpectrogramLayer;
-use clap::Parser as _;
-use tracing::debug;
-
 pub mod apps;
 pub mod libs;
 
@@ -95,7 +82,31 @@ pub type Result<T> = color_eyre::Result<T>;
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
-    tracing_subscriber::fmt::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    use egui_tracing::tracing_subscriber::layer::SubscriberExt;
+    use egui_tracing::tracing_subscriber::util::SubscriberInitExt;
+    use egui_tracing::{egui, tracing_subscriber};
+
+    let collector = egui_tracing::EventCollector::default();
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::filter::filter_fn(|event| {
+            if let Some(module) = event.module_path() {
+                let mut bool = (*event.level() == tracing_core::Level::TRACE
+                    || *event.level() == tracing_core::Level::DEBUG
+                    || *event.level() == tracing_core::Level::INFO)
+                    && (module.starts_with("eframe")
+                        || module.starts_with("wgpu")
+                        || module.starts_with("naga"));
+                bool |= (*event.level() == tracing_core::Level::TRACE
+                    || *event.level() == tracing_core::Level::DEBUG)
+                    && module.starts_with("egui");
+                !bool
+            } else {
+                true
+            }
+        }))
+        .with(collector.clone())
+        .init();
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -111,7 +122,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "eframe template",
         native_options,
-        Box::new(|cc| Ok(Box::new(apps::app::App::new(cc)))),
+        Box::new(|cc| Ok(Box::new(apps::app::App::new(cc, collector.clone())))),
     )
 }
 
@@ -119,9 +130,32 @@ fn main() -> eframe::Result {
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use eframe::wasm_bindgen::JsCast as _;
+    use egui_tracing::tracing_subscriber;
+    use egui_tracing::tracing_subscriber::layer::SubscriberExt;
+    use egui_tracing::tracing_subscriber::util::SubscriberInitExt;
+    use wasm_bindgen::prelude::*;
 
-    // Redirect `log` message to `console.log` and friends:
-    // eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+    let collector = egui_tracing::EventCollector::default();
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::filter::filter_fn(|event| {
+            if let Some(module) = event.module_path() {
+                let mut bool = (*event.level() == tracing_core::Level::TRACE
+                    || *event.level() == tracing_core::Level::DEBUG
+                    || *event.level() == tracing_core::Level::INFO)
+                    && (module.starts_with("eframe")
+                        || module.starts_with("wgpu")
+                        || module.starts_with("naga"));
+                bool |= (*event.level() == tracing_core::Level::TRACE
+                    || *event.level() == tracing_core::Level::DEBUG)
+                    && module.starts_with("egui");
+                !bool
+            } else {
+                true
+            }
+        }))
+        .with(collector.clone())
+        .init();
 
     let web_options = eframe::WebOptions::default();
 
@@ -141,7 +175,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(apps::app::App::new(cc)))),
+                Box::new(move |cc| Ok(Box::new(apps::app::App::new(cc, collector.clone())))),
             )
             .await;
 

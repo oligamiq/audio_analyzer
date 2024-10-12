@@ -1,4 +1,3 @@
-use clap::builder::Str;
 use color_eyre::eyre::{eyre, ContextCompat};
 
 use super::Layer;

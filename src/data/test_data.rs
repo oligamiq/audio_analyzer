@@ -1,3 +1,4 @@
+use log::{error, warn};
 use symphonia::core::{
     codecs::{Decoder, DecoderOptions},
     formats::{FormatOptions, FormatReader},
@@ -5,7 +6,6 @@ use symphonia::core::{
     meta::MetadataOptions,
     probe,
 };
-use tracing::{error, warn};
 
 use super::RawDataStreamLayer;
 

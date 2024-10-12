@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
+use log::debug;
+use log::error;
 use parking_lot::Mutex;
-use tracing::error;
 
 use super::RawDataStreamLayer;
 
@@ -35,7 +36,7 @@ impl Device {
     pub fn run(&mut self) {
         let device = self.device.take().unwrap();
 
-        tracing::debug!("{:?}", device.name().unwrap());
+        debug!("{:?}", device.name().unwrap());
 
         // let mut supported_configs_range = device.supported_output_configs().wrap_err("cannot get supported config on audio device").unwrap();
 

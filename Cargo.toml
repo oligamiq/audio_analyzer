@@ -19,17 +19,6 @@ cpal = "0.15.3"
 # graphing and plotting
 # plotters = "0.3.7"
 
-# command args
-clap = { version = "4.5.20", features = ["derive", "unicode"] }
-
-# console
-# console = { version = "0.15.8", features = ["windows-console-colors"] }
-# ratatui = "0.28.1"
-# crossterm = "0.28.1"
-# indicatif = "0.17.8"
-# billboard = "0.2.0"
-# atty = "0.2.14"
-
 # locad music file
 symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
@@ -44,9 +33,7 @@ mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 color-eyre = "0.6.3"
 
 # log
-tracing = "0.1.40"
-tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
 
 # utils
 lazy_static = "1.5.0"
@@ -71,10 +58,18 @@ num-complex = "0.4.6"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
-egui = "0.29.1"
+egui = { version = "0.29.1", features = []}
 eframe = { version = "0.29.1", default-features = false, features = ["default_fonts", "wgpu", "persistence", "accesskit"] }
 
 serde = { version = "1", features = ["derive"] }
+egui-plotter = "0.3.0"
+log = { version = "0.4.22", features = ["std"] }
+wasm-bindgen = "0.2.95"
+tracing-core = "0.1.32"
+
+[dependencies.getrandom]
+version = "*"
+features = ["js"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
