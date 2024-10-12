@@ -1,24 +1,23 @@
 [package]
-name = "analyze-audio"
+name = "audio_analyser"
 version = "0.1.0"
 edition = "2021"
+authors = ["oligami <nziq53@gmail.com> (https://github.com/oligamiq)"]
+license = "MIT/Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[[bin]]
+name = "audio_analyser"
+path = "src/bin/main.rs"
 
 [dependencies]
 cpal = "0.15.3"
 
 # graphing and plotting
-plotters = "0.3.7"
-
-# command args
-clap = { version = "4.5.20", features = ["derive", "unicode", "wrap_help"] }
-
-# console
-console = { version = "0.15.8", features = ["windows-console-colors"] }
-ratatui = "0.28.1"
-crossterm = "0.28.1"
-indicatif = "0.17.8"
-billboard = "0.2.0"
-atty = "0.2.14"
+# plotters = "0.3.7"
 
 # locad music file
 symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
@@ -34,16 +33,14 @@ mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 color-eyre = "0.6.3"
 
 # log
-tracing = "0.1.40"
-tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
 
 # utils
 lazy_static = "1.5.0"
 directories = "5.0.1"
 predicates = "3.1.0"
 number_prefix = "0.4.0"
-crossbeam-channel = "0.5.13"
+# crossbeam-channel = "0.5.13"
 
 # low memory usage
 compact_str = "0.8.0"
@@ -53,11 +50,34 @@ ndarray = "0.16.1"
 hound = "3.5.1"
 
 # patch
-image = { version = "*", default-features = false }
-heapless = "0.8.0"
-const_struct = "0.5.3"
+# image = { version = "*", default-features = false }
+# heapless = "0.8.0"
+# const_struct = "0.5.3"
 num-complex = "0.4.6"
-typenum = "1.17.0"
+# typenum = "1.17.0"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
+egui = { version = "0.29.1", features = []}
+eframe = { version = "0.29.1", default-features = false, features = ["default_fonts", "wgpu", "persistence", "accesskit"] }
+
+serde = { version = "1", features = ["derive"] }
+egui-plotter = "0.3.0"
+log = { version = "0.4.22", features = ["std"] }
+wasm-bindgen = "0.2.95"
+tracing-core = "0.1.32"
+
+[dependencies.getrandom]
+version = "*"
+features = ["js"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3.70" # to access the DOM (to hide the loading text)
+
+[profile.release]
+opt-level = 2 # fast and small wasm
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2

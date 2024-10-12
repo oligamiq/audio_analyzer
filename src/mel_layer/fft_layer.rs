@@ -1,15 +1,16 @@
 // stft layer
 
-use std::{fmt::Debug, sync::Arc, thread};
+use std::{any::Any, fmt::Debug};
 
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use color_eyre::eyre::eyre;
 use mel_spec::stft::Spectrogram;
 use ndarray::Array1;
 use num_complex::Complex;
-use parking_lot::Mutex;
 
 use crate::layer::Layer;
+use crate::Result;
 
+#[derive(Debug)]
 pub struct FftConfig {
     pub fft_size: usize,
     pub hop_size: usize,
@@ -32,108 +33,80 @@ impl Default for FftConfig {
 
 // To FFT Frame
 pub struct ToSpectrogramLayer {
-    mel_config: FftConfig,
-    handles: Option<Vec<std::thread::JoinHandle<()>>>,
-    result_sender: Arc<Mutex<Vec<Sender<Array1<Complex<f64>>>>>>,
-    input_receiver: Option<Receiver<Vec<f32>>>,
+    hop_size: usize,
+    kept_data: Vec<f32>,
+    fft: Spectrogram,
 }
 
 impl Debug for ToSpectrogramLayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ToSpectrogramLayer")
-            .field("handles", &self.handles)
-            .field("result_sender", &self.result_sender)
-            .field("input_receiver", &self.input_receiver)
+            .field("hop_size", &self.hop_size)
+            .field("kept_data", &self.kept_data)
             .finish()
-    }
-}
-
-impl Default for ToSpectrogramLayer {
-    fn default() -> Self {
-        Self {
-            mel_config: FftConfig::default(),
-            handles: Some(Vec::new()),
-            result_sender: Arc::new(Mutex::new(Vec::new())),
-            input_receiver: None,
-        }
     }
 }
 
 impl ToSpectrogramLayer {
     pub fn new(mel_config: FftConfig) -> Self {
+        let FftConfig { fft_size, hop_size } = mel_config;
+
+        let fft = Spectrogram::new(fft_size, hop_size);
+
         Self {
-            mel_config,
-            handles: Some(Vec::new()),
-            result_sender: Arc::new(Mutex::new(Vec::new())),
-            input_receiver: None,
-        }
-    }
-
-    pub fn start(&mut self) {
-        let Self { mel_config, .. } = self;
-
-        let fft_size = mel_config.fft_size;
-        let hop_size = mel_config.hop_size;
-
-        let result_sender = self.result_sender.clone();
-
-        if let Some(input_receiver) = self.input_receiver.take() {
-            let fft_handle = thread::spawn(move || {
-                let mut fft = Spectrogram::new(fft_size, hop_size);
-
-                let mut kept_data = Vec::new();
-                while let Ok(data) = input_receiver.recv() {
-                    kept_data.extend(data);
-
-                    if kept_data.len() < hop_size {
-                        continue;
-                    }
-
-                    while kept_data.len() >= hop_size {
-                        // hop_sizeと一緒のサイズに調整する
-                        let kept_data = kept_data.drain(..hop_size).collect::<Vec<_>>();
-
-                        let fft_result = fft.add(&kept_data);
-                        if let Some(fft_result) = fft_result {
-                            result_sender
-                                .lock()
-                                .retain(|x| x.send(fft_result.clone()).is_ok());
-                        }
-                    }
-                }
-            });
-
-            self.handles.as_mut().unwrap().push(fft_handle);
-        } else {
-            panic!("Input stream not set");
+            fft,
+            hop_size,
+            kept_data: Vec::new(),
         }
     }
 }
 
 impl Layer for ToSpectrogramLayer {
-    type InputType = Vec<f32>;
+    fn through<'a>(
+        &mut self,
+        input: &'a dyn std::any::Any,
+    ) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+        let Self {
+            fft,
+            hop_size,
+            kept_data,
+        } = self;
 
-    type OutputType = Array1<Complex<f64>>;
+        let hop_size = *hop_size;
 
-    fn get_result_stream(&self) -> Receiver<Self::OutputType> {
-        let (sender, receiver) = unbounded();
-        self.result_sender.lock().push(sender);
-        receiver
-    }
+        let input = input
+            .downcast_ref::<Vec<f32>>()
+            .ok_or_else(|| eyre!("Invalid input type"))?;
 
-    fn set_input_stream(&mut self, input_stream: Receiver<Self::InputType>) {
-        self.input_receiver = Some(input_stream);
-    }
+        kept_data.extend(input);
 
-    fn handle(&mut self) -> Vec<std::thread::JoinHandle<()>> {
-        self.handles.take().expect("Handles already taken")
-    }
+        if kept_data.len() < hop_size {
+            return Ok(Vec::new());
+        }
 
-    fn start(&mut self) {
-        self.start();
+        let mut ret = Vec::new();
+        while kept_data.len() >= hop_size {
+            // hop_sizeと一緒のサイズに調整する
+            let kept_data = kept_data.drain(..hop_size).collect::<Vec<_>>();
+
+            let fft_result: Option<Array1<Complex<f64>>> = fft.add(&kept_data);
+            if let Some(fft_result) = fft_result {
+                ret.push(Box::new(fft_result) as Box<dyn Any>);
+            }
+        }
+
+        Ok(ret)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn input_type(&self) -> &'static str {
+        "Vec<f32>"
+    }
+
+    fn output_type(&self) -> &'static str {
+        "Array1<Complex<f64>>"
     }
 }
