@@ -3,6 +3,7 @@
         "Calibri",
         "crossterm",
         "Deque",
+        "egui",
         "fundsp",
         "LOGLEVEL",
         "mels",

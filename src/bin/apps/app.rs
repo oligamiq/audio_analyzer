@@ -3,6 +3,8 @@ use egui_tracing::tracing::collector;
 use log::{info, trace};
 use serde::de;
 
+use crate::libs::{separate_window_widget::SeparateWindowWidget, utils::log::LogViewerWidget};
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -101,6 +103,7 @@ impl eframe::App for App {
             ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
             if ui.button("Increment").clicked() {
                 self.value += 1.0;
+                trace!("Incremented value to {}", self.value);
             }
 
             // let mut ui_builder = egui::UiBuilder::new();
@@ -108,14 +111,6 @@ impl eframe::App for App {
             // ui.scope_builder(ui_builder, |ui| {
             //     ui.label("############");
             // });
-
-            egui::Window::new("Debug")
-                .open(&mut true)
-                .show(ui.ctx(), |ui| {
-                    ui.label("Debug");
-                    ui.label(format!("Label: {}", self.label));
-                    ui.label(format!("Value: {}", self.value));
-                });
 
             ui.separator();
 
@@ -130,24 +125,10 @@ impl eframe::App for App {
             });
         });
 
-        // let collector = self.collector.clone();
+        let mut separate_window_widget =
+            SeparateWindowWidget::new([400.0, 300.0], LogViewerWidget::new(self.collector.clone()));
 
-        // ctx.show_viewport_immediate(
-        //     egui::ViewportId::from_hash_of("Logs"),
-        //     egui::ViewportBuilder::default()
-        //         .with_title("Logs")
-        //         .with_inner_size([500.0, 800.0]),
-        //     move |ctx, class| {
-        //         egui::CentralPanel::default().show(ctx, |ui| {
-        //             ui.add(egui_tracing::Logs::new(collector.clone()));
-        //         });
-
-        //         if ctx.input(|i| i.viewport().close_requested()) {
-        //             // Tell parent viewport that we should not show next frame:
-        //             // self.show_immediate_viewport = false;
-        //         }
-        //     },
-        // );
+        separate_window_widget.show(ctx);
     }
 }
 
