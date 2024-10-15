@@ -27,7 +27,7 @@ impl<W: UiWidget + View + Send + 'static> SeparateWindowWidget<W> {
             let widget = Arc::clone(&self.widget);
             let show = Arc::clone(&self.show);
 
-            ctx.show_viewport_deferred(
+            ctx.show_viewport_immediate(
                 egui::ViewportId::from_hash_of(&self.title),
                 egui::ViewportBuilder::default()
                     .with_title(&self.title)
@@ -51,11 +51,12 @@ impl<W: UiWidget + View + Send + 'static> SeparateWindowWidget<W> {
 
     #[cfg(target_arch = "wasm32")]
     pub fn show(&mut self, ctx: &egui::Context) {
-        if self.show {
+        if self.show.load(std::sync::atomic::Ordering::Relaxed) {
             egui::Window::new(self.title.clone())
                 .default_size(self.initial_size)
                 .show(ctx, |ui| {
-                    self.widget.ui(ui);
+                    let mut widget = self.widget.lock();
+                    widget.ui(ui);
                 });
         }
     }

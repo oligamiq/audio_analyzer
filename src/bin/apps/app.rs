@@ -3,31 +3,18 @@ use egui_tracing::tracing::collector;
 use log::{info, trace};
 use serde::de;
 
-use crate::libs::{separate_window_widget::SeparateWindowWidget, utils::log::LogViewerWidget};
+use crate::libs::{
+    separate_window_widget::SeparateWindowWidget,
+    stream::{new_stream, streams::Streamer},
+    utils::log::LogViewerWidget,
+};
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
+use super::config::Config;
+
 pub struct App {
-    // Example stuff:
-    label: String,
-
-    #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
-
-    #[serde(skip)]
     collector: egui_tracing::EventCollector,
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
-            collector: Default::default(),
-        }
-    }
+    streamer: Streamer,
+    config: Config,
 }
 
 impl App {
@@ -40,22 +27,30 @@ impl App {
         //     tess_options.feathering = false;
         // });
 
-        cc.egui_ctx.set_visuals(Visuals::light());
+        // cc.egui_ctx.set_visuals(Visuals::light());
+
+        cc.egui_ctx.set_theme(egui::Theme::Light);
 
         info!("Initialized app");
+
+        let streamer = new_stream();
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let mut sl = eframe::get_value::<Self>(storage, eframe::APP_KEY).unwrap_or_default();
-            sl.collector = collector;
+            let sl = eframe::get_value::<Config>(storage, eframe::APP_KEY).unwrap_or_default();
 
-            return sl;
+            return Self {
+                collector,
+                streamer,
+                config: sl,
+            };
         }
 
         Self {
             collector,
-            ..Default::default()
+            streamer,
+            config: Config::default(),
         }
     }
 }
@@ -63,11 +58,13 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        eframe::set_value(storage, eframe::APP_KEY, &self.config);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.streamer.apply();
+
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
@@ -93,29 +90,23 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
-            ui.heading("eframe template");
+            ui.heading("Audio Analyzer");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
-            });
-
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-                trace!("Incremented value to {}", self.value);
-            }
-
-            // let mut ui_builder = egui::UiBuilder::new();
-
-            // ui.scope_builder(ui_builder, |ui| {
-            //     ui.label("############");
+            // ui.horizontal(|ui| {
+            //     ui.label("Write something: ");
+            //     ui.text_edit_singleline(&mut self.label);
             // });
+
+            // ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
+            // if ui.button("Increment").clicked() {
+            //     self.value += 1.0;
+            //     trace!("Incremented value to {}", self.value);
+            // }
 
             ui.separator();
 
             ui.add(egui::github_link_file!(
-                "https://github.com/oligamiq/audio_analyser/tree/main/",
+                "https://github.com/oligamiq/audio_analyzer/tree/main/",
                 "Source code."
             ));
 
