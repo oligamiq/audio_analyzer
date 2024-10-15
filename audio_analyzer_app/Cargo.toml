@@ -1,12 +1,13 @@
 [package]
-name = "audio_analyzer_core"
+name = "audio_analyzer_app"
 version = "0.1.0"
 edition = "2021"
 authors = ["oligami <nziq53@gmail.com> (https://github.com/oligamiq)"]
 license = "MIT/Apache-2.0"
 
-[workspace]
-members = ["audio_analyzer_app"]
+[[bin]]
+name = "audio_analyzer_app"
+path = "main.rs"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
@@ -17,33 +18,25 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 # locad music file
 
-# mel spectrogram
-# mel_spec = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_pipeline = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_audio = { git = "https://github.com/wavey-ai/mel-spec" }
-
-mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
-
 # debugging
 color-eyre = "0.6.3"
 
 # log
 egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
 
-# utils
-# directories = "5.0.1"
-# predicates = "3.1.0"
-# number_prefix = "0.4.0"
-# crossbeam-channel = "0.5.13"
-
 # low memory usage
 # compact_str = "0.8.0"
 # parking_lot = "0.12.3"
 # smallvec = "1.13.2"
 ndarray = "0.16.1"
-# hound = "3.5.1"
+hound = "3.5.1"
 
+# patch
+# image = { version = "*", default-features = false }
+# heapless = "0.8.0"
+# const_struct = "0.5.3"
 num-complex = "0.4.6"
+# typenum = "1.17.0"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
@@ -53,8 +46,9 @@ eframe = { version = "0.29.1", default-features = false, features = ["default_fo
 serde = { version = "1.0", features = ["derive"] }
 egui-plotter = "0.3.0"
 log = { version = "0.4.22", features = ["std"] }
+tracing-core = "0.1.32"
 egui-snarl = { version = "0.5.0", features = ["serde", "egui-probe"] }
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = { version = "*", features = ["js"] }
 
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering"}
@@ -64,25 +58,8 @@ wasm-bindgen = "0.2.95"
 serde-wasm-bindgen = "0.6"
 wasm-bindgen-futures = "0.4"
 # to access the DOM (to hide the loading text)
-web-sys = { version = "0.3.72", features = [
-  "AudioContext",
-  "MediaDevices",
-  "MediaStreamConstraints",
-  "MediaStream",
-  "MediaStreamAudioSourceNode",
-  "AudioWorklet",
-  "AudioWorkletNode",
-  "BaseAudioContext",
-  "MessagePort",
-  "MediaStreamAudioDestinationNode",
-  "MessageEvent",
-  "console",
-  "Url",
-  "BlobPropertyBag",
-  "Blob"
-  ] }
-js-sys = { version = "0.3" }
-# wasm_thread = "0.3.0"
+web-sys = "0.3.72"
+console_error_panic_hook = "0.1.7"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
