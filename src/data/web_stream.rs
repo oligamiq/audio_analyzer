@@ -1,12 +1,18 @@
+// MIT License
+// Copyright (c) oligamiq 2024
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software to deal in the Software without restriction, subject to the
+// following conditions:
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
 use super::RawDataStreamLayer;
-// use egui::mutex::Mutex;
-use std::sync::Mutex;
+use egui::mutex::Mutex;
 use std::sync::{Arc, OnceLock};
-use wasm_bindgen::JsValue;
 use wasm_bindgen::{prelude::Closure, JsCast as _};
 use wasm_bindgen_futures::JsFuture;
-// use web_sys::js_sys::Reflect;
-// use wasm_thread as thread;
+use web_sys::BlobPropertyBag;
 
 // https://zenn.dev/tetter/articles/web-realtime-audio-processing
 // https://qiita.com/okaxaki/items/c807bdfe3e96d6ef7960
@@ -15,13 +21,14 @@ pub struct WebAudioStream(pub Arc<Mutex<Vec<f32>>>);
 
 impl WebAudioStream {
     pub fn new() -> Self {
-        Self(ON_WEB_STRUCT.get().unwrap().clone())
+        Self(WEB_INPUT.get().unwrap().clone())
     }
 }
 
 impl RawDataStreamLayer for WebAudioStream {
     fn try_recv(&mut self) -> Option<Vec<f32>> {
-        let mut data = self.0.lock().unwrap();
+        // this is -1.0 to 1.0
+        let mut data = self.0.lock();
 
         if data.is_empty() {
             return None;
@@ -41,7 +48,7 @@ impl RawDataStreamLayer for WebAudioStream {
     }
 }
 
-static ON_WEB_STRUCT: OnceLock<Arc<Mutex<Vec<f32>>>> = OnceLock::new();
+static WEB_INPUT: OnceLock<Arc<Mutex<Vec<f32>>>> = OnceLock::new();
 static SAMPLE_RATE: OnceLock<u32> = OnceLock::new();
 
 pub async fn init_on_web_struct() {
@@ -49,48 +56,18 @@ pub async fn init_on_web_struct() {
 
     let vec = on_web.data.clone();
 
-    ON_WEB_STRUCT.get_or_init(|| vec);
+    WEB_INPUT.get_or_init(|| vec);
 
     let sample_rate = on_web.sample_rate.unwrap();
 
-    SAMPLE_RATE.get_or_init(|| sample_rate);
+    SAMPLE_RATE.get_or_init(|| sample_rate as u32);
 
     core::mem::forget(on_web);
-
-    // assert!(ON_WEB_STRUCT.get().is_none());
-
-    // thread::spawn(|| {
-    //     spawn_local(async move {
-    //         let on_web = OnWebStruct::new();
-
-    //         let on_web = on_web.await;
-
-    //         panic!("-2");
-
-    //         let vec = on_web.data.clone();
-
-    //         panic!("-1");
-
-    //         ON_WEB_STRUCT.get_or_init(|| vec);
-
-    //         panic!("0");
-
-    //         let sample_rate = on_web.sample_rate.unwrap();
-
-    //         SAMPLE_RATE.get_or_init(|| sample_rate);
-
-    //         core::mem::forget(on_web);
-
-    //         panic!("1");
-
-    //         // sender.send(()).unwrap();
-    //     });
-    // });
 }
 
 pub struct OnWebStruct {
     pub data: Arc<Mutex<Vec<f32>>>,
-    sample_rate: Option<u32>,
+    sample_rate: Option<f32>,
     _audio_ctx: web_sys::AudioContext,
     _source: web_sys::MediaStreamAudioSourceNode,
     _media_devices: web_sys::MediaDevices,
@@ -107,11 +84,9 @@ impl std::fmt::Debug for OnWebStruct {
 
 impl OnWebStruct {
     pub async fn new() -> Self {
-        // let audio_ctx = web_sys::AudioContext::new().unwrap();
-        let config = web_sys::AudioContextOptions::new();
-        config.set_sample_rate(44100.0);
+        let audio_ctx = web_sys::AudioContext::new().unwrap();
 
-        let audio_ctx = web_sys::AudioContext::new_with_context_options(&config).unwrap();
+        let sample_rate = audio_ctx.sample_rate();
 
         let media_devices = web_sys::window()
             .unwrap()
@@ -131,31 +106,20 @@ impl OnWebStruct {
 
         let stream = JsFuture::from(stream).await.unwrap();
 
-        // panic!("## 2 {:?}", stream);
-
         let stream = stream.dyn_into::<web_sys::MediaStream>().unwrap();
-
-        // panic!("3 {:?}", stream);
 
         let source = audio_ctx.create_media_stream_source(&stream).unwrap();
 
-        // panic!("4 {:?}", source);
+        // 明示的にresumeを呼ぶ
+        JsFuture::from(audio_ctx.resume().unwrap()).await.unwrap();
 
         // Return about Float32Array
         // return first input's first channel's samples
         // https://developer.mozilla.org/ja/docs/Web/API/AudioWorkletProcessor/process
         let processor_js_code = r#"
             class MyProcessor extends AudioWorkletProcessor {
-                constructor() {
-                    super();
-
-                    console.log('MyProcessor is constructed');
-                }
-
                 process(inputs, outputs, parameters) {
                     this.port.postMessage(Float32Array.from(inputs[0][0]));
-
-                    console.log('MyProcessor is processing');
 
                     return true;
                 }
@@ -166,29 +130,30 @@ impl OnWebStruct {
             console.log('MyProcessor is registered');
         "#;
 
-        // 明示的にresumeを呼ぶ
-        JsFuture::from(audio_ctx.resume().unwrap()).await.unwrap();
+        let blob_parts = js_sys::Array::new();
+        blob_parts.push(&wasm_bindgen::JsValue::from_str(processor_js_code));
+
+        let type_: BlobPropertyBag = BlobPropertyBag::new();
+        type_.set_type("application/javascript");
+
+        let blob = web_sys::Blob::new_with_str_sequence_and_options(&blob_parts, &type_).unwrap();
+
+        let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
 
         let processor = audio_ctx
             .audio_worklet()
             .expect("Failed to get audio worklet")
-            .add_module(&format!("data:application/javascript,{processor_js_code}"))
+            .add_module(&url)
             .unwrap();
 
         JsFuture::from(processor).await.unwrap();
 
-        let worklet_node = web_sys::AudioWorkletNode::new(&audio_ctx, "my-processor").expect(
-            "Failed to create \
-                                                                               audio worklet node",
-        );
+        web_sys::Url::revoke_object_url(&url).unwrap();
 
-        web_sys::console::log_1(&JsValue::from(&worklet_node));
+        let worklet_node = web_sys::AudioWorkletNode::new(&audio_ctx, "my-processor")
+            .expect("Failed to create audio worklet node");
 
         source.connect_with_audio_node(&worklet_node).unwrap();
-
-        web_sys::console::log_1(&JsValue::from(&source));
-
-        // panic!("## 5 {:?}", worklet_node);
 
         let data = Arc::new(Mutex::new(Vec::new()));
 
@@ -196,16 +161,13 @@ impl OnWebStruct {
 
         // Float32Array
         let js_closure = Closure::wrap(Box::new(move |msg: wasm_bindgen::JsValue| {
-            web_sys::console::log_1(&JsValue::from("onmessage"));
-            web_sys::console::log_1(&msg);
-
             let msg_event = msg.dyn_into::<web_sys::MessageEvent>().unwrap();
 
             let data = msg_event.data();
 
             let data: Vec<f32> = serde_wasm_bindgen::from_value(data).unwrap();
 
-            let mut data_clone = data_clone.lock().unwrap();
+            let mut data_clone = data_clone.lock();
 
             data_clone.extend(data);
         }) as Box<dyn FnMut(wasm_bindgen::JsValue)>);
@@ -217,79 +179,9 @@ impl OnWebStruct {
             .expect("Failed to get port")
             .set_onmessage(Some(js_func));
 
-        let destination = audio_ctx.create_media_stream_destination().unwrap();
-
-        worklet_node.connect_with_audio_node(&destination).unwrap();
-
-        let processed_stream = destination.stream();
-
-        web_sys::console::log_1(&JsValue::from(&processed_stream));
-
-        web_sys::console::log_1(&JsValue::from(&worklet_node));
-
-        // worklet_node.connect_with_audio_node(&source).unwrap();
-
-        web_sys::console::log_1(&JsValue::from(&worklet_node));
-
-        web_sys::console::log_1(&JsValue::from(&source));
-
-        // jsのグローバルに持たせる
-
-        // let global = web_sys::window().unwrap();
-
-        // set worklet_node
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct".into(),
-        //     &JsValue::from(&worklet_node),
-        // )
-        // .unwrap();
-
-        // set audio_ctx
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct_audio_ctx".into(),
-        //     &JsValue::from(&audio_ctx),
-        // )
-        // .unwrap();
-
-        // set source
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct_source".into(),
-        //     &JsValue::from(&source),
-        // )
-        // .unwrap();
-
-        // set stream
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct_stream".into(),
-        //     &JsValue::from(&stream),
-        // )
-        // .unwrap();
-
-        // set media_devices
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct_media_devices".into(),
-        //     &JsValue::from(&media_devices),
-        // )
-        // .unwrap();
-
-        // set js_closure
-        // Reflect::set(
-        //     &global,
-        //     &"on_web_struct_js_closure".into(),
-        //     &JsValue::from(js_func),
-        // )
-        // .unwrap();
-
-        // panic!("## 6");
-
         OnWebStruct {
             data,
-            sample_rate: Some(44100),
+            sample_rate: Some(sample_rate),
             _audio_ctx: audio_ctx,
             _source: source,
             _media_devices: media_devices,

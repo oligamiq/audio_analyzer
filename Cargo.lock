@@ -485,6 +485,7 @@ dependencies = [
  "egui_tracing",
  "getrandom",
  "hound",
+ "js-sys",
  "lazy_static",
  "log",
  "mel_spec",
