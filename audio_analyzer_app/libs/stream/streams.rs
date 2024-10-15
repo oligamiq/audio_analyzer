@@ -48,7 +48,7 @@ impl Streamer {
 
                     self.mel_psd_data = mel_data.to_vec();
 
-                    debug!("{:?}", self.mel_psd_data);
+                    // debug!("{:?}", self.mel_psd_data);
                 }
                 // debug!(mel_data);
             }

@@ -12,8 +12,8 @@ license = "MIT/Apache-2.0"
 [workspace.dependencies]
 audio_analyzer_core = { path = "audio_analyzer_core" }
 color-eyre = "0.6.3"
-ndarray = "0.16.1"
-num-complex = "0.4.6"
+ndarray = { version = "0.16.1", features = ["serde"] }
+num-complex = { version = "0.4.6", features = ["serde"]}
 log = { version = "0.4.22", features = ["std"] }
 mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 

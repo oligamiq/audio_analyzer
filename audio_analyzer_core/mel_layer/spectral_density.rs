@@ -95,7 +95,7 @@ impl Layer for ToPowerSpectralDensityLayer {
             })
             .collect::<Array1<_>>();
 
-        debug!("PSD: {:?}", psd);
+        // debug!("PSD: {:?}", psd);
 
         Ok(vec![Box::new(psd) as Box<dyn Any>])
     }

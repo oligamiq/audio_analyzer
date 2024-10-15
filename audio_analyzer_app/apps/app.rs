@@ -1,9 +1,11 @@
 use egui::{Theme, Visuals};
+use egui_snarl::{ui::SnarlStyle, Snarl};
 use egui_tracing::tracing::collector;
 use log::{info, trace};
 use serde::de;
 
 use crate::libs::{
+    nodes::{LayerNodes, LayerNodesViewer},
     separate_window_widget::SeparateWindowWidget,
     stream::{new_stream, streams::Streamer},
     utils::log::LogViewerWidget,
@@ -15,6 +17,8 @@ pub struct App {
     collector: egui_tracing::EventCollector,
     streamer: Streamer,
     config: Config,
+    snarl: Snarl<LayerNodes>,
+    style: SnarlStyle,
 }
 
 impl App {
@@ -44,6 +48,8 @@ impl App {
                 collector,
                 streamer,
                 config: sl,
+                snarl: Snarl::new(),
+                style: SnarlStyle::default(),
             };
         }
 
@@ -51,6 +57,8 @@ impl App {
             collector,
             streamer,
             config: Config::default(),
+            snarl: Snarl::new(),
+            style: SnarlStyle::default(),
         }
     }
 }
@@ -109,6 +117,9 @@ impl eframe::App for App {
                 "https://github.com/oligamiq/audio_analyzer_core/tree/main/",
                 "Source code."
             ));
+
+            self.snarl
+                .show(&mut LayerNodesViewer, &self.style, "snarl", ui);
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);
