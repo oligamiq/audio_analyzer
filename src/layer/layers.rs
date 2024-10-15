@@ -1,7 +1,7 @@
 use color_eyre::eyre::{eyre, ContextCompat};
 
 use super::Layer;
-use crate::Result;
+use crate::{utils::r#enum::DeferredReturn, Result};
 use std::{any::Any, fmt::Debug};
 
 #[derive(Debug)]
@@ -85,6 +85,43 @@ impl MultipleLayers {
             input_type = layer.output_type();
         }
         Ok(())
+    }
+
+    pub fn through_with_callback<T: FnMut(DeferredReturn, usize)>(
+        &mut self,
+        input: &dyn Any,
+        fn_: &mut T,
+    ) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+        let ret = Ok(self
+            .layers
+            .iter_mut()
+            .try_fold(None::<Vec<Box<dyn Any>>>, move |inputs, layer| {
+                if let Some(inputs) = inputs {
+                    let mut outputs = Vec::new();
+                    for input in inputs {
+                        outputs.extend(layer.through(input.as_ref())?);
+                    }
+
+                    if let Some(first) = outputs.first() {
+                        fn_(DeferredReturn::from_boxed_any(first), outputs.len());
+                    }
+
+                    return Ok::<Option<Vec<Box<dyn Any>>>, color_eyre::Report>(Some(outputs));
+                } else {
+                    let ret = layer.through(input)?;
+
+                    if let Some(first) = ret.first() {
+                        fn_(DeferredReturn::from_boxed_any(first), ret.len());
+                    }
+
+                    Ok(Some(ret))
+                }
+            })?
+            .unwrap());
+
+        // tracing::debug!("ret: {:?}", ret);
+
+        ret
     }
 }
 

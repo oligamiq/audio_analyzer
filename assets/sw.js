@@ -2,8 +2,8 @@ var cacheName = "egui-template-pwa";
 var filesToCache = [
 	"./",
 	"./index.html",
-	"./audio_analyser.js",
-	"./audio_analyser_bg.wasm",
+	"./audio_analyzer_core.js",
+	"./audio_analyzer_core_bg.wasm",
 ];
 
 /* Start the service worker and cache all of the app's content */

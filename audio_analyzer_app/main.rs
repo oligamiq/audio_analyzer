@@ -114,7 +114,7 @@ fn main() -> eframe::Result {
             .with_min_inner_size([300.0, 220.0])
             .with_icon(
                 // NOTE: Adding an icon is optional
-                eframe::icon_data::from_png_bytes(&include_bytes!("../../assets/icon-256.png")[..])
+                eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
                     .expect("Failed to load icon"),
             ),
         ..Default::default()
@@ -133,7 +133,8 @@ fn main() {
     use egui_tracing::tracing_subscriber;
     use egui_tracing::tracing_subscriber::layer::SubscriberExt;
     use egui_tracing::tracing_subscriber::util::SubscriberInitExt;
-    use wasm_bindgen::prelude::*;
+
+    console_error_panic_hook::set_once();
 
     let collector = egui_tracing::EventCollector::default();
 
@@ -171,6 +172,8 @@ fn main() {
             .dyn_into::<web_sys::HtmlCanvasElement>()
             .expect("the_canvas_id was not a HtmlCanvasElement");
 
+        audio_analyzer_core::data::web_stream::init_on_web_struct().await;
+
         let start_result = eframe::WebRunner::new()
             .start(
                 canvas,
@@ -187,7 +190,8 @@ fn main() {
                 }
                 Err(e) => {
                     loading_text.set_inner_html(
-                        "<p> The app has crashed. See the developer console for details. </p>",
+                        "<p> The app has crashed. See the developer \
+                                                 console for details. </p>",
                     );
                     panic!("Failed to start eframe: {e:?}");
                 }

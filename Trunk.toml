@@ -1,1 +1,10 @@
 [build]
+target = "index.html"
+dist = "dist"
+pattern_script = "<script type=\"module\">import init from '{base}{js}';const button=document.createElement('button');button.style.display='none';button.onclick=()=>init('{base}{wasm}');document.body.appendChild(button);button.click();</script>"
+
+[serve.headers]
+# see ./assets/_headers for more documentation
+"cross-origin-embedder-policy"= "require-corp"
+"cross-origin-opener-policy"= "same-origin"
+"cross-origin-resource-policy"= "same-site"

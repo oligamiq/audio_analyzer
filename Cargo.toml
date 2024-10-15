@@ -1,79 +1,77 @@
 [package]
-name = "audio_analyser"
+name = "audio_analyzer_core"
 version = "0.1.0"
 edition = "2021"
 authors = ["oligami <nziq53@gmail.com> (https://github.com/oligamiq)"]
 license = "MIT/Apache-2.0"
 
+[workspace]
+members = ["audio_analyzer_app"]
+default-members = ["audio_analyzer_app"]
+
 [package.metadata.docs.rs]
-all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
-[[bin]]
-name = "audio_analyser"
-path = "src/bin/main.rs"
+[workspace.dependencies]
+audio_analyzer_core = { path = "." }
+color-eyre = "0.6.3"
 
 [dependencies]
-cpal = "0.15.3"
-
-# graphing and plotting
-# plotters = "0.3.7"
+cpal = { version = "0.15", features = ["wasm-bindgen"] }
 
 # locad music file
 symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
-# mel spectrogram
-# mel_spec = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_pipeline = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_audio = { git = "https://github.com/wavey-ai/mel-spec" }
-
 mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 
 # debugging
-color-eyre = "0.6.3"
+color-eyre.workspace = true
 
 # log
-egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
-
 # utils
-lazy_static = "1.5.0"
-directories = "5.0.1"
-predicates = "3.1.0"
-number_prefix = "0.4.0"
+# directories = "5.0.1"
+# predicates = "3.1.0"
+# number_prefix = "0.4.0"
 # crossbeam-channel = "0.5.13"
 
 # low memory usage
-compact_str = "0.8.0"
+# compact_str = "0.8.0"
 parking_lot = "0.12.3"
-smallvec = "1.13.2"
+# smallvec = "1.13.2"
 ndarray = "0.16.1"
-hound = "3.5.1"
+# hound = "3.5.1"
 
-# patch
-# image = { version = "*", default-features = false }
-# heapless = "0.8.0"
-# const_struct = "0.5.3"
 num-complex = "0.4.6"
-# typenum = "1.17.0"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
-egui = { version = "0.29.1", features = []}
-eframe = { version = "0.29.1", default-features = false, features = ["default_fonts", "wgpu", "persistence", "accesskit"] }
 
-serde = { version = "1", features = ["derive"] }
-egui-plotter = "0.3.0"
 log = { version = "0.4.22", features = ["std"] }
-wasm-bindgen = "0.2.95"
-tracing-core = "0.1.32"
-
-[dependencies.getrandom]
-version = "*"
-features = ["js"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2.95"
+serde-wasm-bindgen = "0.6"
 wasm-bindgen-futures = "0.4"
-web-sys = "0.3.70" # to access the DOM (to hide the loading text)
+# to access the DOM (to hide the loading text)
+web-sys = { version = "0.3.72", features = [
+  "AudioContext",
+  "MediaDevices",
+  "MediaStreamConstraints",
+  "MediaStream",
+  "MediaStreamAudioSourceNode",
+  "AudioWorklet",
+  "AudioWorkletNode",
+  "BaseAudioContext",
+  "MessagePort",
+  "MediaStreamAudioDestinationNode",
+  "MessageEvent",
+  "console",
+  "Url",
+  "BlobPropertyBag",
+  "Blob"
+  ] }
+js-sys = { version = "0.3" }
+# wasm_thread = "0.3.0"
 
 [profile.release]
 opt-level = 2 # fast and small wasm

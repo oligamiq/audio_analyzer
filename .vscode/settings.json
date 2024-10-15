@@ -1,12 +1,15 @@
 {
     "cSpell.words": [
+        "bindgen",
         "Calibri",
         "crossterm",
         "Deque",
+        "egui",
         "fundsp",
         "LOGLEVEL",
         "mels",
         "ndarray",
         "ratatui"
-    ]
+    ],
+    "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
 }
