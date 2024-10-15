@@ -1,4 +1,4 @@
-use audio_analyzer::{
+use audio_analyzer_core::{
     data::{
         device_stream,
         test_data::{TestData, TestDataType},
@@ -19,7 +19,7 @@ pub mod streams;
 
 pub fn new_stream() -> Streamer {
     #[cfg(target_family = "wasm")]
-    let mut raw_data_layer = audio_analyzer::data::web_stream::WebAudioStream::new();
+    let mut raw_data_layer = audio_analyzer_core::data::web_stream::WebAudioStream::new();
     #[cfg(not(target_family = "wasm"))]
     let mut raw_data_layer = device_stream::Device::new();
     // let mut raw_data_layer = TestData::new(TestDataType::TestData1);

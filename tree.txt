@@ -1,4 +1,4 @@
-audio_analyzer v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
+audio_analyzer_core v0.1.0 (C:\Users\nziq5\Documents\5J\卒研\analyze-audio)
 ├── color-eyre v0.6.3
 │   ├── backtrace v0.3.71
 │   │   ├── addr2line v0.21.0

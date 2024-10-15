@@ -1,17 +1,15 @@
 [package]
-name = "audio_analyzer"
+name = "audio_analyzer_core"
 version = "0.1.0"
 edition = "2021"
 authors = ["oligami <nziq53@gmail.com> (https://github.com/oligamiq)"]
 license = "MIT/Apache-2.0"
 
-[package.metadata.docs.rs]
-all-features = true
-targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+[workspace]
+members = ["audio_analyzer_app"]
 
-[[bin]]
-name = "audio_analyzer"
-path = "src/bin/main.rs"
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
 cpal = { version = "0.15", features = ["wasm-bindgen"] }
@@ -65,6 +63,7 @@ serde = { version = "1.0", features = ["derive"] }
 egui-plotter = "0.3.0"
 log = { version = "0.4.22", features = ["std"] }
 tracing-core = "0.1.32"
+egui-snarl = { version = "0.5.0", features = ["serde", "egui-probe"] }
 
 [dependencies.getrandom]
 version = "*"

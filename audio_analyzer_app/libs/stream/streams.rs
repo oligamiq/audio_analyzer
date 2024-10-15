@@ -1,4 +1,4 @@
-use audio_analyzer::{
+use audio_analyzer_core::{
     data::RawDataStreamLayer,
     layer::{layers::MultipleLayers, Layer as _},
 };

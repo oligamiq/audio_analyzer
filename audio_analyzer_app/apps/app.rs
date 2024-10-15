@@ -106,7 +106,7 @@ impl eframe::App for App {
             ui.separator();
 
             ui.add(egui::github_link_file!(
-                "https://github.com/oligamiq/audio_analyzer/tree/main/",
+                "https://github.com/oligamiq/audio_analyzer_core/tree/main/",
                 "Source code."
             ));
 

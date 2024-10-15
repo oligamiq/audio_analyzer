@@ -172,7 +172,7 @@ fn main() {
             .dyn_into::<web_sys::HtmlCanvasElement>()
             .expect("the_canvas_id was not a HtmlCanvasElement");
 
-        audio_analyzer::data::web_stream::init_on_web_struct().await;
+        audio_analyzer_core::data::web_stream::init_on_web_struct().await;
 
         let start_result = eframe::WebRunner::new()
             .start(
