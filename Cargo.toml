@@ -7,29 +7,27 @@ license = "MIT/Apache-2.0"
 
 [workspace]
 members = ["audio_analyzer_app"]
+default-members = ["audio_analyzer_app"]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
+[workspace.dependencies]
+audio_analyzer_core = { path = "." }
+color-eyre = "0.6.3"
+
 [dependencies]
-# graphing and plotting
-# plotters = "0.3.7"
+cpal = { version = "0.15", features = ["wasm-bindgen"] }
 
 # locad music file
-
-# mel spectrogram
-# mel_spec = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_pipeline = { git = "https://github.com/wavey-ai/mel-spec" }
-# mel_spec_audio = { git = "https://github.com/wavey-ai/mel-spec" }
+symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
 mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
 
 # debugging
-color-eyre = "0.6.3"
+color-eyre.workspace = true
 
 # log
-egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
-
 # utils
 # directories = "5.0.1"
 # predicates = "3.1.0"
@@ -38,7 +36,7 @@ egui_tracing = { version = "0.2.6", features = ["wasmbind", "reexport"] }
 
 # low memory usage
 # compact_str = "0.8.0"
-# parking_lot = "0.12.3"
+parking_lot = "0.12.3"
 # smallvec = "1.13.2"
 ndarray = "0.16.1"
 # hound = "3.5.1"
@@ -47,17 +45,8 @@ num-complex = "0.4.6"
 
 # others
 # https://ratatui.rs/recipes/apps/color-eyre/
-egui = { version = "0.29.1", features = []}
-eframe = { version = "0.29.1", default-features = false, features = ["default_fonts", "wgpu", "persistence", "accesskit"] }
 
-serde = { version = "1.0", features = ["derive"] }
-egui-plotter = "0.3.0"
 log = { version = "0.4.22", features = ["std"] }
-egui-snarl = { version = "0.5.0", features = ["serde", "egui-probe"] }
-getrandom = { version = "0.2", features = ["js"] }
-
-[patch.crates-io]
-egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering"}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.95"

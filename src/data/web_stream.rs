@@ -8,7 +8,7 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 use super::RawDataStreamLayer;
-use egui::mutex::Mutex;
+use parking_lot::Mutex;
 use std::sync::{Arc, OnceLock};
 use wasm_bindgen::{prelude::Closure, JsCast as _};
 use wasm_bindgen_futures::JsFuture;
