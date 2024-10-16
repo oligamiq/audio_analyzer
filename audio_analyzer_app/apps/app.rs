@@ -5,7 +5,7 @@ use log::{info, trace};
 use serde::de;
 
 use crate::libs::{
-    nodes::{LayerNodes, LayerNodesViewer},
+    nodes::{FlowNodes, FlowNodesViewer},
     separate_window_widget::SeparateWindowWidget,
     stream::{new_stream, streams::Streamer},
     utils::log::LogViewerWidget,
@@ -17,7 +17,7 @@ pub struct App {
     collector: egui_tracing::EventCollector,
     streamer: Streamer,
     config: Config,
-    snarl: Snarl<LayerNodes>,
+    snarl: Snarl<FlowNodes>,
     style: SnarlStyle,
 }
 
@@ -119,7 +119,7 @@ impl eframe::App for App {
             ));
 
             self.snarl
-                .show(&mut LayerNodesViewer, &self.style, "snarl", ui);
+                .show(&mut FlowNodesViewer, &self.style, "snarl", ui);
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);

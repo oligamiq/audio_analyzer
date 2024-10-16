@@ -1,0 +1,14 @@
+[package]
+name = "egui_editable_num"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+egui.workspace = true
+serde.workspace = true
+
+[lib]
+name = "egui_editable_num"
+path = "lib.rs"

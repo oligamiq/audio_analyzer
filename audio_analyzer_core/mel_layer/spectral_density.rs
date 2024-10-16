@@ -2,7 +2,6 @@
 
 use std::{any::Any, fmt::Debug};
 
-use log::debug;
 use ndarray::{s, Array1, Array2, Axis};
 
 use crate::layer::Layer;
@@ -32,17 +31,12 @@ impl ToPowerSpectralDensityLayer {
             holder: Array2::zeros((config.n_mels, 0)),
         }
     }
-}
 
-impl Layer for ToPowerSpectralDensityLayer {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn through<'a>(&mut self, input: &'a dyn Any) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+    pub fn through_inner<'a>(
+        &mut self,
+        data: &'a Array2<f64>,
+    ) -> Result<Option<Array1<(f64, f64)>>> {
         let Self { config, holder } = self;
-
-        let data = input.downcast_ref::<Array2<f64>>().unwrap();
 
         // debug!("Data: {:?}", data);
 
@@ -70,7 +64,7 @@ impl Layer for ToPowerSpectralDensityLayer {
         //     .concatenate(Axis(0));
 
         if holder.shape()[1] < config.time_range {
-            return Ok(vec![]);
+            return Ok(None);
         }
 
         // remove first element if holder is too long
@@ -97,7 +91,24 @@ impl Layer for ToPowerSpectralDensityLayer {
 
         // debug!("PSD: {:?}", psd);
 
-        Ok(vec![Box::new(psd) as Box<dyn Any>])
+        Ok(Some(psd))
+    }
+}
+
+impl Layer for ToPowerSpectralDensityLayer {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn through<'a>(&mut self, input: &'a dyn Any) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+        let data = input.downcast_ref::<Array2<f64>>().unwrap();
+
+        let ret = self.through_inner(data)?;
+
+        Ok(ret
+            .into_iter()
+            .map(|x| Box::new(x) as Box<dyn Any>)
+            .collect())
     }
 
     fn input_type(&self) -> &'static str {

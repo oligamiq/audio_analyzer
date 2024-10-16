@@ -475,6 +475,7 @@ dependencies = [
  "egui",
  "egui-plotter",
  "egui-snarl",
+ "egui_editable_num",
  "egui_tracing",
  "getrandom",
  "hound",
@@ -1299,6 +1300,14 @@ dependencies = [
  "web-time",
  "webbrowser",
  "winit",
+]
+
+[[package]]
+name = "egui_editable_num"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "serde",
 ]
 
 [[package]]

@@ -28,6 +28,17 @@ impl ToMelSpectrogramLayer {
 
         Self { mel }
     }
+
+    pub fn through_inner<'a>(
+        &mut self,
+        data: &'a Array1<Complex<f64>>,
+    ) -> Result<Option<Array2<f64>>> {
+        let Self { mel } = self;
+
+        let mel_spec: Array2<f64> = mel.add(data);
+
+        Ok(Some(mel_spec))
+    }
 }
 
 impl Layer for ToMelSpectrogramLayer {
@@ -36,13 +47,14 @@ impl Layer for ToMelSpectrogramLayer {
     }
 
     fn through<'a>(&mut self, input: &'a dyn Any) -> Result<Vec<Box<(dyn Any + 'static)>>> {
-        let Self { mel } = self;
-
         let data = input.downcast_ref::<Array1<Complex<f64>>>().unwrap();
 
-        let mel_spec: Array2<f64> = mel.add(data);
+        let ret = self.through_inner(data)?;
 
-        Ok(vec![Box::new(mel_spec)])
+        Ok(ret
+            .into_iter()
+            .map(|x| Box::new(x) as Box<dyn Any>)
+            .collect())
     }
 
     fn input_type(&self) -> &'static str {
