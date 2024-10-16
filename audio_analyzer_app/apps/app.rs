@@ -131,6 +131,8 @@ impl eframe::App for App {
             SeparateWindowWidget::new([400.0, 300.0], LogViewerWidget::new(self.collector.clone()));
 
         separate_window_widget.show(ctx);
+
+        ctx.request_repaint();
     }
 }
 

@@ -1,4 +1,8 @@
-use egui_snarl::ui::{PinInfo, SnarlViewer};
+use egui::Ui;
+use egui_snarl::{
+    ui::{PinInfo, SnarlViewer},
+    Snarl,
+};
 use ndarray::{Array1, Array2};
 use num_complex::Complex;
 
@@ -63,7 +67,10 @@ impl SnarlViewer<LayerNodes> for LayerNodesViewer {
                         PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
                     }
                     [remote] => match &snarl[remote.node] {
-                        LayerNodes::STFTLayer(vec) => todo!(),
+                        LayerNodes::STFTLayer(vec) => {
+                            ui.label("STFTLayer");
+                            PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                        }
                         LayerNodes::MelLayer(array_base) => todo!(),
                         LayerNodes::SpectrogramDensityLayer(array_base) => todo!(),
                     },
@@ -92,7 +99,10 @@ impl SnarlViewer<LayerNodes> for LayerNodesViewer {
                         PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
                     }
                     [remote] => match &snarl[remote.node] {
-                        LayerNodes::STFTLayer(vec) => todo!(),
+                        LayerNodes::STFTLayer(vec) => {
+                            ui.label("STFTLayer");
+                            PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                        }
                         LayerNodes::MelLayer(array_base) => todo!(),
                         LayerNodes::SpectrogramDensityLayer(array_base) => todo!(),
                     },
@@ -102,5 +112,39 @@ impl SnarlViewer<LayerNodes> for LayerNodesViewer {
             LayerNodes::MelLayer(array_base) => todo!(),
             LayerNodes::SpectrogramDensityLayer(array_base) => todo!(),
         }
+    }
+
+    fn has_graph_menu(&mut self, _pos: egui::Pos2, _snarl: &mut Snarl<LayerNodes>) -> bool {
+        true
+    }
+
+    fn show_graph_menu(
+        &mut self,
+        pos: egui::Pos2,
+        ui: &mut Ui,
+        _scale: f32,
+        snarl: &mut Snarl<LayerNodes>,
+    ) {
+        ui.label("Add node");
+        if ui.button("STFTLayer").clicked() {
+            snarl.insert_node(pos, LayerNodes::STFTLayer(vec![]));
+            ui.close_menu();
+        }
+        //     if ui.button("Expr").clicked() {
+        //         snarl.insert_node(pos, LayerNodes::ExprNode(ExprNode::new()));
+        //         ui.close_menu();
+        //     }
+        //     if ui.button("String").clicked() {
+        //         snarl.insert_node(pos, LayerNodes::String("".to_owned()));
+        //         ui.close_menu();
+        //     }
+        //     if ui.button("Show image").clicked() {
+        //         snarl.insert_node(pos, LayerNodes::ShowImage("".to_owned()));
+        //         ui.close_menu();
+        //     }
+        //     if ui.button("Sink").clicked() {
+        //         snarl.insert_node(pos, LayerNodes::Sink);
+        //         ui.close_menu();
+        //     }
     }
 }

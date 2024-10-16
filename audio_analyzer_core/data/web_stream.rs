@@ -8,6 +8,7 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 use super::RawDataStreamLayer;
+use log::warn;
 use parking_lot::Mutex;
 use std::sync::{Arc, OnceLock};
 use wasm_bindgen::{prelude::Closure, JsCast as _};
@@ -169,6 +170,11 @@ impl OnWebStruct {
 
             let mut data_clone = data_clone.lock();
 
+            if data_clone.len() > 44100 {
+                warn!("Data is too long, so clear");
+                data_clone.clear();
+            }
+
             data_clone.extend(data);
         }) as Box<dyn FnMut(wasm_bindgen::JsValue)>);
 
@@ -195,5 +201,7 @@ impl OnWebStruct {
 impl Drop for OnWebStruct {
     fn drop(&mut self) {
         let _ = self._audio_ctx.close();
+
+        panic!("AudioContext is closed");
     }
 }
