@@ -60,6 +60,11 @@ impl<T: ToString + FromStr> EditableOnText<T> {
     pub fn fmt(&mut self) {
         self.str = self.obj.to_string();
     }
+
+    pub fn set(&mut self, obj: T) {
+        self.obj = obj;
+        self.fmt();
+    }
 }
 
 impl<T: ToString + FromStr + Copy> EditableOnText<T> {

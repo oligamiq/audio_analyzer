@@ -82,8 +82,8 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
     ) -> egui_snarl::ui::PinInfo {
         enum InputConfig {
-            FftSize,
-            HopSize,
+            FftSize(Option<usize>),
+            HopSize(Option<usize>),
         }
 
         let mut input_config = None;
@@ -92,6 +92,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(node) => match pin.id.input {
                     0 => {
+                        let mut info = CustomPinInfo::setting(8);
+
+                        input_config = Some(InputConfig::FftSize(None));
+
                         if let Some(pin) = pin.remotes.get(0) {
                             let remote = &snarl[pin.node];
                             if let FlowNodes::ConfigNodes(ConfigNodes::FftSizeNode(FftSizeNode {
@@ -99,15 +103,20 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                             })) = remote
                             {
                                 ui.label(format!("fft_size: {}", fft_size));
-                                return CustomPinInfo::lock();
+
+                                input_config = Some(InputConfig::FftSize(Some(fft_size.get())));
+
+                                info = CustomPinInfo::lock();
                             }
                         }
 
-                        input_config = Some(InputConfig::FftSize);
-
-                        CustomPinInfo::setting(8)
+                        info
                     }
                     1 => {
+                        let mut info = CustomPinInfo::setting(8);
+
+                        input_config = Some(InputConfig::HopSize(None));
+
                         if let Some(pin) = pin.remotes.get(0) {
                             let remote = &snarl[pin.node];
                             if let FlowNodes::ConfigNodes(ConfigNodes::HopSizeNode(HopSizeNode {
@@ -115,13 +124,14 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                             })) = remote
                             {
                                 ui.label(format!("hop_size: {}", hop_size));
-                                return CustomPinInfo::lock();
+
+                                input_config = Some(InputConfig::HopSize(Some(hop_size.get())));
+
+                                info = CustomPinInfo::lock();
                             }
                         }
 
-                        input_config = Some(InputConfig::HopSize);
-
-                        CustomPinInfo::setting(8)
+                        info
                     }
                     2 => {
                         ui.label("input STFTLayer");
@@ -136,7 +146,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         };
 
         match input_config {
-            Some(InputConfig::FftSize) => {
+            Some(InputConfig::FftSize(edit)) => {
                 let node = &mut snarl[pin.id.node];
 
                 let node = if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) = node {
@@ -146,24 +156,29 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 };
 
                 let STFTLayerNode { fft_size, .. } = node;
-                ui.label("fft_size");
-                let response = egui::TextEdit::singleline(fft_size)
-                    .clip_text(false)
-                    .desired_width(0.0)
-                    .margin(ui.spacing().item_spacing)
-                    .show(ui)
-                    .response;
 
-                if response.lost_focus() {
-                    node.fft_size.fmt();
-                    node.update();
-                } else if response.changed() {
-                    if node.fft_size.try_update() {
+                if let Some(value) = edit {
+                    node.fft_size.set(value);
+                } else {
+                    ui.label("fft_size");
+                    let response = egui::TextEdit::singleline(fft_size)
+                        .clip_text(false)
+                        .desired_width(0.0)
+                        .margin(ui.spacing().item_spacing)
+                        .show(ui)
+                        .response;
+
+                    if response.lost_focus() {
+                        node.fft_size.fmt();
                         node.update();
+                    } else if response.changed() {
+                        if node.fft_size.try_update() {
+                            node.update();
+                        }
                     }
                 }
             }
-            Some(InputConfig::HopSize) => {
+            Some(InputConfig::HopSize(edit)) => {
                 let node = &mut snarl[pin.id.node];
 
                 let node = if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) = node {
@@ -173,20 +188,25 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 };
 
                 let STFTLayerNode { hop_size, .. } = node;
-                ui.label("hop_size");
-                let response = egui::TextEdit::singleline(hop_size)
-                    .clip_text(false)
-                    .desired_width(0.0)
-                    .margin(ui.spacing().item_spacing)
-                    .show(ui)
-                    .response;
 
-                if response.lost_focus() {
-                    node.hop_size.fmt();
-                    node.update();
-                } else if response.changed() {
-                    if node.hop_size.try_update() {
+                if let Some(value) = edit {
+                    node.hop_size.set(value);
+                } else {
+                    ui.label("hop_size");
+                    let response = egui::TextEdit::singleline(hop_size)
+                        .clip_text(false)
+                        .desired_width(0.0)
+                        .margin(ui.spacing().item_spacing)
+                        .show(ui)
+                        .response;
+
+                    if response.lost_focus() {
+                        node.hop_size.fmt();
                         node.update();
+                    } else if response.changed() {
+                        if node.hop_size.try_update() {
+                            node.update();
+                        }
                     }
                 }
             }
