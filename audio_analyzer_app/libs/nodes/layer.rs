@@ -50,7 +50,9 @@ impl LayerNodes {
 
     pub fn input_type_id(&self) -> TypeId {
         match self {
-            LayerNodes::STFTLayer(_) => TypeId::of::<<STFTLayerNode as InputAndOutputType>::Input>(),
+            LayerNodes::STFTLayer(_) => {
+                TypeId::of::<<STFTLayerNode as InputAndOutputType>::Input>()
+            }
             LayerNodes::MelLayer(_) => TypeId::of::<<MelLayerNode as InputAndOutputType>::Input>(),
             LayerNodes::SpectrogramDensityLayer(_) => {
                 TypeId::of::<<SpectrogramDensityLayerNode as InputAndOutputType>::Input>()
@@ -60,7 +62,9 @@ impl LayerNodes {
 
     pub fn output_type_id(&self) -> TypeId {
         match self {
-            LayerNodes::STFTLayer(_) => TypeId::of::<<STFTLayerNode as InputAndOutputType>::Output>(),
+            LayerNodes::STFTLayer(_) => {
+                TypeId::of::<<STFTLayerNode as InputAndOutputType>::Output>()
+            }
             LayerNodes::MelLayer(_) => TypeId::of::<<MelLayerNode as InputAndOutputType>::Output>(),
             LayerNodes::SpectrogramDensityLayer(_) => {
                 TypeId::of::<<SpectrogramDensityLayerNode as InputAndOutputType>::Output>()
@@ -99,13 +103,16 @@ impl<'a> serde::Deserialize<'a> for STFTLayerNode {
     {
         #[derive(serde::Deserialize)]
         struct STFTLayerNodeHelper {
-            fft_size: usize,
-            hop_size: usize,
+            fft_size: EditableOnText<usize>,
+            hop_size: EditableOnText<usize>,
         }
 
         let helper = STFTLayerNodeHelper::deserialize(deserializer)?;
 
-        Ok(STFTLayerNode::new(helper.fft_size, helper.hop_size))
+        Ok(STFTLayerNode::new(
+            helper.fft_size.get(),
+            helper.hop_size.get(),
+        ))
     }
 }
 
@@ -176,19 +183,19 @@ impl<'a> serde::Deserialize<'a> for MelLayerNode {
     {
         #[derive(serde::Deserialize)]
         struct MelLayerNodeHelper {
-            fft_size: usize,
-            hop_size: usize,
-            n_mels: usize,
-            sample_rate: f64,
+            fft_size: EditableOnText<usize>,
+            hop_size: EditableOnText<usize>,
+            n_mels: EditableOnText<usize>,
+            sample_rate: EditableOnText<f64>,
         }
 
         let helper = MelLayerNodeHelper::deserialize(deserializer)?;
 
         Ok(MelLayerNode::new(
-            helper.fft_size,
-            helper.hop_size,
-            helper.n_mels,
-            helper.sample_rate,
+            helper.fft_size.get(),
+            helper.hop_size.get(),
+            helper.n_mels.get(),
+            helper.sample_rate.get(),
         ))
     }
 }

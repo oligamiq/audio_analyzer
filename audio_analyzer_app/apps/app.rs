@@ -16,7 +16,6 @@ use super::config::Config;
 pub struct App {
     collector: egui_tracing::EventCollector,
     streamer: Streamer,
-    config: Config,
     snarl: Snarl<FlowNodes>,
     style: SnarlStyle,
 }
@@ -44,19 +43,19 @@ impl App {
         if let Some(storage) = cc.storage {
             let sl = eframe::get_value::<Config>(storage, eframe::APP_KEY).unwrap_or_default();
 
+            info!("Loaded app state: {:?}", sl);
+
             return Self {
                 collector,
                 streamer,
-                config: sl,
-                snarl: Snarl::new(),
-                style: SnarlStyle::default(),
+                snarl: sl.snarl,
+                style: sl.style,
             };
         }
 
         Self {
             collector,
             streamer,
-            config: Config::default(),
             snarl: Snarl::new(),
             style: SnarlStyle::default(),
         }
@@ -66,7 +65,11 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, &self.config);
+        eframe::set_value(
+            storage,
+            eframe::APP_KEY,
+            &Config::from_ref(&self.snarl, &self.style),
+        );
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.

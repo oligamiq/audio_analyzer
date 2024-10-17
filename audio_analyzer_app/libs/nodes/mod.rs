@@ -15,7 +15,7 @@ pub mod layer;
 pub mod pin_info;
 pub mod utils;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(config::ConfigNodes),
