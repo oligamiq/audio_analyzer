@@ -46,12 +46,12 @@ impl CustomPinInfo {
                 let inner_y = inner_radius * inner_angle.sin();
                 let inner_point = Pos2::new(center.x + inner_x, center.y + inner_y);
 
-                let angle = (i as f32 - 0.15) * (std::f32::consts::PI * 2.0 / teeth as f32);
+                let angle = (i as f32 - 0.1) * (std::f32::consts::PI * 2.0 / teeth as f32);
                 let x = outer_radius * angle.cos();
                 let y = outer_radius * angle.sin();
                 let outer_point = Pos2::new(center.x + x, center.y + y);
 
-                let angle = (i as f32 + 0.15) * (std::f32::consts::PI * 2.0 / teeth as f32);
+                let angle = (i as f32 + 0.1) * (std::f32::consts::PI * 2.0 / teeth as f32);
                 let x = outer_radius * angle.cos();
                 let y = outer_radius * angle.sin();
                 let outer_point2 = Pos2::new(center.x + x, center.y + y);

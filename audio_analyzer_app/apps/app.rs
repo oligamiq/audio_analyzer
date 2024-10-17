@@ -41,9 +41,16 @@ impl App {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let sl = eframe::get_value::<Config>(storage, eframe::APP_KEY).unwrap_or_default();
-
-            info!("Loaded app state: {:?}", sl);
+            let sl = match eframe::get_value::<Config>(storage, eframe::APP_KEY) {
+                Some(sl) => {
+                    info!("Loaded app state: {:?}", sl);
+                    sl
+                }
+                None => {
+                    info!("failed to load app state");
+                    Config::default()
+                }
+            };
 
             return Self {
                 collector,
@@ -70,6 +77,8 @@ impl eframe::App for App {
             eframe::APP_KEY,
             &Config::from_ref(&self.snarl, &self.style),
         );
+
+        trace!("Saved app state");
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.

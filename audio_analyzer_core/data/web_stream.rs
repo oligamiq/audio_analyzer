@@ -18,6 +18,7 @@ use web_sys::BlobPropertyBag;
 // https://zenn.dev/tetter/articles/web-realtime-audio-processing
 // https://qiita.com/okaxaki/items/c807bdfe3e96d6ef7960
 
+#[derive(Debug)]
 pub struct WebAudioStream(pub Arc<Mutex<Vec<f32>>>);
 
 impl WebAudioStream {

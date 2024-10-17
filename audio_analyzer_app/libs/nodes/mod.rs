@@ -1,24 +1,23 @@
 use config::{ConfigNodes, FftSizeNode, HopSizeNode};
-use egui::{Pos2, Sense, Ui, Vec2};
-use egui_editable_num::EditableOnText;
+use egui::Ui;
 use egui_snarl::{
     ui::{PinInfo, SnarlViewer},
     Snarl,
 };
 use layer::{LayerNodes, STFTLayerNode};
-use ndarray::{Array1, Array2};
-use num_complex::Complex;
 use pin_info::CustomPinInfo;
 
 pub mod config;
 pub mod layer;
 pub mod pin_info;
+pub mod raw_input;
 pub mod utils;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(config::ConfigNodes),
+    RawInputNodes(raw_input::RawInputNodes),
 }
 
 impl FlowNodes {
@@ -26,6 +25,7 @@ impl FlowNodes {
         match self {
             FlowNodes::LayerNodes(node) => node.name(),
             FlowNodes::ConfigNodes(node) => node.name(),
+            FlowNodes::RawInputNodes(node) => node.name(),
         }
     }
 }
@@ -63,6 +63,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         match node {
             FlowNodes::LayerNodes(node) => node.inputs(),
             FlowNodes::ConfigNodes(node) => node.inputs(),
+            FlowNodes::RawInputNodes(raw_input_nodes) => raw_input_nodes.inputs(),
         }
     }
 
@@ -70,6 +71,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         match node {
             FlowNodes::LayerNodes(node) => node.outputs(),
             FlowNodes::ConfigNodes(node) => node.outputs(),
+            FlowNodes::RawInputNodes(node) => node.outputs(),
         }
     }
 
@@ -135,7 +137,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     }
                     2 => {
                         ui.label("input STFTLayer");
-                        PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
                     }
                     _ => unreachable!(),
                 },
@@ -143,6 +145,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 LayerNodes::SpectrogramDensityLayer(_) => todo!(),
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
+            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
+                raw_input::RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
+                raw_input::RawInputNodes::FileInputNode(_) => todo!(),
+            },
         };
 
         match input_config {
@@ -227,7 +233,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
                     ui.label("output STFTLayer");
-                    PinInfo::star().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
                 }
                 LayerNodes::MelLayer(_) => todo!(),
                 LayerNodes::SpectrogramDensityLayer(_) => todo!(),
@@ -263,6 +269,13 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                     CustomPinInfo::setting(8)
                 }
+            },
+            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
+                raw_input::RawInputNodes::MicrophoneInputNode(node) => {
+                    ui.label("out");
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                }
+                raw_input::RawInputNodes::FileInputNode(_) => todo!(),
             },
         }
     }
@@ -300,6 +313,28 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 snarl.insert_node(
                     pos,
                     FlowNodes::ConfigNodes(ConfigNodes::HopSizeNode(HopSizeNode::default())),
+                );
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("raw_input", |ui| {
+            if ui.button("MicrophoneInputNode").clicked() {
+                snarl.insert_node(
+                    pos,
+                    FlowNodes::RawInputNodes(raw_input::RawInputNodes::MicrophoneInputNode(
+                        raw_input::MicrophoneInputNode::default(),
+                    )),
+                );
+                ui.close_menu();
+            }
+
+            if ui.button("FileInputNode").clicked() {
+                snarl.insert_node(
+                    pos,
+                    FlowNodes::RawInputNodes(raw_input::RawInputNodes::FileInputNode(
+                        raw_input::FileInputNode::default(),
+                    )),
                 );
                 ui.close_menu();
             }
