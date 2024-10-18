@@ -11,6 +11,10 @@ use ndarray::{Array1, Array2};
 use num_complex::Complex;
 use serde::de;
 
+use crate::libs::nodes::NodeInfoTypes;
+
+use super::NodeInfo;
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum LayerNodes {
     STFTLayer(STFTLayerNode),
@@ -38,9 +42,9 @@ impl LayerNodes {
     pub const fn inputs(&self) -> usize {
         // input is layer data and config
         match self {
-            LayerNodes::STFTLayer(node) => node.input(),
-            LayerNodes::MelLayer(node) => node.input(),
-            LayerNodes::SpectrogramDensityLayer(node) => node.input(),
+            LayerNodes::STFTLayer(_) => STFTLayerNode::input(),
+            LayerNodes::MelLayer(_) => MelLayerNode::input(),
+            LayerNodes::SpectrogramDensityLayer(_) => SpectrogramDensityLayerNode::input(),
         }
     }
 
@@ -94,6 +98,38 @@ pub struct STFTLayerNode {
     layer: ToSpectrogramLayer,
     #[serde(skip)]
     result: Option<Array1<Complex<f64>>>,
+}
+
+pub struct STFTLayerNodeInfo;
+
+impl NodeInfo for STFTLayerNodeInfo {
+    fn name(&self) -> &str {
+        "STFTLayer"
+    }
+
+    fn inputs(&self) -> usize {
+        STFTLayerNode::input()
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<NodeInfoTypes> {
+        vec![
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Number,
+            NodeInfoTypes::VecF32,
+        ]
+    }
+
+    fn output_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::Array1ComplexF64]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::LayerNodes(LayerNodes::STFTLayer(Default::default()))
+    }
 }
 
 impl<'a> serde::Deserialize<'a> for STFTLayerNode {
@@ -157,8 +193,12 @@ impl STFTLayerNode {
     }
 
     // input_num is layer data and config num
-    pub const fn input(&self) -> usize {
+    pub const fn input() -> usize {
         1 + 2
+    }
+
+    pub fn to_info(&self) -> STFTLayerNodeInfo {
+        STFTLayerNodeInfo
     }
 }
 
@@ -174,6 +214,38 @@ pub struct MelLayerNode {
 
     #[serde(skip)]
     result: Option<Array2<f64>>,
+}
+
+pub struct MelLayerNodeInfo;
+
+impl NodeInfo for MelLayerNodeInfo {
+    fn name(&self) -> &str {
+        "MelLayer"
+    }
+
+    fn inputs(&self) -> usize {
+        MelLayerNode::input()
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<NodeInfoTypes> {
+        vec![
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Array1ComplexF64,
+        ]
+    }
+
+    fn output_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::Array2F64]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::LayerNodes(LayerNodes::MelLayer(Default::default()))
+    }
 }
 
 impl<'a> serde::Deserialize<'a> for MelLayerNode {
@@ -246,8 +318,12 @@ impl MelLayerNode {
     }
 
     // input_num is layer data and config num
-    pub const fn input(&self) -> usize {
+    pub const fn input() -> usize {
         1 + 4
+    }
+
+    pub fn to_info(&self) -> MelLayerNodeInfo {
+        MelLayerNodeInfo
     }
 }
 
@@ -262,6 +338,41 @@ pub struct SpectrogramDensityLayerNode {
 
     #[serde(skip)]
     result: Option<Array1<(f64, f64)>>,
+}
+
+pub struct SpectrogramDensityLayerNodeInfo;
+
+impl NodeInfo for SpectrogramDensityLayerNodeInfo {
+    fn name(&self) -> &str {
+        "SpectrogramDensityLayer"
+    }
+
+    fn inputs(&self) -> usize {
+        SpectrogramDensityLayerNode::input()
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<NodeInfoTypes> {
+        vec![
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Array2F64,
+        ]
+    }
+
+    fn output_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::Array1TupleF64F64]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::LayerNodes(
+            LayerNodes::SpectrogramDensityLayer(Default::default()),
+        )
+    }
 }
 
 impl<'a> serde::Deserialize<'a> for SpectrogramDensityLayerNode {
@@ -333,7 +444,11 @@ impl SpectrogramDensityLayerNode {
     }
 
     // input_num is layer data and config num
-    pub const fn input(&self) -> usize {
+    pub const fn input() -> usize {
         1 + 3
+    }
+
+    pub fn to_info(&self) -> SpectrogramDensityLayerNodeInfo {
+        SpectrogramDensityLayerNodeInfo
     }
 }

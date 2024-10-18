@@ -1,5 +1,7 @@
 use egui_editable_num::EditableOnText;
 
+use super::{NodeInfo, NodeInfoTypes};
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {
     NumberNode(NumberNode),
@@ -8,19 +10,19 @@ pub enum ConfigNodes {
 impl ConfigNodes {
     pub fn name(&self) -> &str {
         match self {
-            ConfigNodes::NumberNode(_) => "NumberNode",
+            Self::NumberNode(_) => "NumberNode",
         }
     }
 
-    pub const fn inputs(&self) -> usize {
+    pub fn inputs(&self) -> usize {
         match self {
-            ConfigNodes::NumberNode(_) => NumberNode::inputs(),
+            Self::NumberNode(_) => NumberNodeInfo.inputs(),
         }
     }
 
-    pub const fn outputs(&self) -> usize {
+    pub fn outputs(&self) -> usize {
         match self {
-            ConfigNodes::NumberNode(_) => NumberNode::outputs(),
+            Self::NumberNode(_) => NumberNodeInfo.outputs(),
         }
     }
 }
@@ -29,6 +31,34 @@ impl ConfigNodes {
 pub struct NumberNode {
     pub name: String,
     pub number: EditableOnText<f64>,
+}
+
+pub struct NumberNodeInfo;
+
+impl NodeInfo for NumberNodeInfo {
+    fn name(&self) -> &str {
+        "NumberNode"
+    }
+
+    fn inputs(&self) -> usize {
+        0
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<NodeInfoTypes> {
+        vec![]
+    }
+
+    fn output_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::Number]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::ConfigNodes(ConfigNodes::NumberNode(Default::default()))
+    }
 }
 
 impl Default for NumberNode {
@@ -47,5 +77,9 @@ impl NumberNode {
 
     pub const fn outputs() -> usize {
         1
+    }
+
+    pub fn to_info(&self) -> NumberNodeInfo {
+        NumberNodeInfo
     }
 }

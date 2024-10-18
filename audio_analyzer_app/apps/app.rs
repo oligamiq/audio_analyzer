@@ -5,10 +5,7 @@ use log::{info, trace};
 use serde::de;
 
 use crate::libs::{
-    nodes::{FlowNodes, FlowNodesViewer},
-    separate_window_widget::SeparateWindowWidget,
-    stream::{new_stream, streams::Streamer},
-    utils::log::LogViewerWidget,
+    nodes::editor::{FlowNodes, FlowNodesViewer}, separate_window_widget::SeparateWindowWidget, stream::{new_stream, streams::Streamer}, utils::log::LogViewerWidget
 };
 
 use super::config::Config;

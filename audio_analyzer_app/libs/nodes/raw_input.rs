@@ -7,6 +7,8 @@ use audio_analyzer_core::data::web_stream::WebAudioStream;
 
 use egui_editable_num::EditableOnText;
 
+use super::NodeInfo;
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum RawInputNodes {
     MicrophoneInputNode(MicrophoneInputNode),
@@ -53,6 +55,36 @@ pub enum MicrophoneInputNode {
     Device(Device),
     #[cfg(target_family = "wasm")]
     WebAudioStream(WebAudioStream),
+}
+
+pub struct MicrophoneInputNodeInfo;
+
+impl NodeInfo for MicrophoneInputNodeInfo {
+    fn name(&self) -> &str {
+        "MicrophoneInputNode"
+    }
+
+    fn inputs(&self) -> usize {
+        0
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![]
+    }
+
+    fn output_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![super::NodeInfoTypes::VecF32]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::RawInputNodes(RawInputNodes::MicrophoneInputNode(
+            MicrophoneInputNode::default(),
+        ))
+    }
 }
 
 impl Default for MicrophoneInputNode {
@@ -162,6 +194,10 @@ impl MicrophoneInputNode {
             MicrophoneInputNode::WebAudioStream(node) => node.try_recv(),
         }
     }
+
+    pub fn to_info(&self) -> MicrophoneInputNodeInfo {
+        MicrophoneInputNodeInfo
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -170,6 +206,36 @@ pub struct FileInputNode {
 
     #[serde(skip)]
     data: TestData,
+}
+
+pub struct FileInputNodeInfo;
+
+impl NodeInfo for FileInputNodeInfo {
+    fn name(&self) -> &str {
+        "FileInputNode"
+    }
+
+    fn inputs(&self) -> usize {
+        1
+    }
+
+    fn outputs(&self) -> usize {
+        1
+    }
+
+    fn input_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![]
+    }
+
+    fn output_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![super::NodeInfoTypes::VecF32]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::RawInputNodes(RawInputNodes::FileInputNode(
+            FileInputNode::default(),
+        ))
+    }
 }
 
 impl Default for FileInputNode {
@@ -220,5 +286,9 @@ impl FileInputNode {
 
     pub fn try_recv(&mut self) -> Option<Vec<f32>> {
         self.data.try_recv()
+    }
+
+    pub fn to_info(&self) -> FileInputNodeInfo {
+        FileInputNodeInfo
     }
 }
