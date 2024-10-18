@@ -38,6 +38,13 @@ impl RawInputNodes {
     pub const fn outputs(&self) -> usize {
         1
     }
+
+    pub fn try_recv(&mut self) -> Option<Vec<f32>> {
+        match self {
+            RawInputNodes::MicrophoneInputNode(node) => node.try_recv(),
+            RawInputNodes::FileInputNode(node) => node.try_recv(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -100,6 +107,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
     where
         S: serde::Serializer,
     {
+        #[allow(dead_code)]
         #[derive(serde::Serialize)]
         enum Variant {
             Device,

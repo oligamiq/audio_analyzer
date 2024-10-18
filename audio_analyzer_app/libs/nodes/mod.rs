@@ -6,6 +6,7 @@ use egui_snarl::{
 };
 use layer::{LayerNodes, STFTLayerNode};
 use pin_info::CustomPinInfo;
+use raw_input::RawInputNodes;
 
 pub mod config;
 pub mod layer;
@@ -86,72 +87,79 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         enum InputConfig {
             FftSize(Option<usize>),
             HopSize(Option<usize>),
+            STFTCalc(NodeId),
         }
 
         let mut input_config = None;
 
-        let info = match &snarl[pin.id.node] {
-            FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                LayerNodes::STFTLayer(node) => match pin.id.input {
-                    0 => {
-                        let mut info = CustomPinInfo::setting(8);
+        let info =
+            match &snarl[pin.id.node] {
+                FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
+                    LayerNodes::STFTLayer(node) => match pin.id.input {
+                        0 => {
+                            let mut info = CustomPinInfo::setting(8);
 
-                        input_config = Some(InputConfig::FftSize(None));
+                            input_config = Some(InputConfig::FftSize(None));
 
-                        if let Some(pin) = pin.remotes.get(0) {
-                            let remote = &snarl[pin.node];
-                            if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                                number,
-                                ..
-                            })) = remote
-                            {
-                                ui.label(format!("fft_size: {}", number));
+                            if let Some(pin) = pin.remotes.get(0) {
+                                let remote = &snarl[pin.node];
+                                if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(
+                                    NumberNode { number, .. },
+                                )) = remote
+                                {
+                                    ui.label(format!("fft_size: {}", number));
 
-                                input_config = Some(InputConfig::FftSize(Some(number.get() as usize)));
+                                    input_config =
+                                        Some(InputConfig::FftSize(Some(number.get() as usize)));
 
-                                info = CustomPinInfo::lock();
+                                    info = CustomPinInfo::lock();
+                                }
                             }
+
+                            info
                         }
+                        1 => {
+                            let mut info = CustomPinInfo::setting(8);
 
-                        info
-                    }
-                    1 => {
-                        let mut info = CustomPinInfo::setting(8);
+                            input_config = Some(InputConfig::HopSize(None));
 
-                        input_config = Some(InputConfig::HopSize(None));
+                            if let Some(pin) = pin.remotes.get(0) {
+                                let remote = &snarl[pin.node];
+                                if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(
+                                    NumberNode { number, .. },
+                                )) = remote
+                                {
+                                    ui.label(format!("hop_size: {}", number));
 
-                        if let Some(pin) = pin.remotes.get(0) {
-                            let remote = &snarl[pin.node];
-                            if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                                number,
-                                ..
-                            })) = remote
-                            {
-                                ui.label(format!("hop_size: {}", number));
+                                    input_config =
+                                        Some(InputConfig::HopSize(Some(number.get() as usize)));
 
-                                input_config = Some(InputConfig::HopSize(Some(number.get() as usize)));
-
-                                info = CustomPinInfo::lock();
+                                    info = CustomPinInfo::lock();
+                                }
                             }
-                        }
 
-                        info
-                    }
-                    2 => {
-                        ui.label("raw stream");
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
-                    }
-                    _ => unreachable!(),
+                            info
+                        }
+                        2 => {
+                            ui.label("raw stream");
+
+                            if let Some(pin) = pin.remotes.get(0) {
+                                input_config = Some(InputConfig::STFTCalc(pin.node));
+                            }
+
+                            PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+                        }
+                        _ => unreachable!(),
+                    },
+                    LayerNodes::MelLayer(_) => todo!(),
+                    LayerNodes::SpectrogramDensityLayer(_) => todo!(),
                 },
-                LayerNodes::MelLayer(_) => todo!(),
-                LayerNodes::SpectrogramDensityLayer(_) => todo!(),
-            },
-            FlowNodes::ConfigNodes(_) => unreachable!(),
-            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                raw_input::RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
-                raw_input::RawInputNodes::FileInputNode(_) => todo!(),
-            },
-        };
+                FlowNodes::ConfigNodes(_) => unreachable!(),
+                FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
+                    raw_input::RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
+                    raw_input::RawInputNodes::FileInputNode(_) => todo!(),
+                },
+            };
 
         match input_config {
             Some(InputConfig::FftSize(edit)) => {
@@ -214,6 +222,20 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     } else if response.changed() {
                         if node.hop_size.try_update() {
                             node.update();
+                        }
+                    }
+                }
+            }
+            Some(InputConfig::STFTCalc(id)) => {
+                let remote = &mut snarl[id];
+                if let FlowNodes::RawInputNodes(node) = remote {
+                    if let Some(data) = node.try_recv() {
+                        if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
+                            &mut snarl[pin.id.node]
+                        {
+                            if let Err(err) = node.calc(&data) {
+                                log::error!("STFTLayerNode: {}", err);
+                            }
                         }
                     }
                 }

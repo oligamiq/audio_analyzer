@@ -15,7 +15,7 @@ use super::config::Config;
 
 pub struct App {
     collector: egui_tracing::EventCollector,
-    streamer: Streamer,
+    // streamer: Streamer,
     snarl: Snarl<FlowNodes>,
     style: SnarlStyle,
 }
@@ -36,7 +36,7 @@ impl App {
 
         info!("Initialized app");
 
-        let streamer = new_stream();
+        // let streamer = new_stream();
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
@@ -54,7 +54,7 @@ impl App {
 
             return Self {
                 collector,
-                streamer,
+                // streamer,
                 snarl: sl.snarl,
                 style: sl.style,
             };
@@ -62,7 +62,7 @@ impl App {
 
         Self {
             collector,
-            streamer,
+            // streamer,
             snarl: Snarl::new(),
             style: SnarlStyle::default(),
         }
@@ -83,7 +83,7 @@ impl eframe::App for App {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.streamer.apply();
+        // self.streamer.apply();
 
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
