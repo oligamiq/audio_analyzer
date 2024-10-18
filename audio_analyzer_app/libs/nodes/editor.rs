@@ -24,32 +24,49 @@ impl FlowNodes {
             FlowNodes::RawInputNodes(node) => node.name(),
         }
     }
+
+    pub fn to_as_info(&self) -> Box<dyn NodeInfo> {
+        match self {
+            FlowNodes::LayerNodes(node) => match node {
+                LayerNodes::STFTLayer(node) => Box::new(node.to_info()),
+                LayerNodes::MelLayer(node) => Box::new(node.to_info()),
+                LayerNodes::SpectrogramDensityLayer(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::ConfigNodes(node) => match node {
+                ConfigNodes::NumberNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::RawInputNodes(node) => match node {
+                RawInputNodes::MicrophoneInputNode(node) => Box::new(node.to_info()),
+                RawInputNodes::FileInputNode(node) => Box::new(node.to_info()),
+            },
+        }
+    }
 }
 
 pub struct FlowNodesViewer;
 
 impl SnarlViewer<FlowNodes> for FlowNodesViewer {
-    // #[inline]
-    // fn connect(
-    //     &mut self,
-    //     from: &egui_snarl::OutPin,
-    //     to: &egui_snarl::InPin,
-    //     snarl: &mut Snarl<FlowNodes>,
-    // ) {
-    //     match (&snarl[from.id.node], &snarl[to.id.node]) {
-    //         (FlowNodes::LayerNodes(from), FlowNodes::LayerNodes(to)) => {
-    //             if !from.validate_connections(to) {
-    //                 return;
-    //             }
-    //         }
-    //     }
+    #[inline]
+    fn connect(
+        &mut self,
+        from: &egui_snarl::OutPin,
+        to: &egui_snarl::InPin,
+        snarl: &mut Snarl<FlowNodes>,
+    ) {
+        let in_type = snarl[to.id.node].to_as_info().input_types()[to.id.input];
 
-    //     for &remote in &to.remotes {
-    //         snarl.disconnect(remote, to.id);
-    //     }
+        let out_type = snarl[from.id.node].to_as_info().output_types()[from.id.output];
 
-    //     snarl.connect(from.id, to.id);
-    // }
+        if in_type != out_type {
+            return;
+        }
+
+        for &remote in &to.remotes {
+            snarl.disconnect(remote, to.id);
+        }
+
+        snarl.connect(from.id, to.id);
+    }
 
     fn title(&mut self, node: &FlowNodes) -> String {
         node.name().to_string()
@@ -394,6 +411,8 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         // In your implementation, you may want to define specifications for each node's
         // pin inputs and outputs and compatibility to make this easier.
 
+        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+
         ui.label("Add node");
 
         match src_pins {
@@ -427,7 +446,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                                     let dst_pin = egui_snarl::OutPinId {
                                         node: new_node,
-                                        output: out_type.iter().position(|&x| x == in_type).unwrap(),
+                                        output: out_type
+                                            .iter()
+                                            .position(|&x| x == in_type)
+                                            .unwrap(),
                                     };
 
                                     snarl.connect(dst_pin, pin.clone());

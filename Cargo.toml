@@ -24,9 +24,16 @@ serde_json = "1.0"
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering"}
 
+[profile.dev]
+# codegen-backend = "cranelift"
+opt-level = 1
+incremental = true
+
 [profile.release]
-opt-level = 2 # fast and small wasm
+opt-level = 3 # fast and small wasm
 
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
-opt-level = 2
+# codegen-backend = "llvm"
+incremental = false
+opt-level = 3
