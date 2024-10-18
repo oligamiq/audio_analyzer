@@ -2,70 +2,45 @@ use egui_editable_num::EditableOnText;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {
-    FftSizeNode(FftSizeNode),
-    HopSizeNode(HopSizeNode),
+    NumberNode(NumberNode),
 }
 
 impl ConfigNodes {
     pub fn name(&self) -> &str {
         match self {
-            ConfigNodes::FftSizeNode(_) => "FftSize",
-            ConfigNodes::HopSizeNode(_) => "HopSize",
+            ConfigNodes::NumberNode(_) => "NumberNode",
         }
     }
 
     pub const fn inputs(&self) -> usize {
         match self {
-            ConfigNodes::FftSizeNode(_) => FftSizeNode::inputs(),
-            ConfigNodes::HopSizeNode(_) => HopSizeNode::inputs(),
+            ConfigNodes::NumberNode(_) => NumberNode::inputs(),
         }
     }
 
     pub const fn outputs(&self) -> usize {
         match self {
-            ConfigNodes::FftSizeNode(_) => FftSizeNode::outputs(),
-            ConfigNodes::HopSizeNode(_) => HopSizeNode::outputs(),
+            ConfigNodes::NumberNode(_) => NumberNode::outputs(),
         }
     }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct FftSizeNode {
-    pub fft_size: EditableOnText<usize>,
+pub struct NumberNode {
+    pub name: String,
+    pub number: EditableOnText<f64>,
 }
 
-impl Default for FftSizeNode {
+impl Default for NumberNode {
     fn default() -> Self {
         Self {
-            fft_size: EditableOnText::new(1024),
+            name: "NumberNode".to_string(),
+            number: EditableOnText::new(1024.),
         }
     }
 }
 
-impl FftSizeNode {
-    pub const fn inputs() -> usize {
-        0
-    }
-
-    pub const fn outputs() -> usize {
-        1
-    }
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct HopSizeNode {
-    pub hop_size: EditableOnText<usize>,
-}
-
-impl Default for HopSizeNode {
-    fn default() -> Self {
-        Self {
-            hop_size: EditableOnText::new(512),
-        }
-    }
-}
-
-impl HopSizeNode {
+impl NumberNode {
     pub const fn inputs() -> usize {
         0
     }
