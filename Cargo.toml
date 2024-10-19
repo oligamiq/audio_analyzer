@@ -31,6 +31,7 @@ incremental = true
 
 [profile.release]
 opt-level = 3 # fast and small wasm
+lto = "fat" # "thin" is faster to compile, but produces larger binaries
 
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]

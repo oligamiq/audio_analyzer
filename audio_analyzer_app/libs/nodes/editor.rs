@@ -1,8 +1,11 @@
+use crate::libs::nodes::NodeInfoTypesWithData;
+
 use super::config::{ConfigNodes, NumberNode};
 use super::layer::{LayerNodes, STFTLayerNode};
 use super::pin_info::CustomPinInfo;
 use super::raw_input::{FileInputNode, MicrophoneInputNode, RawInputNodes};
-use super::NodeInfo;
+use super::viewer::DataPlotterNode;
+use super::{NodeInfo, SerdeClone};
 use egui::Ui;
 use egui_snarl::{
     ui::{AnyPins, PinInfo, SnarlViewer},
@@ -13,18 +16,11 @@ use egui_snarl::{
 pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(ConfigNodes),
+    DataPlotterNode(DataPlotterNode),
     RawInputNodes(RawInputNodes),
 }
 
 impl FlowNodes {
-    fn name(&self) -> &str {
-        match self {
-            FlowNodes::LayerNodes(node) => node.name(),
-            FlowNodes::ConfigNodes(node) => node.name(),
-            FlowNodes::RawInputNodes(node) => node.name(),
-        }
-    }
-
     pub fn to_as_info(&self) -> Box<dyn NodeInfo> {
         match self {
             FlowNodes::LayerNodes(node) => match node {
@@ -39,6 +35,7 @@ impl FlowNodes {
                 RawInputNodes::MicrophoneInputNode(node) => Box::new(node.to_info()),
                 RawInputNodes::FileInputNode(node) => Box::new(node.to_info()),
             },
+            FlowNodes::DataPlotterNode(node) => Box::new(node.to_info()),
         }
     }
 }
@@ -69,23 +66,15 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
     }
 
     fn title(&mut self, node: &FlowNodes) -> String {
-        node.name().to_string()
+        node.to_as_info().name().to_string()
     }
 
     fn inputs(&mut self, node: &FlowNodes) -> usize {
-        match node {
-            FlowNodes::LayerNodes(node) => node.inputs(),
-            FlowNodes::ConfigNodes(node) => node.inputs(),
-            FlowNodes::RawInputNodes(raw_input_nodes) => raw_input_nodes.inputs(),
-        }
+        node.to_as_info().inputs()
     }
 
     fn outputs(&mut self, node: &FlowNodes) -> usize {
-        match node {
-            FlowNodes::LayerNodes(node) => node.outputs(),
-            FlowNodes::ConfigNodes(node) => node.outputs(),
-            FlowNodes::RawInputNodes(node) => node.outputs(),
-        }
+        node.to_as_info().outputs()
     }
 
     // inputを表示する
@@ -96,10 +85,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         scale: f32,
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
     ) -> egui_snarl::ui::PinInfo {
-        enum InputConfig {
+        enum MutBridge {
             FftSize(Option<usize>),
             HopSize(Option<usize>),
             STFTCalc(NodeId),
+            DataPreview(Option<NodeInfoTypesWithData>),
         }
 
         let mut input_config = None;
@@ -107,11 +97,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         let info =
             match &snarl[pin.id.node] {
                 FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                    LayerNodes::STFTLayer(node) => match pin.id.input {
+                    LayerNodes::STFTLayer(_) => match pin.id.input {
                         0 => {
                             let mut info = CustomPinInfo::setting(8);
 
-                            input_config = Some(InputConfig::FftSize(None));
+                            input_config = Some(MutBridge::FftSize(None));
 
                             if let Some(pin) = pin.remotes.get(0) {
                                 let remote = &snarl[pin.node];
@@ -122,7 +112,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                                     ui.label(format!("fft_size: {}", number));
 
                                     input_config =
-                                        Some(InputConfig::FftSize(Some(number.get() as usize)));
+                                        Some(MutBridge::FftSize(Some(number.get() as usize)));
 
                                     info = CustomPinInfo::lock();
                                 }
@@ -133,7 +123,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         1 => {
                             let mut info = CustomPinInfo::setting(8);
 
-                            input_config = Some(InputConfig::HopSize(None));
+                            input_config = Some(MutBridge::HopSize(None));
 
                             if let Some(pin) = pin.remotes.get(0) {
                                 let remote = &snarl[pin.node];
@@ -144,7 +134,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                                     ui.label(format!("hop_size: {}", number));
 
                                     input_config =
-                                        Some(InputConfig::HopSize(Some(number.get() as usize)));
+                                        Some(MutBridge::HopSize(Some(number.get() as usize)));
 
                                     info = CustomPinInfo::lock();
                                 }
@@ -156,7 +146,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                             ui.label("raw stream");
 
                             if let Some(pin) = pin.remotes.get(0) {
-                                input_config = Some(InputConfig::STFTCalc(pin.node));
+                                input_config = Some(MutBridge::STFTCalc(pin.node));
                             }
 
                             PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
@@ -171,10 +161,21 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
                     RawInputNodes::FileInputNode(_) => todo!(),
                 },
+                FlowNodes::DataPlotterNode(node) => {
+                    if let Some(pin) = pin.remotes.get(0) {
+                        let remote = &snarl[pin.node];
+
+                        input_config = Some(MutBridge::DataPreview(
+                            remote.to_node_info_types_with_data(),
+                        ));
+                    }
+
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
+                }
             };
 
         match input_config {
-            Some(InputConfig::FftSize(edit)) => {
+            Some(MutBridge::FftSize(edit)) => {
                 let node = &mut snarl[pin.id.node];
 
                 let node = if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) = node {
@@ -206,7 +207,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     }
                 }
             }
-            Some(InputConfig::HopSize(edit)) => {
+            Some(MutBridge::HopSize(edit)) => {
                 let node = &mut snarl[pin.id.node];
 
                 let node = if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) = node {
@@ -238,10 +239,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     }
                 }
             }
-            Some(InputConfig::STFTCalc(id)) => {
+            Some(MutBridge::STFTCalc(id)) => {
                 let remote = &mut snarl[id];
                 if let FlowNodes::RawInputNodes(node) = remote {
-                    if let Some(data) = node.try_recv() {
+                    if let Some(data) = node.get() {
                         if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
                             &mut snarl[pin.id.node]
                         {
@@ -250,6 +251,17 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                             }
                         }
                     }
+                }
+            }
+            Some(MutBridge::DataPreview(data)) => {
+                let remote = &mut snarl[pin.id.node];
+                if let FlowNodes::DataPlotterNode(node) = remote {
+                    if let Some(data) = data {
+                        node.set_hold_data(data);
+                        node.show(ui, true);
+                    } else {
+                        node.show(ui, false);
+                    };
                 }
             }
             None => {}
@@ -299,11 +311,14 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             },
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
                 RawInputNodes::MicrophoneInputNode(node) => {
+                    node.update();
+
                     ui.label("raw stream");
                     PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
                 }
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
+            FlowNodes::DataPlotterNode(_) => unreachable!(),
         }
     }
 
@@ -358,6 +373,13 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 ui.close_menu();
             }
         });
+
+        ui.menu_button("viewer", |ui| {
+            if ui.button("DataPlotterNode").clicked() {
+                snarl.insert_node(pos, FlowNodes::DataPlotterNode(DataPlotterNode::default()));
+                ui.close_menu();
+            }
+        });
     }
 
     fn has_node_menu(&mut self, _node: &FlowNodes) -> bool {
@@ -379,8 +401,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             ui.close_menu();
         }
         if ui.button("Duplicate").clicked() {
-            let duplicate_node: FlowNodes =
-                serde_json::from_str(&serde_json::to_string(&snarl[node]).unwrap()).unwrap();
+            let duplicate_node: FlowNodes = snarl[node].serde_clone();
 
             let mut now_pos = snarl.get_node_info(node).unwrap().pos;
 
@@ -433,7 +454,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         for node in all {
                             let out_type = node.output_types();
 
-                            if out_type.contains(&in_type) {
+                            if in_type.contains_in(&out_type) {
                                 if ui.button(node.name()).clicked() {
                                     let mut pos = pos;
                                     pos.x -= 100.0;
@@ -446,10 +467,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                                     let dst_pin = egui_snarl::OutPinId {
                                         node: new_node,
-                                        output: out_type
-                                            .iter()
-                                            .position(|&x| x == in_type)
-                                            .unwrap(),
+                                        output: in_type.positions_in(&out_type)[0],
                                     };
 
                                     snarl.connect(dst_pin, pin.clone());
@@ -460,32 +478,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         }
                     };
 
-                match &snarl[pin.node] {
-                    FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                        LayerNodes::STFTLayer(node) => {
-                            view_connect_in_node(&node.to_info(), snarl);
-                        }
-                        LayerNodes::MelLayer(mel_layer_node) => {
-                            view_connect_in_node(&mel_layer_node.to_info(), snarl);
-                        }
-                        LayerNodes::SpectrogramDensityLayer(spectrogram_density_layer_node) => {
-                            view_connect_in_node(&spectrogram_density_layer_node.to_info(), snarl);
-                        }
-                    },
-                    FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
-                        ConfigNodes::NumberNode(number_node) => {
-                            view_connect_in_node(&number_node.to_info(), snarl);
-                        }
-                    },
-                    FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                        RawInputNodes::MicrophoneInputNode(microphone_input_node) => {
-                            view_connect_in_node(&microphone_input_node.to_info(), snarl);
-                        }
-                        RawInputNodes::FileInputNode(file_input_node) => {
-                            view_connect_in_node(&file_input_node.to_info(), snarl);
-                        }
-                    },
-                }
+                let node = &snarl[pin.node];
+                let as_info = node.to_as_info();
+
+                view_connect_in_node(as_info.as_ref(), snarl);
             }
             AnyPins::Out(pin) => {
                 assert!(pin.len() == 1);
@@ -503,7 +499,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         for node in all {
                             let in_type = node.input_types();
 
-                            if in_type.contains(&out_type) {
+                            if out_type.contains_out(&in_type) {
                                 if ui.button(node.name()).clicked() {
                                     let mut pos = pos;
                                     pos.x += 100.0;
@@ -516,7 +512,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                                     let src_pin = egui_snarl::InPinId {
                                         node: new_node,
-                                        input: in_type.iter().position(|&x| x == out_type).unwrap(),
+                                        input: out_type.positions_out(&in_type)[0],
                                     };
 
                                     snarl.connect(pin.clone(), src_pin);
@@ -527,32 +523,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         }
                     };
 
-                match &snarl[pin.node] {
-                    FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                        LayerNodes::STFTLayer(node) => {
-                            view_connect_out_node(&node.to_info(), snarl);
-                        }
-                        LayerNodes::MelLayer(mel_layer_node) => {
-                            view_connect_out_node(&mel_layer_node.to_info(), snarl);
-                        }
-                        LayerNodes::SpectrogramDensityLayer(spectrogram_density_layer_node) => {
-                            view_connect_out_node(&spectrogram_density_layer_node.to_info(), snarl);
-                        }
-                    },
-                    FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
-                        ConfigNodes::NumberNode(number_node) => {
-                            view_connect_out_node(&number_node.to_info(), snarl);
-                        }
-                    },
-                    FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                        RawInputNodes::MicrophoneInputNode(microphone_input_node) => {
-                            view_connect_out_node(&microphone_input_node.to_info(), snarl);
-                        }
-                        RawInputNodes::FileInputNode(file_input_node) => {
-                            view_connect_out_node(&file_input_node.to_info(), snarl);
-                        }
-                    },
-                }
+                let node = &snarl[pin.node];
+                let as_info = node.to_as_info();
+
+                view_connect_out_node(as_info.as_ref(), snarl);
             }
         }
     }

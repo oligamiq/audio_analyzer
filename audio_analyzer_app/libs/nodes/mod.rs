@@ -1,5 +1,8 @@
 use config::NumberNodeInfo;
 use layer::{MelLayerNodeInfo, STFTLayerNodeInfo, SpectrogramDensityLayerNodeInfo};
+use ndarray::{Array1, Array2};
+use raw_input::{FileInputNodeInfo, MicrophoneInputNodeInfo};
+use viewer::DataPlotterNodeInfo;
 
 pub mod config;
 pub mod editor;
@@ -25,6 +28,54 @@ pub enum NodeInfoTypes {
     Array1TupleF64F64,
     Array2F64,
     Array1ComplexF64,
+    AnyInput,
+}
+
+impl NodeInfoTypes {
+    pub fn contains_out(&self, other: &[NodeInfoTypes]) -> bool {
+        other
+            .iter()
+            .any(|x| x == self || x == &NodeInfoTypes::AnyInput)
+    }
+
+    pub fn positions_out(&self, other: &[NodeInfoTypes]) -> Vec<usize> {
+        other
+            .iter()
+            .enumerate()
+            .filter_map(|(i, x)| {
+                if x == self || x == &NodeInfoTypes::AnyInput {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn contains_in(&self, other: &[NodeInfoTypes]) -> bool {
+        other.iter().any(|x| x == self) || (self == &NodeInfoTypes::AnyInput && !other.is_empty())
+    }
+
+    pub fn positions_in(&self, other: &[NodeInfoTypes]) -> Vec<usize> {
+        if self == &NodeInfoTypes::AnyInput {
+            other.iter().enumerate().map(|(i, _)| i).collect()
+        } else {
+            other
+                .iter()
+                .enumerate()
+                .filter_map(|(i, x)| if x == self { Some(i) } else { None })
+                .collect()
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub enum NodeInfoTypesWithData {
+    Number(f64),
+    VecF32(Vec<f32>),
+    Array1TupleF64F64(Array1<(f64, f64)>),
+    Array2F64(Array2<f64>),
+    Array1ComplexF64(Array1<num_complex::Complex<f64>>),
 }
 
 pub struct NodeInfos;
@@ -36,8 +87,9 @@ impl NodeInfos {
             Box::new(STFTLayerNodeInfo),
             Box::new(MelLayerNodeInfo),
             Box::new(SpectrogramDensityLayerNodeInfo),
-            Box::new(raw_input::MicrophoneInputNodeInfo),
-            Box::new(raw_input::FileInputNodeInfo),
+            Box::new(MicrophoneInputNodeInfo),
+            Box::new(FileInputNodeInfo),
+            Box::new(DataPlotterNodeInfo),
         ]
     }
 }

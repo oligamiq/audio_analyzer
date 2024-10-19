@@ -41,10 +41,22 @@ impl RawInputNodes {
         1
     }
 
-    pub fn try_recv(&mut self) -> Option<Vec<f32>> {
+    pub fn update(&mut self) {
         match self {
-            RawInputNodes::MicrophoneInputNode(node) => node.try_recv(),
-            RawInputNodes::FileInputNode(node) => node.try_recv(),
+            RawInputNodes::MicrophoneInputNode(node) => node.update(),
+            RawInputNodes::FileInputNode(node) => node.update(),
+        }
+    }
+
+    pub fn get(&self) -> Option<Vec<f32>> {
+        match self {
+            RawInputNodes::MicrophoneInputNode(node) => match node {
+                #[cfg(not(target_family = "wasm"))]
+                MicrophoneInputNode::Device(_, vec) => vec.clone(),
+                #[cfg(target_family = "wasm")]
+                MicrophoneInputNode::WebAudioStream(_, vec) => vec.clone(),
+            },
+            RawInputNodes::FileInputNode(node) => node.vec.clone(),
         }
     }
 }
@@ -52,9 +64,9 @@ impl RawInputNodes {
 #[derive(Debug)]
 pub enum MicrophoneInputNode {
     #[cfg(not(target_family = "wasm"))]
-    Device(Device),
+    Device(Device, Option<Vec<f32>>),
     #[cfg(target_family = "wasm")]
-    WebAudioStream(WebAudioStream),
+    WebAudioStream(WebAudioStream, Option<Vec<f32>>),
 }
 
 pub struct MicrophoneInputNodeInfo;
@@ -91,11 +103,11 @@ impl Default for MicrophoneInputNode {
     fn default() -> Self {
         #[cfg(not(target_family = "wasm"))]
         {
-            MicrophoneInputNode::Device(Device::new())
+            MicrophoneInputNode::Device(Device::new(), None)
         }
         #[cfg(target_family = "wasm")]
         {
-            MicrophoneInputNode::WebAudioStream(WebAudioStream::new())
+            MicrophoneInputNode::WebAudioStream(WebAudioStream::new(), None)
         }
     }
 }
@@ -117,9 +129,10 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
             #[cfg(not(target_family = "wasm"))]
             Variant::Device => Ok(MicrophoneInputNode::Device(Device::new())),
             #[cfg(target_family = "wasm")]
-            Variant::WebAudioStream => {
-                Ok(MicrophoneInputNode::WebAudioStream(WebAudioStream::new()))
-            }
+            Variant::WebAudioStream => Ok(MicrophoneInputNode::WebAudioStream(
+                WebAudioStream::new(),
+                None,
+            )),
             _ => {
                 #[cfg(not(target_family = "wasm"))]
                 {
@@ -127,7 +140,10 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
                 }
                 #[cfg(target_family = "wasm")]
                 {
-                    Ok(MicrophoneInputNode::WebAudioStream(WebAudioStream::new()))
+                    Ok(MicrophoneInputNode::WebAudioStream(
+                        WebAudioStream::new(),
+                        None,
+                    ))
                 }
             }
         }
@@ -150,7 +166,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
             #[cfg(not(target_family = "wasm"))]
             MicrophoneInputNode::Device(_) => Variant::Device,
             #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(_) => Variant::WebAudioStream,
+            MicrophoneInputNode::WebAudioStream(_, _) => Variant::WebAudioStream,
         };
 
         variant.serialize(serializer)
@@ -161,20 +177,20 @@ impl MicrophoneInputNode {
     pub fn get_sample_rate(&mut self) -> u32 {
         match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node) => {
+            MicrophoneInputNode::Device(node, _) => {
                 node.get_sample_rate().expect("please start stream")
             }
             #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node) => node.sample_rate(),
+            MicrophoneInputNode::WebAudioStream(node, _) => node.sample_rate(),
         }
     }
 
     pub fn start(&mut self) {
         match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node) => node.start(),
+            MicrophoneInputNode::Device(node, _) => node.start(),
             #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node) => node.start(),
+            MicrophoneInputNode::WebAudioStream(node, _) => node.start(),
         }
     }
 
@@ -186,12 +202,12 @@ impl MicrophoneInputNode {
         1
     }
 
-    pub fn try_recv(&mut self) -> Option<Vec<f32>> {
+    pub fn update(&mut self) {
         match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node) => node.try_recv(),
+            MicrophoneInputNode::Device(node, vec) => *vec = node.try_recv(),
             #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node) => node.try_recv(),
+            MicrophoneInputNode::WebAudioStream(node, vec) => *vec = node.try_recv(),
         }
     }
 
@@ -203,6 +219,8 @@ impl MicrophoneInputNode {
 #[derive(Debug, serde::Serialize)]
 pub struct FileInputNode {
     pub file_path: EditableOnText<String>,
+
+    vec: Option<Vec<f32>>,
 
     #[serde(skip)]
     data: TestData,
@@ -265,6 +283,7 @@ impl FileInputNode {
         Self {
             file_path: EditableOnText::new(file_path.clone()),
             data: TestData::new_with_path(file_path),
+            vec: None,
         }
     }
 
@@ -284,8 +303,8 @@ impl FileInputNode {
         1
     }
 
-    pub fn try_recv(&mut self) -> Option<Vec<f32>> {
-        self.data.try_recv()
+    pub fn update(&mut self) {
+        self.vec = self.data.try_recv();
     }
 
     pub fn to_info(&self) -> FileInputNodeInfo {
