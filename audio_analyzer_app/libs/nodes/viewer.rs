@@ -245,26 +245,28 @@ impl DataPlotterNode {
             const SCROLL_SCALE: f32 = 0.001;
 
             // First, get mouse data
-            let (pitch_delta, yaw_delta, scale_delta) = ui.input(|input| {
-                let pointer = &input.pointer;
-                let delta = pointer.delta();
+            if ui.rect_contains_pointer(ui.max_rect()) {
+                let (pitch_delta, yaw_delta, scale_delta) = ui.input(|input| {
+                    let pointer = &input.pointer;
+                    let delta = pointer.delta();
 
-                let (pitch_delta, yaw_delta) = match pointer.primary_down() {
-                    true => (delta.y * MOVE_SCALE, -delta.x * MOVE_SCALE),
-                    false => (sl.chart_pitch_vel, sl.chart_yaw_vel),
-                };
+                    let (pitch_delta, yaw_delta) = match pointer.primary_down() {
+                        true => (delta.y * MOVE_SCALE, -delta.x * MOVE_SCALE),
+                        false => (sl.chart_pitch_vel, sl.chart_yaw_vel),
+                    };
 
-                let scale_delta = input.raw_scroll_delta.y * SCROLL_SCALE;
+                    let scale_delta = input.raw_scroll_delta.y * SCROLL_SCALE;
 
-                (pitch_delta, yaw_delta, scale_delta)
-            });
+                    (pitch_delta, yaw_delta, scale_delta)
+                });
 
-            sl.chart_pitch_vel = pitch_delta;
-            sl.chart_yaw_vel = yaw_delta;
+                sl.chart_pitch_vel = pitch_delta;
+                sl.chart_yaw_vel = yaw_delta;
 
-            sl.chart_pitch += sl.chart_pitch_vel;
-            sl.chart_yaw += sl.chart_yaw_vel;
-            sl.chart_scale += scale_delta;
+                sl.chart_pitch += sl.chart_pitch_vel;
+                sl.chart_yaw += sl.chart_yaw_vel;
+                sl.chart_scale += scale_delta;
+            }
 
             let root = EguiBackend::new(&ui).into_drawing_area();
 
