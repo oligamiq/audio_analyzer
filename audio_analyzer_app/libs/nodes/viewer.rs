@@ -69,46 +69,15 @@ impl DataPlotterNode {
     }
 
     pub fn show(&mut self, ui: &mut egui::Ui, is_new: bool, scale: f32) {
-        if let Some(hold_data) = &self.hold_data {
+        let hold_data = self.hold_data.clone();
+
+        if let Some(hold_data) = hold_data {
             match hold_data {
                 NodeInfoTypesWithData::Number(number) => {
                     ui.label(format!("Number: {}", number));
                 }
                 NodeInfoTypesWithData::VecF32(vec_f32) => {
-                    ui.scope_builder(
-                        UiBuilder::new().max_rect({
-                            let mut rect = ui.available_rect_before_wrap();
-                            rect.max.x = rect.min.x + 100.0 * scale;
-                            rect.max.y = rect.min.y + 100.0 * scale;
-                            rect
-                        }),
-                        |ui| {
-                            ui.columns(1, |ui| {
-                                let mut ui = &mut ui[0];
-
-                                ui.label(self.name.clone());
-
-                                Separator::default().horizontal().ui(ui);
-
-                                ui.label("size: ");
-
-                                if egui::TextEdit::singleline(&mut self.size)
-                                    .clip_text(false)
-                                    .show(ui)
-                                    .response
-                                    .lost_focus()
-                                {
-                                    self.size.fmt();
-                                }
-
-                                ui.separator();
-                            });
-
-                            ui.separator();
-                        },
-                    );
-
-                    self.show_vec_f32(ui, vec_f32, scale * self.size.get() as f32 / 100.0);
+                    self.show_vec_f32(ui, vec_f32, scale);
                 }
                 NodeInfoTypesWithData::Array1TupleF64F64(array1_tuple_f64_f64) => {
                     ui.label(format!("Array1TupleF64F64: {:?}", array1_tuple_f64_f64));
@@ -123,7 +92,87 @@ impl DataPlotterNode {
         }
     }
 
-    pub fn show_vec_f32(&self, ui: &mut egui::Ui, vec_f32: &Vec<f32>, scale: f32) {
+    pub fn show_vec_f32(&mut self, ui: &mut egui::Ui, vec_f32: Vec<f32>, scale: f32) {
+        self.plot(ui, scale, |ui, scale| {
+            let root = EguiBackend::new(&ui).into_drawing_area();
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption("vec<f32> stream", ("sans-serif", 5. * scale).into_font())
+                .margin(10. * scale)
+                .x_label_area_size((3. * scale) as i32)
+                .y_label_area_size((3. * scale) as i32)
+                .build_cartesian_2d(0f32..1f32, -0.1f32..1f32)
+                .unwrap();
+
+            chart
+                .configure_mesh()
+                .label_style(("sans-serif", 5. * scale).into_font())
+                .draw()
+                .unwrap();
+
+            chart
+                .draw_series(LineSeries::new(
+                    vec_f32
+                        .iter()
+                        .enumerate()
+                        .map(|(x, y)| (x as f32 / vec_f32.len() as f32, *y)),
+                    &RED,
+                ))
+                .unwrap()
+                .label("vec<f32> stream")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &RED)
+                });
+
+            chart
+                .configure_series_labels()
+                .legend_area_size((2. * scale) as i32)
+                .label_font(("sans-serif", 5. * scale))
+                .background_style(&WHITE.mix(0.8))
+                .border_style(&BLACK)
+                .draw()
+                .unwrap();
+
+            root.present().unwrap();
+        });
+    }
+
+    pub fn plot<F: FnMut(&mut egui::Ui, f32)>(&mut self, ui: &mut egui::Ui, scale: f32, mut f: F) {
+        ui.scope_builder(
+            UiBuilder::new().max_rect({
+                let mut rect = ui.available_rect_before_wrap();
+                rect.max.x = rect.min.x + 100.0 * scale;
+                rect.max.y = rect.min.y + 100.0 * scale;
+                rect
+            }),
+            |ui| {
+                ui.columns(1, |ui| {
+                    let ui = &mut ui[0];
+
+                    ui.label(self.name.clone());
+
+                    Separator::default().horizontal().ui(ui);
+
+                    ui.label("size: ");
+
+                    if egui::TextEdit::singleline(&mut self.size)
+                        .clip_text(false)
+                        .show(ui)
+                        .response
+                        .lost_focus()
+                    {
+                        self.size.fmt();
+                    }
+
+                    ui.separator();
+                });
+
+                ui.separator();
+            },
+        );
+
+        let scale = scale * self.size.get() as f32 / 100.0;
+
         ui.set_min_size(Vec2::new(100.0 * scale, 100.0 * scale));
 
         ui.scope_builder(
@@ -134,45 +183,7 @@ impl DataPlotterNode {
                 rect
             }),
             |new_ui| {
-                let root = EguiBackend::new(&new_ui).into_drawing_area();
-
-                // root.fill(&WHITE).unwrap();
-
-                let mut chart = ChartBuilder::on(&root)
-                    .caption("y=x^2", ("sans-serif", 5. * scale).into_font())
-                    .margin(10. * scale)
-                    .x_label_area_size((3. * scale) as i32)
-                    .y_label_area_size((3. * scale) as i32)
-                    .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
-                    .unwrap();
-
-                chart
-                    .configure_mesh()
-                    .label_style(("sans-serif", 5. * scale).into_font())
-                    .draw()
-                    .unwrap();
-
-                chart
-                    .draw_series(LineSeries::new(
-                        (-50..=50).map(|x| x as f32 / 50.0).map(|x| (x, x * x)),
-                        &RED,
-                    ))
-                    .unwrap()
-                    .label("y = x^2")
-                    .legend(|(x, y)| {
-                        PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &RED)
-                    });
-
-                chart
-                    .configure_series_labels()
-                    .legend_area_size((2. * scale) as i32)
-                    .label_font(("sans-serif", 5. * scale))
-                    .background_style(&WHITE.mix(0.8))
-                    .border_style(&BLACK)
-                    .draw()
-                    .unwrap();
-
-                root.present().unwrap();
+                f(new_ui, scale);
             },
         );
     }
