@@ -5,7 +5,7 @@ pub struct CustomPinInfo;
 
 impl CustomPinInfo {
     pub fn lock() -> PinInfo {
-        PinInfo::custom(|painter, rect, color32, stroke| {
+        PinInfo::custom(move |painter, rect, color32, stroke| {
             // paint lock
             // painter.rect(rect, 0.0, color32, stroke);
 

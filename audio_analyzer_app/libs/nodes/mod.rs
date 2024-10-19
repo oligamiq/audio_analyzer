@@ -69,7 +69,7 @@ impl NodeInfoTypes {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum NodeInfoTypesWithData {
     Number(f64),
     VecF32(Vec<f32>),

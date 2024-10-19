@@ -60,10 +60,15 @@ impl<T: ToString + FromStr> EditableOnText<T> {
     pub fn fmt(&mut self) {
         self.str = self.obj.to_string();
     }
+}
 
-    pub fn set(&mut self, obj: T) {
+impl<T: ToString + FromStr + Eq> EditableOnText<T> {
+    /// 違うならtrueを返す
+    pub fn set(&mut self, obj: T) -> bool {
+        let ret = self.obj != obj;
         self.obj = obj;
         self.fmt();
+        ret
     }
 }
 
