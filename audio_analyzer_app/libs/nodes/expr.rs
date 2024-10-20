@@ -443,3 +443,33 @@ impl ExprNodes {
         PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
     }
 }
+
+impl FlowNodesViewerTrait for ExprNodes {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        _: &mut egui::Ui,
+        _: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        assert!(pin.id.input == 0);
+
+        let pin_id = pin.id;
+
+        let data = pin
+            .remotes
+            .get(0)
+            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data())
+            .flatten();
+
+        return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+            if let FlowNodes::ExprNode(node) = &mut snarl[pin_id.node] {
+                config_ui!(node, ui, expr);
+
+                return node.show_and_calc(ui, data.clone());
+            }
+
+            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+        });
+    }
+}

@@ -1,5 +1,5 @@
+use crate::prelude::{egui::*, nodes::*};
 use egui_plotter::EguiBackend;
-use crate::prelude::{nodes::*, egui::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataPlotterNode {
@@ -365,5 +365,44 @@ impl DataPlotterNode {
                 f(new_ui, scale, self);
             },
         );
+    }
+}
+
+impl FlowNodesViewerTrait for DataPlotterNode {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        _: &mut egui::Ui,
+        scale: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        if let Some(out_pin) = pin.remotes.get(0) {
+            let remote = &snarl[out_pin.node];
+
+            let data = remote.to_node_info_types_with_data();
+
+            return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                extract_node!(
+                    &mut snarl[pin_id.node],
+                    FlowNodes::DataPlotterNode(node) => {
+                        if let Some(data) = &data {
+                            node.set_hold_data(data.clone());
+                            node.show(ui, true, scale);
+
+                            return PinInfo::circle()
+                                .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                        } else {
+                            node.show(ui, false, scale);
+                        }
+                    }
+                );
+
+                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
+            });
+        }
+
+        return Box::new(|_, _| PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255)));
     }
 }

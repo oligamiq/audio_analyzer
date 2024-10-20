@@ -30,6 +30,7 @@ impl FlowNodes {
     }
 }
 
+/// config_ui!(node, ui, expr);
 macro_rules! config_ui {
     (@fmt, $node:ident, $ui:ident, $config:ident) => {
         $ui.label(stringify!($config));

@@ -80,4 +80,6 @@ impl NumberNode {
     pub fn to_info(&self) -> NumberNodeInfo {
         NumberNodeInfo
     }
+
+    pub fn update(&self) {}
 }

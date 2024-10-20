@@ -40,7 +40,7 @@ pub trait FlowNodesViewerTrait {
         _scale: f32,
         _snarl: &egui_snarl::Snarl<FlowNodes>,
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
-        unreachable!()
+        todo!()
     }
 }
 
@@ -52,8 +52,6 @@ impl FlowNodesViewer {
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
-        let pin_id = pin.id;
-
         match &snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(node) => node.show_input(pin, ui, scale, snarl),
@@ -65,55 +63,8 @@ impl FlowNodesViewer {
                 RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
-            FlowNodes::DataPlotterNode(_) => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    let remote = &snarl[out_pin.node];
-
-                    let data = remote.to_node_info_types_with_data();
-
-                    return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                        extract_node!(
-                            &mut snarl[pin_id.node],
-                            FlowNodes::DataPlotterNode(node) => {
-                                if let Some(data) = &data {
-                                    node.set_hold_data(data.clone());
-                                    node.show(ui, true, scale);
-
-                                    return PinInfo::circle()
-                                        .with_fill(egui::Color32::from_rgb(0, 255, 0));
-                                } else {
-                                    node.show(ui, false, scale);
-                                }
-                            }
-                        );
-
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
-                    });
-                }
-
-                return Box::new(|_, _| {
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
-                });
-            }
-            FlowNodes::ExprNode(_) => {
-                assert!(pin.id.input == 0);
-
-                let data = pin
-                    .remotes
-                    .get(0)
-                    .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data())
-                    .flatten();
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    if let FlowNodes::ExprNode(node) = &mut snarl[pin_id.node] {
-                        config_ui!(node, ui, expr);
-
-                        return node.show_and_calc(ui, data.clone());
-                    }
-
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
-                });
-            }
+            FlowNodes::DataPlotterNode(node) => node.show_input(pin, ui, scale, snarl),
+            FlowNodes::ExprNode(node) => node.show_input(pin, ui, scale, snarl),
         }
     }
 }
@@ -183,22 +134,16 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
                 ConfigNodes::NumberNode(node) => {
                     ui.end_row();
-                    if egui::TextEdit::singleline(&mut node.number)
-                        .clip_text(false)
-                        .desired_width(0.0)
-                        .margin(ui.spacing().item_spacing)
-                        .show(ui)
-                        .response
-                        .lost_focus()
-                    {
-                        node.number.fmt();
-                    }
 
-                    egui::TextEdit::singleline(&mut node.name)
-                        .clip_text(false)
-                        .desired_width(0.0)
-                        .margin(ui.spacing().item_spacing)
-                        .show(ui);
+                    config_ui!(@fmt, node, ui, number);
+
+                    config_ui!(node, ui, name);
+
+                    // egui::TextEdit::singleline(&mut node.name)
+                    //     .clip_text(false)
+                    //     .desired_width(0.0)
+                    //     .margin(ui.spacing().item_spacing)
+                    //     .show(ui);
 
                     CustomPinInfo::setting(8)
                 }
@@ -230,55 +175,39 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
     ) {
         ui.label("Add node");
         if ui.button("STFTLayer").clicked() {
-            snarl.insert_node(
-                pos,
-                FlowNodes::LayerNodes(LayerNodes::STFTLayer(STFTLayerNode::default())),
-            );
+            snarl.insert_node(pos, STFTLayerNodeInfo.flow_node());
             ui.close_menu();
         }
 
         ui.menu_button("config", |ui| {
             if ui.button("number_node").clicked() {
-                snarl.insert_node(
-                    pos,
-                    FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode::default())),
-                );
+                snarl.insert_node(pos, NumberNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
 
         ui.menu_button("raw_input", |ui| {
             if ui.button("MicrophoneInputNode").clicked() {
-                snarl.insert_node(
-                    pos,
-                    FlowNodes::RawInputNodes(RawInputNodes::MicrophoneInputNode(
-                        MicrophoneInputNode::default(),
-                    )),
-                );
+                snarl.insert_node(pos, MicrophoneInputNodeInfo.flow_node());
                 ui.close_menu();
             }
 
             if ui.button("FileInputNode").clicked() {
-                snarl.insert_node(
-                    pos,
-                    FlowNodes::RawInputNodes(
-                        RawInputNodes::FileInputNode(FileInputNode::default()),
-                    ),
-                );
+                snarl.insert_node(pos, FileInputNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
 
         ui.menu_button("viewer", |ui| {
             if ui.button("DataPlotterNode").clicked() {
-                snarl.insert_node(pos, FlowNodes::DataPlotterNode(DataPlotterNode::default()));
+                snarl.insert_node(pos, DataPlotterNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
 
         ui.menu_button("expr", |ui| {
             if ui.button("ExprNode").clicked() {
-                snarl.insert_node(pos, FlowNodes::ExprNode(ExprNodes::default()));
+                snarl.insert_node(pos, ExprNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
