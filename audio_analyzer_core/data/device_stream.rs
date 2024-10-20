@@ -30,13 +30,17 @@ impl Device {
         let host = cpal::default_host();
         let device = host.default_input_device().unwrap();
 
-        Device {
+        let mut sl = Device {
             _host: host,
             device: Some(device),
             sample_rate: None,
             data: Arc::new(Mutex::new(Vec::new())),
             stream: None,
-        }
+        };
+
+        sl.start();
+
+        sl
     }
 
     pub fn get_sample_rate(&self) -> Option<u32> {

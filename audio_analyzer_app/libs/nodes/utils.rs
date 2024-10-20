@@ -25,6 +25,7 @@ impl FlowNodes {
             FlowNodes::RawInputNodes(raw_input_nodes) => {
                 Some(NodeInfoTypesWithData::VecF32(raw_input_nodes.get()?))
             }
+            FlowNodes::ExprNode(expr_nodes) => expr_nodes.calculated.clone(),
         }
     }
 }

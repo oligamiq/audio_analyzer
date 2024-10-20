@@ -127,7 +127,7 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
 
         match variant {
             #[cfg(not(target_family = "wasm"))]
-            Variant::Device => Ok(MicrophoneInputNode::Device(Device::new())),
+            Variant::Device => Ok(MicrophoneInputNode::Device(Device::new(), None)),
             #[cfg(target_family = "wasm")]
             Variant::WebAudioStream => Ok(MicrophoneInputNode::WebAudioStream(
                 WebAudioStream::new(),
@@ -136,7 +136,7 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
             _ => {
                 #[cfg(not(target_family = "wasm"))]
                 {
-                    Ok(MicrophoneInputNode::Device(Device::new()))
+                    Ok(MicrophoneInputNode::Device(Device::new(), None))
                 }
                 #[cfg(target_family = "wasm")]
                 {
@@ -164,7 +164,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
 
         let variant = match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(_) => Variant::Device,
+            MicrophoneInputNode::Device(_, _) => Variant::Device,
             #[cfg(target_family = "wasm")]
             MicrophoneInputNode::WebAudioStream(_, _) => Variant::WebAudioStream,
         };

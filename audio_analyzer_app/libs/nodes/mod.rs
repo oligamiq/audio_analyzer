@@ -1,4 +1,5 @@
 use config::NumberNodeInfo;
+use expr::ExprNodeInfo;
 use layer::{MelLayerNodeInfo, STFTLayerNodeInfo, SpectrogramDensityLayerNodeInfo};
 use ndarray::{Array1, Array2};
 use raw_input::{FileInputNodeInfo, MicrophoneInputNodeInfo};
@@ -6,6 +7,7 @@ use viewer::DataPlotterNodeInfo;
 
 pub mod config;
 pub mod editor;
+pub mod expr;
 pub mod layer;
 pub mod pin_info;
 pub mod raw_input;
@@ -29,31 +31,48 @@ pub enum NodeInfoTypes {
     Array2F64,
     Array1ComplexF64,
     AnyInput,
+    AnyOutput,
 }
 
 impl NodeInfoTypes {
+    pub fn eq(&self, other: &NodeInfoTypes) -> bool {
+        self == other
+            || other == &NodeInfoTypes::AnyInput
+            || self == &NodeInfoTypes::AnyInput
+            || other == &NodeInfoTypes::AnyOutput
+            || self == &NodeInfoTypes::AnyOutput
+    }
+
     pub fn contains_out(&self, other: &[NodeInfoTypes]) -> bool {
         other
             .iter()
             .any(|x| x == self || x == &NodeInfoTypes::AnyInput)
+            || (self == &NodeInfoTypes::AnyOutput && !other.is_empty())
     }
 
     pub fn positions_out(&self, other: &[NodeInfoTypes]) -> Vec<usize> {
-        other
-            .iter()
-            .enumerate()
-            .filter_map(|(i, x)| {
-                if x == self || x == &NodeInfoTypes::AnyInput {
-                    Some(i)
-                } else {
-                    None
-                }
-            })
-            .collect()
+        if self == &NodeInfoTypes::AnyOutput {
+            other.iter().enumerate().map(|(i, _)| i).collect()
+        } else {
+            other
+                .iter()
+                .enumerate()
+                .filter_map(|(i, x)| {
+                    if x == self || x == &NodeInfoTypes::AnyInput {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        }
     }
 
     pub fn contains_in(&self, other: &[NodeInfoTypes]) -> bool {
-        other.iter().any(|x| x == self) || (self == &NodeInfoTypes::AnyInput && !other.is_empty())
+        other
+            .iter()
+            .any(|x| x == self || x == &NodeInfoTypes::AnyOutput)
+            || (self == &NodeInfoTypes::AnyInput && !other.is_empty())
     }
 
     pub fn positions_in(&self, other: &[NodeInfoTypes]) -> Vec<usize> {
@@ -63,7 +82,13 @@ impl NodeInfoTypes {
             other
                 .iter()
                 .enumerate()
-                .filter_map(|(i, x)| if x == self { Some(i) } else { None })
+                .filter_map(|(i, x)| {
+                    if x == self || x == &NodeInfoTypes::AnyOutput {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
                 .collect()
         }
     }
@@ -90,6 +115,7 @@ impl NodeInfos {
             Box::new(MicrophoneInputNodeInfo),
             Box::new(FileInputNodeInfo),
             Box::new(DataPlotterNodeInfo),
+            Box::new(ExprNodeInfo::default()),
         ]
     }
 }

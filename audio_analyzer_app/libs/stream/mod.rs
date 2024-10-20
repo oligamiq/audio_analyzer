@@ -1,5 +1,5 @@
 use audio_analyzer_core::{
-    data::RawDataStreamLayer as _,
+    data::{device_stream, RawDataStreamLayer as _},
     layer::layers::MultipleLayers,
     mel_layer::{
         fft_layer::{FftConfig, ToSpectrogramLayer},
