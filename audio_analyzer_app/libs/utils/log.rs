@@ -1,6 +1,6 @@
 use egui_tracing::EventCollector;
 
-use crate::libs::widget::{UiWidget, View};
+use crate::prelude::ui::*;
 
 pub struct LogViewerWidget {
     collector: EventCollector,

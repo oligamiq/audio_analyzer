@@ -1,6 +1,4 @@
-use egui_editable_num::EditableOnText;
-
-use super::{NodeInfo, NodeInfoTypes};
+use crate::prelude::nodes::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {

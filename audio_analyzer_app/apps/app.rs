@@ -1,15 +1,6 @@
-use egui::{Theme, Visuals};
-use egui_snarl::{ui::SnarlStyle, Snarl};
+use crate::prelude::{nodes::*, snarl::*, utils::*};
 use egui_tracing::tracing::collector;
 use log::{info, trace};
-use serde::de;
-
-use crate::libs::{
-    nodes::editor::{FlowNodes, FlowNodesViewer},
-    separate_window_widget::SeparateWindowWidget,
-    stream::{new_stream, streams::Streamer},
-    utils::log::LogViewerWidget,
-};
 
 use super::config::Config;
 

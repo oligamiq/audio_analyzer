@@ -1,9 +1,5 @@
-use egui::{Pos2, Rect, Separator, UiBuilder, Vec2, Widget as _};
-use egui_editable_num::EditableOnText;
 use egui_plotter::EguiBackend;
-use ndarray::Array1;
-
-use super::NodeInfoTypesWithData;
+use crate::prelude::{nodes::*, egui::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataPlotterNode {

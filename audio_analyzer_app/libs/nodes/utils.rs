@@ -1,4 +1,4 @@
-use super::{config::ConfigNodes, editor::FlowNodes, layer::LayerNodes, NodeInfoTypesWithData};
+use crate::prelude::nodes::*;
 
 impl FlowNodes {
     pub fn to_node_info_types_with_data(&self) -> Option<NodeInfoTypesWithData> {
@@ -29,3 +29,54 @@ impl FlowNodes {
         }
     }
 }
+
+macro_rules! config_ui {
+    (@fmt, $node:ident, $ui:ident, $config:ident) => {
+        $ui.label(stringify!($config));
+        let response = egui::TextEdit::singleline(&mut $node.$config)
+            .clip_text(false)
+            .desired_width(0.0)
+            .margin($ui.spacing().item_spacing)
+            .show($ui)
+            .response;
+
+        if response.lost_focus() {
+            $node.$config.fmt();
+            $node.update();
+        } else if response.changed() {
+            if $node.$config.try_update() {
+                $node.update();
+            }
+        }
+    };
+
+    ($node:ident, $ui:ident, $config:ident) => {
+        $ui.label(stringify!($config));
+        let response = egui::TextEdit::singleline(&mut $node.$config)
+            .clip_text(false)
+            .desired_width(0.0)
+            .margin($ui.spacing().item_spacing)
+            .show($ui)
+            .response;
+
+        if response.lost_focus() {
+            $node.update();
+        } else if response.changed() {
+            $node.update();
+        }
+    };
+}
+
+pub(crate) use config_ui;
+
+macro_rules! extract_node {
+    ($expr:expr, $pattern:pat => $result:expr) => {
+        if let $pattern = $expr {
+            $result
+        } else {
+            unreachable!()
+        }
+    };
+}
+
+pub(crate) use extract_node;

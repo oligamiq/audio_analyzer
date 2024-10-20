@@ -1,9 +1,4 @@
-use config::NumberNodeInfo;
-use expr::ExprNodeInfo;
-use layer::{MelLayerNodeInfo, STFTLayerNodeInfo, SpectrogramDensityLayerNodeInfo};
-use ndarray::{Array1, Array2};
-use raw_input::{FileInputNodeInfo, MicrophoneInputNodeInfo};
-use viewer::DataPlotterNodeInfo;
+use crate::prelude::nodes::*;
 
 pub mod config;
 pub mod editor;
@@ -115,7 +110,7 @@ impl NodeInfos {
             Box::new(MicrophoneInputNodeInfo),
             Box::new(FileInputNodeInfo),
             Box::new(DataPlotterNodeInfo),
-            Box::new(ExprNodeInfo::default()),
+            Box::new(ExprNodeInfo),
         ]
     }
 }

@@ -1,17 +1,4 @@
-use crate::libs::nodes::NodeInfoTypesWithData;
-
-use super::config::{ConfigNodes, NumberNode};
-use super::expr::ExprNodes;
-use super::layer::{LayerNodes, STFTLayerNode};
-use super::pin_info::CustomPinInfo;
-use super::raw_input::{FileInputNode, MicrophoneInputNode, RawInputNodes};
-use super::viewer::DataPlotterNode;
-use super::{NodeInfo, SerdeClone};
-use egui::Ui;
-use egui_snarl::{
-    ui::{AnyPins, PinInfo, SnarlViewer},
-    InPin, NodeId, OutPin, Snarl,
-};
+use crate::prelude::{egui::*, nodes::*, snarl::*, utils::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum FlowNodes {
@@ -45,6 +32,18 @@ impl FlowNodes {
 
 pub struct FlowNodesViewer;
 
+pub trait FlowNodesViewerTrait {
+    fn show_input(
+        &self,
+        _pin: &egui_snarl::InPin,
+        _ui: &mut egui::Ui,
+        _scale: f32,
+        _snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        unreachable!()
+    }
+}
+
 impl FlowNodesViewer {
     fn show_input(
         &mut self,
@@ -57,138 +56,7 @@ impl FlowNodesViewer {
 
         match &snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                LayerNodes::STFTLayer(_) => match pin.id.input {
-                    0 => {
-                        if let Some(out_pin) = pin.remotes.get(0) {
-                            if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                                number,
-                                ..
-                            })) = &snarl[out_pin.node]
-                            {
-                                ui.label(format!("fft_size: {}", number));
-
-                                let fft_size = number.get();
-
-                                return Box::new(
-                                    move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                                        if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
-                                            &mut snarl[pin_id.node]
-                                        {
-                                            if node.fft_size.set(fft_size as usize) {
-                                                node.update();
-                                            }
-                                        }
-
-                                        CustomPinInfo::lock()
-                                    },
-                                );
-                            }
-                        }
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                            if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
-                                &mut snarl[pin_id.node]
-                            {
-                                ui.label("fft_size");
-                                let response = egui::TextEdit::singleline(&mut node.fft_size)
-                                    .clip_text(false)
-                                    .desired_width(0.0)
-                                    .margin(ui.spacing().item_spacing)
-                                    .show(ui)
-                                    .response;
-
-                                if response.lost_focus() {
-                                    node.fft_size.fmt();
-                                    node.update();
-                                } else if response.changed() {
-                                    if node.fft_size.try_update() {
-                                        node.update();
-                                    }
-                                }
-                            }
-
-                            CustomPinInfo::setting(8)
-                        });
-                    }
-                    1 => {
-                        if let Some(out_pin) = pin.remotes.get(0) {
-                            if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                                number,
-                                ..
-                            })) = &snarl[out_pin.node]
-                            {
-                                ui.label(format!("hop_size: {}", number));
-
-                                let hop_size = number.get();
-
-                                return Box::new(
-                                    move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                                        if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
-                                            &mut snarl[pin_id.node]
-                                        {
-                                            if node.hop_size.set(hop_size as usize) {
-                                                node.update();
-                                            }
-                                        }
-
-                                        CustomPinInfo::lock()
-                                    },
-                                );
-                            }
-                        }
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                            if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
-                                &mut snarl[pin_id.node]
-                            {
-                                ui.label("hop_size");
-                                let response = egui::TextEdit::singleline(&mut node.hop_size)
-                                    .clip_text(false)
-                                    .desired_width(0.0)
-                                    .margin(ui.spacing().item_spacing)
-                                    .show(ui)
-                                    .response;
-
-                                if response.lost_focus() {
-                                    node.hop_size.fmt();
-                                    node.update();
-                                } else if response.changed() {
-                                    if node.hop_size.try_update() {
-                                        node.update();
-                                    }
-                                }
-                            }
-
-                            CustomPinInfo::setting(8)
-                        });
-                    }
-                    2 => {
-                        ui.label("raw stream");
-
-                        if let Some(out_pin) = pin.remotes.get(0) {
-                            if let FlowNodes::RawInputNodes(node) = &snarl[out_pin.node] {
-                                if let Some(data) = node.get() {
-                                    return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
-                                        if let FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) =
-                                            &mut snarl[pin_id.node]
-                                        {
-                                            if let Err(err) = node.calc(&data) {
-                                                log::error!("STFTLayerNode: {}", err);
-                                            }
-                                        }
-
-                                        CustomPinInfo::lock()
-                                    });
-                                }
-                            }
-                        }
-
-                        return Box::new(|_, _| {
-                            PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
-                        });
-                    }
-                    _ => unreachable!(),
-                },
+                LayerNodes::STFTLayer(node) => node.show_input(pin, ui, scale, snarl),
                 LayerNodes::MelLayer(_) => todo!(),
                 LayerNodes::SpectrogramDensityLayer(_) => todo!(),
             },
@@ -204,17 +72,21 @@ impl FlowNodesViewer {
                     let data = remote.to_node_info_types_with_data();
 
                     return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                        if let FlowNodes::DataPlotterNode(node) = &mut snarl[pin_id.node] {
-                            if let Some(data) = &data {
-                                node.set_hold_data(data.clone());
-                                node.show(ui, true, scale);
+                        extract_node!(
+                            &mut snarl[pin_id.node],
+                            FlowNodes::DataPlotterNode(node) => {
+                                if let Some(data) = &data {
+                                    node.set_hold_data(data.clone());
+                                    node.show(ui, true, scale);
 
-                                return PinInfo::circle()
-                                    .with_fill(egui::Color32::from_rgb(0, 255, 0));
-                            } else {
-                                node.show(ui, false, scale);
+                                    return PinInfo::circle()
+                                        .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                                } else {
+                                    node.show(ui, false, scale);
+                                }
                             }
-                        }
+                        );
+
                         PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
                     });
                 }
@@ -223,34 +95,18 @@ impl FlowNodesViewer {
                     PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
                 });
             }
-            FlowNodes::ExprNode(expr_nodes) => {
+            FlowNodes::ExprNode(_) => {
                 assert!(pin.id.input == 0);
 
-                let data = if let Some(out_pin) = pin.remotes.get(0) {
-                    let remote = &snarl[out_pin.node];
-
-                    let data = remote.to_node_info_types_with_data();
-
-                    data
-                } else {
-                    None
-                };
+                let data = pin
+                    .remotes
+                    .get(0)
+                    .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data())
+                    .flatten();
 
                 return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
                     if let FlowNodes::ExprNode(node) = &mut snarl[pin_id.node] {
-                        ui.label("expr");
-                        let response = egui::TextEdit::singleline(&mut node.expr_str)
-                            .clip_text(false)
-                            .desired_width(0.0)
-                            .margin(ui.spacing().item_spacing)
-                            .show(ui)
-                            .response;
-
-                        if response.lost_focus() {
-                            node.update();
-                        } else if response.changed() {
-                            node.update();
-                        }
+                        config_ui!(node, ui, expr);
 
                         return node.show_and_calc(ui, data.clone());
                     }
@@ -258,7 +114,7 @@ impl FlowNodesViewer {
                     PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
                 });
             }
-        };
+        }
     }
 }
 
@@ -416,6 +272,13 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui.menu_button("viewer", |ui| {
             if ui.button("DataPlotterNode").clicked() {
                 snarl.insert_node(pos, FlowNodes::DataPlotterNode(DataPlotterNode::default()));
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("expr", |ui| {
+            if ui.button("ExprNode").clicked() {
+                snarl.insert_node(pos, FlowNodes::ExprNode(ExprNodes::default()));
                 ui.close_menu();
             }
         });

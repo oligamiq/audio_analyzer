@@ -1,5 +1,4 @@
-use egui::{epaint::PathShape, Pos2, Shape, Vec2};
-use egui_snarl::ui::PinInfo;
+use crate::prelude::{egui::*, snarl::*};
 
 pub struct CustomPinInfo;
 

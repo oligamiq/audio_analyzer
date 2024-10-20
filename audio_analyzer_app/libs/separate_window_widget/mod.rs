@@ -2,7 +2,7 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 use egui::mutex::Mutex;
 
-use super::widget::{UiWidget, View};
+use crate::prelude::ui::*;
 
 pub struct SeparateWindowWidget<W: UiWidget + View> {
     title: String,

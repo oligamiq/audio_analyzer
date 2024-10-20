@@ -1,13 +1,5 @@
-#[cfg(not(target_family = "wasm"))]
-use audio_analyzer_core::data::device_stream::Device;
-use audio_analyzer_core::data::{test_data::TestData, RawDataStreamLayer};
-
-#[cfg(target_family = "wasm")]
-use audio_analyzer_core::data::web_stream::WebAudioStream;
-
-use egui_editable_num::EditableOnText;
-
-use super::NodeInfo;
+use crate::prelude::nodes::*;
+use audio_analyzer_core::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum RawInputNodes {

@@ -1,17 +1,16 @@
+use crate::prelude::nodes::*;
+
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
-use egui_editable_num::EditableOnText;
-use egui_snarl::ui::PinInfo;
 use fasteval3::{Compiler, EmptyNamespace, Instruction};
-use serde::Deserialize;
 
-use super::{NodeInfo, NodeInfoTypes, NodeInfoTypesWithData};
+use serde::Deserialize;
 
 #[derive(serde::Serialize)]
 pub struct ExprNodes {
     pub inputs_num: EditableOnText<usize>,
     pub input_var_names: Vec<String>,
-    pub expr_str: String,
+    pub expr: String,
     pub outputs_num: EditableOnText<usize>,
     pub calculated: Option<NodeInfoTypesWithData>,
 
@@ -37,7 +36,7 @@ impl std::fmt::Debug for ExprNodes {
             .field("inputs_num", &self.inputs_num)
             .field("input_var_names", &self.input_var_names)
             .field("outputs_num", &self.outputs_num)
-            .field("expr_str", &self.expr_str)
+            .field("expr", &self.expr)
             .finish()
     }
 }
@@ -51,7 +50,7 @@ impl<'de> Deserialize<'de> for ExprNodes {
         struct ExprNodesHelper {
             inputs_num: EditableOnText<usize>,
             input_var_names: Vec<String>,
-            expr_str: String,
+            expr: String,
             outputs_num: EditableOnText<usize>,
         }
 
@@ -60,7 +59,7 @@ impl<'de> Deserialize<'de> for ExprNodes {
         Ok(ExprNodes::new(
             helper.inputs_num.get(),
             helper.input_var_names,
-            helper.expr_str,
+            helper.expr,
             helper.outputs_num.get(),
         ))
     }
@@ -110,7 +109,7 @@ impl ExprNodes {
     pub fn new(
         inputs_num: usize,
         input_var_names: Vec<String>,
-        expr_str: String,
+        expr: String,
         outputs_num: usize,
     ) -> Self {
         let (cb, access_vars, ret_values) = Self::create_cb();
@@ -118,7 +117,7 @@ impl ExprNodes {
         let mut sl = Self {
             inputs_num: EditableOnText::new(inputs_num),
             input_var_names,
-            expr_str,
+            expr,
             outputs_num: EditableOnText::new(outputs_num),
             calculated: None,
             cb,
@@ -160,6 +159,11 @@ impl ExprNodes {
                     }
                     return Some(0.0);
                 }
+                "sqrt" => {
+                    if args.len() == 1 {
+                        return Some(args[0].sqrt());
+                    }
+                }
                 _ => {}
             }
 
@@ -175,10 +179,10 @@ impl ExprNodes {
     }
 
     pub fn update(&mut self) {
-        let Self { expr_str, slab, .. } = self;
+        let Self { expr, slab, .. } = self;
 
         let parser = fasteval3::Parser::new();
-        if let Ok(parsed) = parser.parse(expr_str, &mut slab.ps) {
+        if let Ok(parsed) = parser.parse(expr, &mut slab.ps) {
             let compiled =
                 parsed
                     .from(&slab.ps)
@@ -262,20 +266,20 @@ impl ExprNodes {
         ui: &mut egui::Ui,
         data: Option<NodeInfoTypesWithData>,
     ) -> PinInfo {
+        ui.label("outputs_num");
+
+        if egui::TextEdit::singleline(&mut self.outputs_num)
+            .clip_text(false)
+            .desired_width(0.0)
+            .margin(ui.spacing().item_spacing)
+            .show(ui)
+            .response
+            .lost_focus()
+        {
+            self.outputs_num.fmt();
+        }
+
         if let Some(data) = &data {
-            ui.label("outputs_num");
-
-            if egui::TextEdit::singleline(&mut self.outputs_num)
-                .clip_text(false)
-                .desired_width(0.0)
-                .margin(ui.spacing().item_spacing)
-                .show(ui)
-                .response
-                .lost_focus()
-            {
-                self.outputs_num.fmt();
-            }
-
             match data {
                 NodeInfoTypesWithData::Number(num) => {
                     self.inputs_num.set(1);
@@ -428,11 +432,13 @@ impl ExprNodes {
                         _ => {}
                     }
                 }
-                NodeInfoTypesWithData::Array2F64(array) => {
+                NodeInfoTypesWithData::Array2F64(_array) => {
                     unimplemented!()
                 }
             }
         }
+
+        self.calculated = None;
 
         PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
     }

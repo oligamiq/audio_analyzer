@@ -1,19 +1,8 @@
-use std::any::TypeId;
+use crate::prelude::nodes::*;
+use audio_analyzer_core::prelude::*;
 
-use audio_analyzer_core::mel_layer::{
-    fft_layer::{FftConfig, ToSpectrogramLayer},
-    spectral_density::{ToPowerSpectralDensityLayer, ToPowerSpectralDensityLayerConfig},
-    to_mel_layer::ToMelSpectrogramLayer,
-};
-use egui_editable_num::EditableOnText;
-use mel_spec::config::MelConfig;
-use ndarray::{Array1, Array2};
-use num_complex::Complex;
 use serde::de;
-
-use crate::libs::nodes::NodeInfoTypes;
-
-use super::NodeInfo;
+use std::any::TypeId;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum LayerNodes {
@@ -98,6 +87,122 @@ pub struct STFTLayerNode {
     layer: ToSpectrogramLayer,
     #[serde(skip)]
     result: Option<Array1<Complex<f64>>>,
+}
+
+impl FlowNodesViewerTrait for STFTLayerNode {
+    fn show_input(
+        &self,
+        pin: &InPin,
+        ui: &mut egui::Ui,
+        _scale: f32,
+        snarl: &Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        match pin.id.input {
+            0 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("fft_size: {}", number));
+
+                        let fft_size = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
+                                    if node.fft_size.set(fft_size as usize) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, fft_size);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            1 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("hop_size: {}", number));
+
+                        let hop_size = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
+                                    if node.hop_size.set(hop_size as usize) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, hop_size);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            2 => {
+                ui.label("raw stream");
+
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::RawInputNodes(node) = &snarl[out_pin.node] {
+                        if let Some(data) = node.get() {
+                            return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
+                                extract_node!(
+                                    &mut snarl[pin_id.node],
+                                    FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
+                                        if let Err(err) = node.calc(&data) {
+                                            log::error!("STFTLayerNode: {}", err);
+                                        }
+                                    }
+                                );
+
+                                CustomPinInfo::lock()
+                            });
+                        }
+                    }
+                }
+
+                return Box::new(|_, _| {
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+                });
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub struct STFTLayerNodeInfo;
