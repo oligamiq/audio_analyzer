@@ -1,4 +1,4 @@
-use crate::prelude::nodes::*;
+use crate::prelude::{egui::*, nodes::*};
 use audio_analyzer_core::prelude::*;
 
 use serde::de;
@@ -314,11 +314,226 @@ pub struct MelLayerNode {
     pub n_mels: EditableOnText<usize>,
     pub sample_rate: EditableOnText<f64>,
 
+    pub stop: bool,
+
     #[serde(skip)]
     layer: ToMelSpectrogramLayer,
 
     #[serde(skip)]
     result: Option<Array2<f64>>,
+}
+
+impl FlowNodesViewerTrait for MelLayerNode {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        ui: &mut egui::Ui,
+        _: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        match pin.id.input {
+            0 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("fft_size: {}", number));
+
+                        let fft_size = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                                    if node.fft_size.set(fft_size as usize) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, fft_size);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            1 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("hop_size: {}", number));
+
+                        let hop_size = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                                    if node.hop_size.set(hop_size as usize) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, hop_size);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            2 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("n_mels: {}", number));
+
+                        let n_mels = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                                    if node.n_mels.set(n_mels as usize) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, n_mels);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            3 => {
+                if let Some(out_pin) = pin.remotes.get(0) {
+                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
+                        number,
+                        ..
+                    })) = &snarl[out_pin.node]
+                    {
+                        ui.label(format!("sample_rate: {}", number));
+
+                        let sample_rate = number.get();
+
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                                    if node.sample_rate.set(sample_rate) {
+                                        node.update();
+                                    }
+                                }
+                            );
+
+                            CustomPinInfo::lock()
+                        });
+                    }
+                }
+
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    let node = extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
+                    );
+
+                    config_ui!(@fmt, node, ui, sample_rate);
+
+                    CustomPinInfo::setting(8)
+                });
+            }
+            4 => {
+                ui.label("raw stream");
+
+                let remote_node = pin.remotes.get(0);
+
+                if let Some(remote_node) = remote_node {
+                    let data = snarl[remote_node.node].to_node_info_types_with_data();
+
+                    match data {
+                        Some(NodeInfoTypesWithData::Array1ComplexF64(data)) => {
+                            return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui| {
+                                extract_node!(
+                                    &mut snarl[pin_id.node],
+                                    FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                                        egui::Checkbox::new(
+                                            &mut node.stop,
+                                            "stop"
+                                        )
+                                        .ui(ui);
+
+                                        if node.stop {
+                                            return PinInfo::circle()
+                                                .with_fill(egui::Color32::from_rgb(255, 0, 0));
+                                        }
+
+                                        if let Err(err) = node.calc(data.clone()) {
+                                            log::error!("MelLayerNode: {}", err);
+                                        }
+                                    }
+                                );
+
+                                CustomPinInfo::lock()
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+
+                return Box::new(move |snarl, ui| {
+                    extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
+                            egui::Checkbox::new(&mut node.stop, "stop").ui(ui);
+
+                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                        }
+                    )
+                });
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub struct MelLayerNodeInfo;
@@ -338,6 +553,8 @@ impl NodeInfo for MelLayerNodeInfo {
 
     fn input_types(&self) -> Vec<NodeInfoTypes> {
         vec![
+            NodeInfoTypes::Number,
+            NodeInfoTypes::Number,
             NodeInfoTypes::Number,
             NodeInfoTypes::Number,
             NodeInfoTypes::Array1ComplexF64,
@@ -379,7 +596,7 @@ impl<'a> serde::Deserialize<'a> for MelLayerNode {
 
 impl Default for MelLayerNode {
     fn default() -> Self {
-        Self::new(400, 160, 128, 44100.0)
+        Self::new(400, 160, 80, 44100.0)
     }
 }
 
@@ -400,6 +617,7 @@ impl MelLayerNode {
             sample_rate: EditableOnText::new(sample_rate),
             layer,
             result: None,
+            stop: true,
         }
     }
 

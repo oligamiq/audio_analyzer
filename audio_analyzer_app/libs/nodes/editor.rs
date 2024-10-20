@@ -55,7 +55,7 @@ impl FlowNodesViewer {
         match &snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(node) => node.show_input(pin, ui, scale, snarl),
-                LayerNodes::MelLayer(_) => todo!(),
+                LayerNodes::MelLayer(node) => node.show_input(pin, ui, scale, snarl),
                 LayerNodes::SpectrogramDensityLayer(_) => todo!(),
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
@@ -128,7 +128,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     ui.label("output STFTLayer");
                     PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
                 }
-                LayerNodes::MelLayer(_) => todo!(),
+                LayerNodes::MelLayer(_) => {
+                    ui.label("output MelLayer");
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                }
                 LayerNodes::SpectrogramDensityLayer(_) => todo!(),
             },
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {

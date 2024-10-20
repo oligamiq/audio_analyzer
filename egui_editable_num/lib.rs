@@ -62,7 +62,7 @@ impl<T: ToString + FromStr> EditableOnText<T> {
     }
 }
 
-impl<T: ToString + FromStr + Eq> EditableOnText<T> {
+impl<T: ToString + FromStr + PartialEq> EditableOnText<T> {
     /// 違うならtrueを返す
     pub fn set(&mut self, obj: T) -> bool {
         let ret = self.obj != obj;
