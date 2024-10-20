@@ -54,6 +54,7 @@ impl<W: UiWidget + View + Send + 'static> SeparateWindowWidget<W> {
         if self.show.load(std::sync::atomic::Ordering::Relaxed) {
             egui::Window::new(self.title.clone())
                 .default_size(self.initial_size)
+                // .
                 .show(ctx, |ui| {
                     let mut widget = self.widget.lock();
                     widget.ui(ui);

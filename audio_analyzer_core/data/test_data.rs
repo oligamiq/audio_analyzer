@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use log::{error, warn};
 use symphonia::core::{
     codecs::{Decoder, DecoderOptions},
@@ -14,18 +16,46 @@ pub enum TestDataType {
     TestData1,
 }
 
+impl TestDataType {
+    pub fn path(&self) -> &'static str {
+        match self {
+            TestDataType::TestData1 => "test_data/jfk_f32le.wav",
+        }
+    }
+}
+
 pub struct TestData {
-    pub test_data_type: TestDataType,
+    pub test_data_string: String,
     sample_rate: Option<u32>,
     format: Option<Box<dyn FormatReader>>,
     track_id: Option<u32>,
     decoder: Option<Box<dyn Decoder>>,
 }
 
+impl Debug for TestData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TestData")
+            .field("test_data_string", &self.test_data_string)
+            .field("sample_rate", &self.sample_rate)
+            .field("track_id", &self.track_id)
+            .finish()
+    }
+}
+
 impl TestData {
     pub fn new(test_data_type: TestDataType) -> Self {
         TestData {
-            test_data_type,
+            test_data_string: test_data_type.path().to_string(),
+            sample_rate: None,
+            format: None,
+            track_id: None,
+            decoder: None,
+        }
+    }
+
+    pub fn new_with_path(test_data_string: String) -> Self {
+        TestData {
+            test_data_string,
             sample_rate: None,
             format: None,
             track_id: None,
@@ -34,13 +64,24 @@ impl TestData {
     }
 
     pub fn start(&mut self) {
-        let file_path = match self.test_data_type {
-            TestDataType::TestData1 => "test_data/jfk_f32le.wav",
+        let file_path = self.test_data_string.clone();
+
+
+        let mss = if file_path == "jfk_f32le.wav" {
+            let file_buff = include_bytes!("../../test_data/jfk_f32le.wav");
+
+            let file = Box::new(std::io::Cursor::new(file_buff));
+
+            let mss = MediaSourceStream::new(file, Default::default());
+
+            mss
+        } else {
+            let file = Box::new(std::fs::File::open(file_path).unwrap());
+
+            let mss = MediaSourceStream::new(file, Default::default());
+
+            mss
         };
-
-        let file = Box::new(std::fs::File::open(file_path).unwrap());
-
-        let mss = MediaSourceStream::new(file, Default::default());
 
         let hint = probe::Hint::new();
 

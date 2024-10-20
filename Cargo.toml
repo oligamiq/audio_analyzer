@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["audio_analyzer_app", "audio_analyzer_core"]
+members = ["audio_analyzer_app", "audio_analyzer_core", "egui_editable_num"]
 default-members = ["audio_analyzer_app"]
 
 [workspace.package]
@@ -12,17 +12,29 @@ license = "MIT/Apache-2.0"
 [workspace.dependencies]
 audio_analyzer_core = { path = "audio_analyzer_core" }
 color-eyre = "0.6.3"
-ndarray = "0.16.1"
-num-complex = "0.4.6"
+ndarray = { version = "0.16.1", features = ["serde"] }
+num-complex = { version = "0.4.6", features = ["serde"]}
 log = { version = "0.4.22", features = ["std"] }
 mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
+egui = { version = "0.29.1", features = ["accesskit", "log", "persistence"] }
+egui_editable_num = { path = "egui_editable_num" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering"}
 
+[profile.dev]
+# codegen-backend = "cranelift"
+opt-level = 1
+incremental = true
+
 [profile.release]
-opt-level = 2 # fast and small wasm
+opt-level = 3 # fast and small wasm
+lto = "fat" # "thin" is faster to compile, but produces larger binaries
 
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
-opt-level = 2
+# codegen-backend = "llvm"
+incremental = false
+opt-level = 3

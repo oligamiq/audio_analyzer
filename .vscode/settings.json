@@ -9,7 +9,8 @@
         "LOGLEVEL",
         "mels",
         "ndarray",
-        "ratatui"
+        "ratatui",
+        "STFT"
     ],
     "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
 }

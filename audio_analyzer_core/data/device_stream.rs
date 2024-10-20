@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait as _, HostTrait, StreamTrait as _};
@@ -13,6 +14,15 @@ pub struct Device {
     data: Arc<Mutex<Vec<f32>>>,
     sample_rate: Option<u32>,
     stream: Option<cpal::Stream>,
+}
+
+impl Debug for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Device")
+            .field("data", &self.data)
+            .field("sample_rate", &self.sample_rate)
+            .finish()
+    }
 }
 
 impl Device {

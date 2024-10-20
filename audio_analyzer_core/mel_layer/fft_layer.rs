@@ -59,13 +59,8 @@ impl ToSpectrogramLayer {
             kept_data: Vec::new(),
         }
     }
-}
 
-impl Layer for ToSpectrogramLayer {
-    fn through<'a>(
-        &mut self,
-        input: &'a dyn std::any::Any,
-    ) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+    pub fn through_inner<'a>(&mut self, input: &'a Vec<f32>) -> Result<Vec<Array1<Complex<f64>>>> {
         let Self {
             fft,
             hop_size,
@@ -73,10 +68,6 @@ impl Layer for ToSpectrogramLayer {
         } = self;
 
         let hop_size = *hop_size;
-
-        let input = input
-            .downcast_ref::<Vec<f32>>()
-            .ok_or_else(|| eyre!("Invalid input type"))?;
 
         kept_data.extend(input);
 
@@ -91,11 +82,29 @@ impl Layer for ToSpectrogramLayer {
 
             let fft_result: Option<Array1<Complex<f64>>> = fft.add(&kept_data);
             if let Some(fft_result) = fft_result {
-                ret.push(Box::new(fft_result) as Box<dyn Any>);
+                ret.push(fft_result);
             }
         }
 
         Ok(ret)
+    }
+}
+
+impl Layer for ToSpectrogramLayer {
+    fn through<'a>(
+        &mut self,
+        input: &'a dyn std::any::Any,
+    ) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+        let input = input
+            .downcast_ref::<Vec<f32>>()
+            .ok_or_else(|| eyre!("Invalid input type"))?;
+
+        let ret = self.through_inner(input)?;
+
+        Ok(ret
+            .into_iter()
+            .map(|x| Box::new(x) as Box<dyn Any>)
+            .collect())
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

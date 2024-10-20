@@ -1,9 +1,11 @@
 use egui::{Theme, Visuals};
+use egui_snarl::{ui::SnarlStyle, Snarl};
 use egui_tracing::tracing::collector;
 use log::{info, trace};
 use serde::de;
 
 use crate::libs::{
+    nodes::editor::{FlowNodes, FlowNodesViewer},
     separate_window_widget::SeparateWindowWidget,
     stream::{new_stream, streams::Streamer},
     utils::log::LogViewerWidget,
@@ -13,8 +15,9 @@ use super::config::Config;
 
 pub struct App {
     collector: egui_tracing::EventCollector,
-    streamer: Streamer,
-    config: Config,
+    // streamer: Streamer,
+    snarl: Snarl<FlowNodes>,
+    style: SnarlStyle,
 }
 
 impl App {
@@ -33,24 +36,35 @@ impl App {
 
         info!("Initialized app");
 
-        let streamer = new_stream();
+        // let streamer = new_stream();
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let sl = eframe::get_value::<Config>(storage, eframe::APP_KEY).unwrap_or_default();
+            let sl = match eframe::get_value::<Config>(storage, eframe::APP_KEY) {
+                Some(sl) => {
+                    info!("Loaded app state: {:?}", sl);
+                    sl
+                }
+                None => {
+                    info!("failed to load app state");
+                    Config::default()
+                }
+            };
 
             return Self {
                 collector,
-                streamer,
-                config: sl,
+                // streamer,
+                snarl: sl.snarl,
+                style: sl.style,
             };
         }
 
         Self {
             collector,
-            streamer,
-            config: Config::default(),
+            // streamer,
+            snarl: Snarl::new(),
+            style: SnarlStyle::default(),
         }
     }
 }
@@ -58,12 +72,18 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, &self.config);
+        eframe::set_value(
+            storage,
+            eframe::APP_KEY,
+            &Config::from_ref(&self.snarl, &self.style),
+        );
+
+        trace!("Saved app state");
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.streamer.apply();
+        // self.streamer.apply();
 
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
@@ -110,6 +130,9 @@ impl eframe::App for App {
                 "Source code."
             ));
 
+            self.snarl
+                .show(&mut FlowNodesViewer, &self.style, "snarl", ui);
+
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);
                 egui::warn_if_debug_build(ui);
@@ -120,6 +143,8 @@ impl eframe::App for App {
             SeparateWindowWidget::new([400.0, 300.0], LogViewerWidget::new(self.collector.clone()));
 
         separate_window_widget.show(ctx);
+
+        ctx.request_repaint();
     }
 }
 

@@ -8,6 +8,7 @@ pub struct LogViewerWidget {
 
 impl View for LogViewerWidget {
     fn ui(&mut self, ui: &mut egui::Ui) {
+        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
         ui.add(egui_tracing::Logs::new(self.collector.clone()));
     }
 }

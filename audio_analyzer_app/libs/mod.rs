@@ -1,3 +1,4 @@
+pub mod nodes;
 pub mod separate_window_widget;
 pub mod stream;
 pub mod utils;
