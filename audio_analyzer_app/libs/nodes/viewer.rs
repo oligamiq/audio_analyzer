@@ -179,7 +179,7 @@ impl DataPlotterNode {
                     &RED,
                 ))
                 .unwrap()
-                .label("Array1<(F64, F64)> stream")
+                // .label("Array1<(F64, F64)> stream")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &RED)
                 });
@@ -193,19 +193,19 @@ impl DataPlotterNode {
                     &BLUE,
                 ))
                 .unwrap()
-                .label("Array1<(F64, F64)> stream")
+                // .label("Array1<(F64, F64)> stream")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &BLUE)
                 });
 
-            chart
-                .configure_series_labels()
-                .legend_area_size((2. * scale) as i32)
-                .label_font(("sans-serif", 5. * scale))
-                .background_style(&WHITE.mix(0.8))
-                .border_style(&BLACK)
-                .draw()
-                .unwrap();
+            // chart
+            //     .configure_series_labels()
+            //     .legend_area_size((2. * scale) as i32)
+            //     .label_font(("sans-serif", 5. * scale))
+            //     .background_style(&WHITE.mix(0.8))
+            //     .border_style(&BLACK)
+            //     .draw()
+            //     .unwrap();
 
             root.present().unwrap();
         });
@@ -381,7 +381,7 @@ impl FlowNodesViewerTrait for DataPlotterNode {
         if let Some(out_pin) = pin.remotes.get(0) {
             let remote = &snarl[out_pin.node];
 
-            let data = remote.to_node_info_types_with_data();
+            let data = remote.to_node_info_types_with_data(out_pin.output);
 
             return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
                 extract_node!(

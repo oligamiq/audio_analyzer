@@ -1,7 +1,7 @@
 use crate::prelude::nodes::*;
 
 impl FlowNodes {
-    pub fn to_node_info_types_with_data(&self) -> Option<NodeInfoTypesWithData> {
+    pub fn to_node_info_types_with_data(&self, pin: usize) -> Option<NodeInfoTypesWithData> {
         match self {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(stft_layer_node) => Some(
@@ -23,7 +23,17 @@ impl FlowNodes {
             },
             FlowNodes::DataPlotterNode(_) => None,
             FlowNodes::RawInputNodes(raw_input_nodes) => {
-                Some(NodeInfoTypesWithData::VecF32(raw_input_nodes.get()?))
+                match pin {
+                    // raw stream
+                    0 => Some(NodeInfoTypesWithData::VecF32(raw_input_nodes.get()?)),
+
+                    // sample rate
+                    1 => Some(NodeInfoTypesWithData::Number(
+                        raw_input_nodes.get_sample_rate() as f64,
+                    )),
+
+                    _ => unreachable!(),
+                }
             }
             FlowNodes::ExprNode(expr_nodes) => expr_nodes.calculated.clone(),
         }

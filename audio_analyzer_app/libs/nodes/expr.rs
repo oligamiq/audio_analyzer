@@ -459,7 +459,7 @@ impl FlowNodesViewerTrait for ExprNodes {
         let data = pin
             .remotes
             .get(0)
-            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data())
+            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
             .flatten();
 
         return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {

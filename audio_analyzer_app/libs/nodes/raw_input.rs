@@ -15,7 +15,7 @@ impl RawInputNodes {
         }
     }
 
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         match self {
             RawInputNodes::MicrophoneInputNode(node) => node.get_sample_rate(),
             RawInputNodes::FileInputNode(node) => node.get_sample_rate(),
@@ -30,7 +30,7 @@ impl RawInputNodes {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {
@@ -73,7 +73,7 @@ impl NodeInfo for MicrophoneInputNodeInfo {
     }
 
     fn outputs(&self) -> usize {
-        1
+        2
     }
 
     fn input_types(&self) -> Vec<super::NodeInfoTypes> {
@@ -81,7 +81,7 @@ impl NodeInfo for MicrophoneInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![super::NodeInfoTypes::VecF32]
+        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -166,7 +166,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
 }
 
 impl MicrophoneInputNode {
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         match self {
             #[cfg(not(target_family = "wasm"))]
             MicrophoneInputNode::Device(node, _) => {
@@ -191,7 +191,7 @@ impl MicrophoneInputNode {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {
@@ -230,7 +230,7 @@ impl NodeInfo for FileInputNodeInfo {
     }
 
     fn outputs(&self) -> usize {
-        1
+        2
     }
 
     fn input_types(&self) -> Vec<super::NodeInfoTypes> {
@@ -238,7 +238,7 @@ impl NodeInfo for FileInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![super::NodeInfoTypes::VecF32]
+        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -279,7 +279,7 @@ impl FileInputNode {
         }
     }
 
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         self.data.sample_rate()
     }
 
@@ -292,7 +292,7 @@ impl FileInputNode {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {

@@ -89,6 +89,45 @@ pub struct STFTLayerNode {
     result: Option<Array1<Complex<f64>>>,
 }
 
+macro_rules! extract_snarl_ui_pin_member {
+    ($snarl:ident, $ui:ident, $pin:ident, $pattern:pat, $pattern_inner:ident, $member:ident) => {
+        let pin_id = $pin.id;
+
+        use num_traits::cast::AsPrimitive;
+
+        if let Some(out_pin) = $pin.remotes.get(0) {
+            let data = $snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
+            if let Some(NodeInfoTypesWithData::Number(number)) = data {
+                $ui.label(format!("{}: {}", stringify!($member), number));
+
+                return Box::new(move |$snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                    extract_node!(
+                        &mut $snarl[pin_id.node],
+                        $pattern => {
+                            if $pattern_inner.$member.set(number.as_()) {
+                                $pattern_inner.update();
+                            }
+                        }
+                    );
+
+                    CustomPinInfo::lock()
+                });
+            }
+        }
+
+        return Box::new(move |$snarl: &mut Snarl<FlowNodes>, $ui: &mut egui::Ui| {
+            let node = extract_node!(
+                &mut $snarl[pin_id.node],
+                $pattern => $pattern_inner
+            );
+
+            config_ui!(@fmt, node, $ui, $member);
+
+            CustomPinInfo::setting(8)
+        });
+    };
+}
+
 impl FlowNodesViewerTrait for STFTLayerNode {
     fn show_input(
         &self,
@@ -101,78 +140,24 @@ impl FlowNodesViewerTrait for STFTLayerNode {
 
         match pin.id.input {
             0 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("fft_size: {}", number));
-
-                        let fft_size = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
-                                    if node.fft_size.set(fft_size as usize) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, fft_size);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)),
+                    node,
+                    fft_size
+                );
             }
             1 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("hop_size: {}", number));
-
-                        let hop_size = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
-                                    if node.hop_size.set(hop_size as usize) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, hop_size);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)),
+                    node,
+                    hop_size
+                );
             }
             2 => {
                 ui.label("raw stream");
@@ -190,7 +175,7 @@ impl FlowNodesViewerTrait for STFTLayerNode {
                                     }
                                 );
 
-                                CustomPinInfo::lock()
+                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
                             });
                         }
                     }
@@ -289,6 +274,14 @@ impl STFTLayerNode {
     }
 
     pub fn update(&mut self) {
+        if self.fft_size.get() <= self.hop_size.get() {
+            log::warn!(
+                "hop_size must be smaller than fft_size. so hop_size is set to fft_size / 2"
+            );
+
+            self.hop_size.set(self.fft_size.get() / 2);
+        }
+
         self.layer =
             ToSpectrogramLayer::new(FftConfig::new(self.fft_size.get(), self.hop_size.get()));
     }
@@ -335,152 +328,44 @@ impl FlowNodesViewerTrait for MelLayerNode {
 
         match pin.id.input {
             0 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("fft_size: {}", number));
-
-                        let fft_size = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
-                                    if node.fft_size.set(fft_size as usize) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, fft_size);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::MelLayer(node)),
+                    node,
+                    fft_size
+                );
             }
             1 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("hop_size: {}", number));
-
-                        let hop_size = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
-                                    if node.hop_size.set(hop_size as usize) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, hop_size);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::MelLayer(node)),
+                    node,
+                    hop_size
+                );
             }
             2 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("n_mels: {}", number));
-
-                        let n_mels = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
-                                    if node.n_mels.set(n_mels as usize) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, n_mels);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::MelLayer(node)),
+                    node,
+                    n_mels
+                );
             }
             3 => {
-                if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::ConfigNodes(ConfigNodes::NumberNode(NumberNode {
-                        number,
-                        ..
-                    })) = &snarl[out_pin.node]
-                    {
-                        ui.label(format!("sample_rate: {}", number));
-
-                        let sample_rate = number.get();
-
-                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                            extract_node!(
-                                &mut snarl[pin_id.node],
-                                FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
-                                    if node.sample_rate.set(sample_rate) {
-                                        node.update();
-                                    }
-                                }
-                            );
-
-                            CustomPinInfo::lock()
-                        });
-                    }
-                }
-
-                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-                    let node = extract_node!(
-                        &mut snarl[pin_id.node],
-                        FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => node
-                    );
-
-                    config_ui!(@fmt, node, ui, sample_rate);
-
-                    CustomPinInfo::setting(8)
-                });
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::MelLayer(node)),
+                    node,
+                    sample_rate
+                );
             }
             4 => {
                 ui.label("raw stream");
@@ -488,7 +373,8 @@ impl FlowNodesViewerTrait for MelLayerNode {
                 let remote_node = pin.remotes.get(0);
 
                 if let Some(remote_node) = remote_node {
-                    let data = snarl[remote_node.node].to_node_info_types_with_data();
+                    let data =
+                        snarl[remote_node.node].to_node_info_types_with_data(remote_node.output);
 
                     match data {
                         Some(NodeInfoTypesWithData::Array1ComplexF64(data)) => {
@@ -513,7 +399,7 @@ impl FlowNodesViewerTrait for MelLayerNode {
                                     }
                                 );
 
-                                CustomPinInfo::lock()
+                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
                             });
                         }
                         _ => {}
@@ -581,6 +467,7 @@ impl<'a> serde::Deserialize<'a> for MelLayerNode {
             hop_size: EditableOnText<usize>,
             n_mels: EditableOnText<usize>,
             sample_rate: EditableOnText<f64>,
+            stop: bool,
         }
 
         let helper = MelLayerNodeHelper::deserialize(deserializer)?;
@@ -590,13 +477,14 @@ impl<'a> serde::Deserialize<'a> for MelLayerNode {
             helper.hop_size.get(),
             helper.n_mels.get(),
             helper.sample_rate.get(),
+            helper.stop,
         ))
     }
 }
 
 impl Default for MelLayerNode {
     fn default() -> Self {
-        Self::new(400, 160, 80, 44100.0)
+        Self::new(400, 160, 80, 44100.0, false)
     }
 }
 
@@ -606,7 +494,13 @@ impl InputAndOutputType for MelLayerNode {
 }
 
 impl MelLayerNode {
-    pub fn new(fft_size: usize, hop_size: usize, n_mels: usize, sample_rate: f64) -> Self {
+    pub fn new(
+        fft_size: usize,
+        hop_size: usize,
+        n_mels: usize,
+        sample_rate: f64,
+        stop: bool,
+    ) -> Self {
         let layer =
             ToMelSpectrogramLayer::new(MelConfig::new(fft_size, hop_size, n_mels, sample_rate));
 
@@ -617,7 +511,7 @@ impl MelLayerNode {
             sample_rate: EditableOnText::new(sample_rate),
             layer,
             result: None,
-            stop: true,
+            stop,
         }
     }
 
@@ -663,6 +557,89 @@ pub struct SpectrogramDensityLayerNode {
     result: Option<Array1<(f64, f64)>>,
 }
 
+impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        ui: &mut egui::Ui,
+        _: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        match pin.id.input {
+            0 => {
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(node)),
+                    node,
+                    sample_rate
+                );
+            }
+            1 => {
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(node)),
+                    node,
+                    time_range
+                );
+            }
+            2 => {
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(node)),
+                    node,
+                    n_mels
+                );
+            }
+            3 => {
+                ui.label("raw stream");
+
+                let remote_node = pin.remotes.get(0);
+
+                if let Some(remote_node) = remote_node {
+                    let data =
+                        snarl[remote_node.node].to_node_info_types_with_data(remote_node.output);
+
+                    match data {
+                        Some(NodeInfoTypesWithData::Array2F64(data)) => {
+                            return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
+                                extract_node!(
+                                    &mut snarl[pin_id.node],
+                                    FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(node)) => {
+                                        if let Err(err) = node.calc(data.clone()) {
+                                            log::error!("SpectrogramDensityLayerNode: {}", err);
+                                        }
+                                    }
+                                );
+
+                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+
+                return Box::new(move |snarl, _| {
+                    extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(_)) => {
+                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                        }
+                    )
+                });
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub struct SpectrogramDensityLayerNodeInfo;
 
 impl NodeInfo for SpectrogramDensityLayerNodeInfo {
@@ -705,17 +682,17 @@ impl<'a> serde::Deserialize<'a> for SpectrogramDensityLayerNode {
     {
         #[derive(serde::Deserialize)]
         struct SpectrogramDensityLayerNodeHelper {
-            sample_rate: f64,
-            time_range: usize,
-            n_mels: usize,
+            sample_rate: EditableOnText<f64>,
+            time_range: EditableOnText<usize>,
+            n_mels: EditableOnText<usize>,
         }
 
         let helper = SpectrogramDensityLayerNodeHelper::deserialize(deserializer)?;
 
         Ok(SpectrogramDensityLayerNode::new(
-            helper.sample_rate,
-            helper.time_range,
-            helper.n_mels,
+            helper.sample_rate.get(),
+            helper.time_range.get(),
+            helper.n_mels.get(),
         ))
     }
 }

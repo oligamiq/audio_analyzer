@@ -484,6 +484,7 @@ dependencies = [
  "mel_spec",
  "ndarray",
  "num-complex",
+ "num-traits",
  "plotters",
  "serde",
  "serde-wasm-bindgen",

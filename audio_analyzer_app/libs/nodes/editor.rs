@@ -1,3 +1,5 @@
+use egui::accesskit::Node;
+
 use crate::prelude::{egui::*, nodes::*, snarl::*, utils::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -56,7 +58,7 @@ impl FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(node) => node.show_input(pin, ui, scale, snarl),
                 LayerNodes::MelLayer(node) => node.show_input(pin, ui, scale, snarl),
-                LayerNodes::SpectrogramDensityLayer(_) => todo!(),
+                LayerNodes::SpectrogramDensityLayer(node) => node.show_input(pin, ui, scale, snarl),
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
@@ -132,7 +134,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     ui.label("output MelLayer");
                     PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
                 }
-                LayerNodes::SpectrogramDensityLayer(_) => todo!(),
+                LayerNodes::SpectrogramDensityLayer(_) => {
+                    ui.label("output SpectrogramDensityLayer");
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                }
             },
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
                 ConfigNodes::NumberNode(node) => {
@@ -142,22 +147,24 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                     config_ui!(node, ui, name);
 
-                    // egui::TextEdit::singleline(&mut node.name)
-                    //     .clip_text(false)
-                    //     .desired_width(0.0)
-                    //     .margin(ui.spacing().item_spacing)
-                    //     .show(ui);
-
                     CustomPinInfo::setting(8)
                 }
             },
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                RawInputNodes::MicrophoneInputNode(node) => {
-                    node.update();
+                RawInputNodes::MicrophoneInputNode(node) => match pin.id.output {
+                    0 => {
+                        ui.label("raw stream");
 
-                    ui.label("raw stream");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
-                }
+                        node.update();
+
+                        PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+                    }
+                    1 => {
+                        ui.label("sample rate");
+                        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                    }
+                    _ => unreachable!(),
+                },
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
             FlowNodes::DataPlotterNode(_) => unreachable!(),
