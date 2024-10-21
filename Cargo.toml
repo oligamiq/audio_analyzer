@@ -38,5 +38,5 @@ lto = "fat" # "thin" is faster to compile, but produces larger binaries
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
 # codegen-backend = "llvm"
-incremental = false
+# incremental = false
 opt-level = 3

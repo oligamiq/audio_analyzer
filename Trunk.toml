@@ -8,3 +8,8 @@ pattern_script = "<script type=\"module\">import init from '{base}{js}';const bu
 "cross-origin-embedder-policy"= "require-corp"
 "cross-origin-opener-policy"= "same-origin"
 "cross-origin-resource-policy"= "same-site"
+
+# [[hooks]]
+# stage = "build"
+# command = "sh"
+# command_arguments = ["-c", "echo Staging directory: $TRUNK_STAGING_DIR && cd $TRUNK_STAGING_DIR && ls | grep \"\\.wasm$\" | xargs -I {} wasm-opt -Oz -o {} {}"]
