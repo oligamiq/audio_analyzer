@@ -2,6 +2,8 @@ use std::{fmt::Display, str::FromStr};
 
 use egui::TextBuffer;
 
+pub mod picker;
+
 /// EditableOnText is a wrapper for a type that can be edited as text.
 /// ```
 ///  if egui::TextEdit::singleline(input)

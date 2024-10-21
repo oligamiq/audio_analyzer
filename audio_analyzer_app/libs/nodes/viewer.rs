@@ -108,7 +108,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_2d(0f32..1f32, -0.1f32..1f32)
+                .build_cartesian_2d(-0.1f32..1.1f32, -0.1f32..1.1f32)
                 .unwrap();
 
             chart
@@ -161,7 +161,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_2d(0f64..1f64, -0.1f64..1f64)
+                .build_cartesian_2d(-0.1f64..1.1f64, -0.1f64..1.1f64)
                 .unwrap();
 
             chart
@@ -274,7 +274,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_3d(0f64..1000f64, 0f64..5f64, 0f64..1f64)
+                .build_cartesian_3d(-10f64..1010f64, -0.1f64..5.1f64, -0.1f64..1.1f64)
                 .unwrap();
 
             chart.with_projection(|mut pb| {

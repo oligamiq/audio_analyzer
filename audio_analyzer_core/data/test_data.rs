@@ -66,7 +66,6 @@ impl TestData {
     pub fn start(&mut self) {
         let file_path = self.test_data_string.clone();
 
-
         let mss = if file_path == "jfk_f32le.wav" {
             let file_buff = include_bytes!("../../test_data/jfk_f32le.wav");
 
