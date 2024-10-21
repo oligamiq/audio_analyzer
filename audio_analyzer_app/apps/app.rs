@@ -1,15 +1,10 @@
-use egui::{Theme, Visuals};
-use egui_snarl::{ui::SnarlStyle, Snarl};
+use std::sync::Arc;
+
+use crate::prelude::{nodes::*, snarl::*, utils::*};
+use egui::mutex::Mutex;
+use egui_editable_num::picker;
 use egui_tracing::tracing::collector;
 use log::{info, trace};
-use serde::de;
-
-use crate::libs::{
-    nodes::editor::{FlowNodes, FlowNodesViewer},
-    separate_window_widget::SeparateWindowWidget,
-    stream::{new_stream, streams::Streamer},
-    utils::log::LogViewerWidget,
-};
 
 use super::config::Config;
 
@@ -18,6 +13,7 @@ pub struct App {
     // streamer: Streamer,
     snarl: Snarl<FlowNodes>,
     style: SnarlStyle,
+    reloader: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
 impl App {
@@ -57,6 +53,7 @@ impl App {
                 // streamer,
                 snarl: sl.snarl,
                 style: sl.style,
+                reloader: Arc::new(Mutex::new(None)),
             };
         }
 
@@ -65,6 +62,7 @@ impl App {
             // streamer,
             snarl: Snarl::new(),
             style: SnarlStyle::default(),
+            reloader: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -83,6 +81,26 @@ impl eframe::App for App {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.reloader.lock().is_some() {
+            log::info!("Reloading config");
+
+            let mut reloader = self.reloader.lock();
+
+            log::info!("Reloader: {:?}", reloader);
+
+            if let Some(config) = reloader.take() {
+                log::info!("taken config: {:?}", config);
+
+                if let Ok(config) = serde_json::from_slice(&config) {
+                    log::info!("parsed config: {:?}", config);
+
+                    let Config { snarl, style } = config;
+                    self.snarl = snarl;
+                    self.style = style;
+                }
+            }
+        }
+
         // self.streamer.apply();
 
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
@@ -94,14 +112,43 @@ impl eframe::App for App {
             egui::menu::bar(ui, |ui| {
                 // NOTE: no File->Quit on web pages!
                 let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
+                ui.menu_button("File", |ui| {
+                    if !is_web {
                         if ui.button("Quit").clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
-                    });
-                    ui.add_space(16.0);
-                }
+                        ui.add_space(16.0);
+                    }
+
+                    if ui.button("📂 Open text file").clicked() {
+                        log::info!("Open text file");
+
+                        let reloader = self.reloader.clone();
+
+                        picker::open_file(move |file| match std::str::from_utf8(&file) {
+                            Ok(config) => {
+                                log::info!("Loaded file: {}", config);
+
+                                let mut reloader = reloader.lock();
+                                *reloader = Some(file);
+                            }
+                            Err(e) => {
+                                trace!("Failed to load file: {}", e);
+                            }
+                        });
+                    }
+
+                    if ui.button("💾 Save text file").clicked() {
+                        log::info!("Save text file");
+
+                        picker::save_file(
+                            serde_json::to_string(&Config::from_ref(&self.snarl, &self.style))
+                                .unwrap()
+                                .as_bytes()
+                                .to_vec(),
+                        );
+                    }
+                });
 
                 egui::widgets::global_theme_preference_buttons(ui);
             });

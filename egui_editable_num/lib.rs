@@ -2,6 +2,8 @@ use std::{fmt::Display, str::FromStr};
 
 use egui::TextBuffer;
 
+pub mod picker;
+
 /// EditableOnText is a wrapper for a type that can be edited as text.
 /// ```
 ///  if egui::TextEdit::singleline(input)
@@ -62,7 +64,7 @@ impl<T: ToString + FromStr> EditableOnText<T> {
     }
 }
 
-impl<T: ToString + FromStr + Eq> EditableOnText<T> {
+impl<T: ToString + FromStr + PartialEq> EditableOnText<T> {
     /// 違うならtrueを返す
     pub fn set(&mut self, obj: T) -> bool {
         let ret = self.obj != obj;

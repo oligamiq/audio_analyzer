@@ -1,20 +1,18 @@
-use egui::{Pos2, Rect, Separator, UiBuilder, Vec2, Widget as _};
-use egui_editable_num::EditableOnText;
+use crate::prelude::{egui::*, nodes::*};
 use egui_plotter::EguiBackend;
-use ndarray::Array1;
-
-use super::NodeInfoTypesWithData;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataPlotterNode {
     pub name: String,
-    pub hold_data: Option<NodeInfoTypesWithData>,
     pub size: EditableOnText<usize>,
     chart_pitch: f32,
     chart_yaw: f32,
     chart_scale: f32,
     chart_pitch_vel: f32,
     chart_yaw_vel: f32,
+
+    #[serde(skip)]
+    pub hold_data: Option<NodeInfoTypesWithData>,
 }
 
 use plotters::prelude::*;
@@ -112,7 +110,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_2d(0f32..1f32, -0.1f32..1f32)
+                .build_cartesian_2d(-0.1f32..1.1f32, -0.1f32..1.1f32)
                 .unwrap();
 
             chart
@@ -165,7 +163,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_2d(0f64..1f64, -0.1f64..1f64)
+                .build_cartesian_2d(-0.1f64..1.1f64, -0.1f64..1.1f64)
                 .unwrap();
 
             chart
@@ -183,7 +181,7 @@ impl DataPlotterNode {
                     &RED,
                 ))
                 .unwrap()
-                .label("Array1<(F64, F64)> stream")
+                // .label("Array1<(F64, F64)> stream")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &RED)
                 });
@@ -197,19 +195,19 @@ impl DataPlotterNode {
                     &BLUE,
                 ))
                 .unwrap()
-                .label("Array1<(F64, F64)> stream")
+                // .label("Array1<(F64, F64)> stream")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + (2. * scale) as i32, y)], &BLUE)
                 });
 
-            chart
-                .configure_series_labels()
-                .legend_area_size((2. * scale) as i32)
-                .label_font(("sans-serif", 5. * scale))
-                .background_style(&WHITE.mix(0.8))
-                .border_style(&BLACK)
-                .draw()
-                .unwrap();
+            // chart
+            //     .configure_series_labels()
+            //     .legend_area_size((2. * scale) as i32)
+            //     .label_font(("sans-serif", 5. * scale))
+            //     .background_style(&WHITE.mix(0.8))
+            //     .border_style(&BLACK)
+            //     .draw()
+            //     .unwrap();
 
             root.present().unwrap();
         });
@@ -278,7 +276,7 @@ impl DataPlotterNode {
                 .margin(10. * scale)
                 .x_label_area_size((3. * scale) as i32)
                 .y_label_area_size((3. * scale) as i32)
-                .build_cartesian_3d(0f64..1000f64, 0f64..5f64, 0f64..1f64)
+                .build_cartesian_3d(-10f64..1010f64, -0.1f64..5.1f64, -0.1f64..1.1f64)
                 .unwrap();
 
             chart.with_projection(|mut pb| {
@@ -369,5 +367,44 @@ impl DataPlotterNode {
                 f(new_ui, scale, self);
             },
         );
+    }
+}
+
+impl FlowNodesViewerTrait for DataPlotterNode {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        _: &mut egui::Ui,
+        scale: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        if let Some(out_pin) = pin.remotes.get(0) {
+            let remote = &snarl[out_pin.node];
+
+            let data = remote.to_node_info_types_with_data(out_pin.output);
+
+            return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                extract_node!(
+                    &mut snarl[pin_id.node],
+                    FlowNodes::DataPlotterNode(node) => {
+                        if let Some(data) = &data {
+                            node.set_hold_data(data.clone());
+                            node.show(ui, true, scale);
+
+                            return PinInfo::circle()
+                                .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                        } else {
+                            node.show(ui, false, scale);
+                        }
+                    }
+                );
+
+                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
+            });
+        }
+
+        return Box::new(|_, _| PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255)));
     }
 }

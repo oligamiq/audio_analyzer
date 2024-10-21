@@ -8,7 +8,15 @@ license.workspace = true
 [dependencies]
 egui.workspace = true
 serde.workspace = true
+rfd = "0.15"
 
 [lib]
 name = "egui_editable_num"
 path = "lib.rs"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+futures = "0.3"
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"

@@ -1,13 +1,5 @@
-#[cfg(not(target_family = "wasm"))]
-use audio_analyzer_core::data::device_stream::Device;
-use audio_analyzer_core::data::{test_data::TestData, RawDataStreamLayer};
-
-#[cfg(target_family = "wasm")]
-use audio_analyzer_core::data::web_stream::WebAudioStream;
-
-use egui_editable_num::EditableOnText;
-
-use super::NodeInfo;
+use crate::prelude::nodes::*;
+use audio_analyzer_core::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum RawInputNodes {
@@ -23,7 +15,7 @@ impl RawInputNodes {
         }
     }
 
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         match self {
             RawInputNodes::MicrophoneInputNode(node) => node.get_sample_rate(),
             RawInputNodes::FileInputNode(node) => node.get_sample_rate(),
@@ -38,7 +30,7 @@ impl RawInputNodes {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {
@@ -81,7 +73,7 @@ impl NodeInfo for MicrophoneInputNodeInfo {
     }
 
     fn outputs(&self) -> usize {
-        1
+        2
     }
 
     fn input_types(&self) -> Vec<super::NodeInfoTypes> {
@@ -89,7 +81,7 @@ impl NodeInfo for MicrophoneInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![super::NodeInfoTypes::VecF32]
+        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -127,7 +119,7 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
 
         match variant {
             #[cfg(not(target_family = "wasm"))]
-            Variant::Device => Ok(MicrophoneInputNode::Device(Device::new())),
+            Variant::Device => Ok(MicrophoneInputNode::Device(Device::new(), None)),
             #[cfg(target_family = "wasm")]
             Variant::WebAudioStream => Ok(MicrophoneInputNode::WebAudioStream(
                 WebAudioStream::new(),
@@ -136,7 +128,7 @@ impl<'a> serde::Deserialize<'a> for MicrophoneInputNode {
             _ => {
                 #[cfg(not(target_family = "wasm"))]
                 {
-                    Ok(MicrophoneInputNode::Device(Device::new()))
+                    Ok(MicrophoneInputNode::Device(Device::new(), None))
                 }
                 #[cfg(target_family = "wasm")]
                 {
@@ -164,7 +156,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
 
         let variant = match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(_) => Variant::Device,
+            MicrophoneInputNode::Device(_, _) => Variant::Device,
             #[cfg(target_family = "wasm")]
             MicrophoneInputNode::WebAudioStream(_, _) => Variant::WebAudioStream,
         };
@@ -174,7 +166,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
 }
 
 impl MicrophoneInputNode {
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         match self {
             #[cfg(not(target_family = "wasm"))]
             MicrophoneInputNode::Device(node, _) => {
@@ -199,7 +191,7 @@ impl MicrophoneInputNode {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {
@@ -238,7 +230,7 @@ impl NodeInfo for FileInputNodeInfo {
     }
 
     fn outputs(&self) -> usize {
-        1
+        2
     }
 
     fn input_types(&self) -> Vec<super::NodeInfoTypes> {
@@ -246,7 +238,7 @@ impl NodeInfo for FileInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![super::NodeInfoTypes::VecF32]
+        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -287,7 +279,7 @@ impl FileInputNode {
         }
     }
 
-    pub fn get_sample_rate(&mut self) -> u32 {
+    pub fn get_sample_rate(&self) -> u32 {
         self.data.sample_rate()
     }
 
@@ -300,7 +292,7 @@ impl FileInputNode {
     }
 
     pub const fn outputs(&self) -> usize {
-        1
+        2
     }
 
     pub fn update(&mut self) {

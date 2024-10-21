@@ -40,6 +40,16 @@ impl ToPowerSpectralDensityLayer {
 
         // debug!("Data: {:?}", data);
 
+        if data.shape()[1] != 1 || data.shape()[0] != config.n_mels {
+            log::error!(
+                "Data shape is invalid. Expected: ({}, 1), Got: {:?}",
+                config.n_mels,
+                data.shape()
+            );
+
+            return Ok(None);
+        }
+
         assert!(data.shape()[1] == 1);
         assert!(data.shape()[0] == config.n_mels);
 

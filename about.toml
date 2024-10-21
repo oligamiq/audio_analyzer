@@ -1,0 +1,15 @@
+accepted = [
+    "Apache-2.0",
+    "MIT",
+
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "MPL-2.0",
+    "ISC",
+    "Unlicense",
+    "OFL-1.1",
+    "LicenseRef-UFL-1.0",
+    "CC0-1.0",
+    "Zlib",
+    "Unicode-DFS-2016"
+]

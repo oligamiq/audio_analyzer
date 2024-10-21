@@ -1,6 +1,4 @@
-use egui_editable_num::EditableOnText;
-
-use super::{NodeInfo, NodeInfoTypes};
+use crate::prelude::nodes::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {
@@ -82,4 +80,6 @@ impl NumberNode {
     pub fn to_info(&self) -> NumberNodeInfo {
         NumberNodeInfo
     }
+
+    pub fn update(&self) {}
 }

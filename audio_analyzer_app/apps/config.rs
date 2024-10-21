@@ -1,6 +1,4 @@
-use egui_snarl::{ui::SnarlStyle, Snarl};
-
-use crate::libs::nodes::{editor::FlowNodes, SerdeClone};
+use crate::prelude::{snarl::*, utils::*};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
