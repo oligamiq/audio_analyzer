@@ -13,7 +13,7 @@ pub struct App {
     // streamer: Streamer,
     snarl: Snarl<FlowNodes>,
     style: SnarlStyle,
-    reloader: Arc<Mutex<Option<Config>>>,
+    reloader: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
 impl App {
@@ -84,8 +84,11 @@ impl eframe::App for App {
         if self.reloader.lock().is_some() {
             let mut reloader = self.reloader.lock();
             if let Some(config) = reloader.take() {
-                self.snarl = config.snarl;
-                self.style = config.style;
+                if let Ok(config) = serde_json::from_slice(&config) {
+                    let Config { snarl, style } = config;
+                    self.snarl = snarl;
+                    self.style = style;
+                }
             }
         }
 
@@ -112,17 +115,12 @@ impl eframe::App for App {
                         let reloader = self.reloader.clone();
 
                         picker::open_file(move |file| match std::str::from_utf8(&file) {
-                            Ok(serde_json) => match serde_json::from_str::<Config>(&serde_json) {
-                                Ok(config) => {
-                                    let mut reloader = reloader.lock();
-                                    *reloader = Some(config);
-                                }
-                                Err(e) => {
-                                    log::warn!("Failed to deserialize file: {}", e);
-                                }
-                            },
+                            Ok(config) => {
+                                let mut reloader = reloader.lock();
+                                *reloader = Some(serde_json::from_str(config).unwrap());
+                            }
                             Err(e) => {
-                                log::warn!("Failed to read file: {}", e);
+                                trace!("Failed to load file: {}", e);
                             }
                         });
                     }
