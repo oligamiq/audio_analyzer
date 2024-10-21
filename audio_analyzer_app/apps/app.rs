@@ -130,7 +130,7 @@ impl eframe::App for App {
                                 log::info!("Loaded file: {}", config);
 
                                 let mut reloader = reloader.lock();
-                                *reloader = Some(serde_json::from_str(config).unwrap());
+                                *reloader = Some(file);
                             }
                             Err(e) => {
                                 trace!("Failed to load file: {}", e);
