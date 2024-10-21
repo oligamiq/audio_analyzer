@@ -1,7 +1,9 @@
 use std::future::Future;
 
 pub fn save_file(data: Vec<u8>) {
-    let task = rfd::AsyncFileDialog::new().save_file();
+    let task = rfd::AsyncFileDialog::new()
+        .set_file_name("audio_analyzer_save.txt")
+        .save_file();
 
     execute(async move {
         let file = task.await;

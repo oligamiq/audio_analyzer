@@ -4,13 +4,15 @@ use egui_plotter::EguiBackend;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataPlotterNode {
     pub name: String,
-    pub hold_data: Option<NodeInfoTypesWithData>,
     pub size: EditableOnText<usize>,
     chart_pitch: f32,
     chart_yaw: f32,
     chart_scale: f32,
     chart_pitch_vel: f32,
     chart_yaw_vel: f32,
+
+    #[serde(skip)]
+    pub hold_data: Option<NodeInfoTypesWithData>,
 }
 
 use plotters::prelude::*;
