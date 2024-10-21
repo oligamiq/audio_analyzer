@@ -82,9 +82,18 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.reloader.lock().is_some() {
+            log::info!("Reloading config");
+
             let mut reloader = self.reloader.lock();
+
+            log::info!("Reloader: {:?}", reloader);
+
             if let Some(config) = reloader.take() {
+                log::info!("taken config: {:?}", config);
+
                 if let Ok(config) = serde_json::from_slice(&config) {
+                    log::info!("parsed config: {:?}", config);
+
                     let Config { snarl, style } = config;
                     self.snarl = snarl;
                     self.style = style;
@@ -112,10 +121,14 @@ impl eframe::App for App {
                     }
 
                     if ui.button("📂 Open text file").clicked() {
+                        log::info!("Open text file");
+
                         let reloader = self.reloader.clone();
 
                         picker::open_file(move |file| match std::str::from_utf8(&file) {
                             Ok(config) => {
+                                log::info!("Loaded file: {}", config);
+
                                 let mut reloader = reloader.lock();
                                 *reloader = Some(serde_json::from_str(config).unwrap());
                             }
@@ -126,6 +139,8 @@ impl eframe::App for App {
                     }
 
                     if ui.button("💾 Save text file").clicked() {
+                        log::info!("Save text file");
+
                         picker::save_file(
                             serde_json::to_string(&Config::from_ref(&self.snarl, &self.style))
                                 .unwrap()
