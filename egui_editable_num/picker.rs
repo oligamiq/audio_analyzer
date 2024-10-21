@@ -2,7 +2,7 @@ use std::future::Future;
 
 pub fn save_file(data: Vec<u8>) {
     let task = rfd::AsyncFileDialog::new()
-        .set_file_name("audio_analyzer_save.txt")
+        .set_file_name("audio_analyzer_save.json")
         .save_file();
 
     execute(async move {
@@ -13,7 +13,7 @@ pub fn save_file(data: Vec<u8>) {
     });
 }
 
-pub fn open_file<F: Fn(Vec<u8>) + 'static>(callback: F) {
+pub fn open_file<F: Fn(Vec<u8>) + 'static + Send>(callback: F) {
     let task = rfd::AsyncFileDialog::new().pick_file();
 
     execute(async move {
