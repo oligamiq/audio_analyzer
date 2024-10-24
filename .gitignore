@@ -1,3 +1,4 @@
 /target
 /dist
 **/out/*.png
+**/chime_home/*
