@@ -7,15 +7,7 @@ use rayon::prelude::*;
 pub fn main() -> anyhow::Result<()> {
     let first_time = std::time::Instant::now();
 
-    // bench_data(1)?;
-
-    let correct = (1..=60)
-        .into_par_iter()
-        .map(|i| bench_data(i))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let correct_self_rate = correct.iter().map(|(a, _)| a).sum::<f64>() / 60.;
-    let correct_other_rate = correct.iter().map(|(_, b)| b).sum::<f64>() / 60.;
+    let (correct_self_rate, correct_other_rate) = bench_data()?;
 
     println!("correct_self_rate: {}", correct_self_rate);
     println!("correct_other_rate: {}", correct_other_rate);
@@ -31,129 +23,30 @@ pub fn main() -> anyhow::Result<()> {
 const ANALYZE_SECOND: f64 = 0.05;
 const THRESHOLD: f64 = 50.;
 
-pub fn bench_data(speaker_n: usize) -> anyhow::Result<(f64, f64)> {
-    assert!(speaker_n > 0);
-    assert!(speaker_n <= 60);
+pub fn bench_data() -> anyhow::Result<(f64, f64)> {
+    let datas = get_all_data()?;
 
-    let mut rng = rand::thread_rng();
+    let correct = (1..=60)
+        .into_par_iter()
+        .map(|i| {
+            let (self_datas, other_datas) = get_ident_data(&datas, i)?;
 
-    let base_path = "AudioMNIST/data";
+            let ave_lifter = gen_ident_data(&datas, i, 3)?;
 
-    let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
-        assert!(say_n <= 9);
+            check_speaker(ave_lifter.view(), self_datas, other_datas)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
-        assert!(num_n <= 49);
-
-        let path = format!("{base_path}/{speaker_n:02}/{say_n}_{speaker_n:02}_{num_n}.wav");
-
-        path
-    };
-
-    let get_lifter = |path: &str| {
-        let mut data = TestData::new_with_path(path.to_owned());
-
-        data.start();
-
-        let lifter = get_lifters(data, ANALYZE_SECOND);
-
-        //平均を取る
-        let lifter = (0..lifter[0].len())
-            .map(|i| {
-                lifter.iter().map(|lifter| lifter[i].clone()).sum::<f64>() / lifter.len() as f64
-            })
-            .collect::<Array1<_>>();
-
-        lifter
-    };
-
-    let mut gen_landom_lifter = || {
-        let say_n = rng.gen_range(0..10);
-        let num_n = rng.gen_range(0..50);
-
-        let path = gen_path(speaker_n, say_n, num_n);
-
-        get_lifter(&path)
-    };
-
-    // 5 sample
-    let mut data = Vec::new();
-    for _ in 0..5 {
-        data.push(gen_landom_lifter());
-    }
-
-    // 平均を取る
-    let ave_lifter = (0..data[0].len())
-        .map(|i| data.iter().map(|lifter| lifter[i].clone()).sum::<f64>() / 50.0)
-        .collect::<Vec<_>>();
-
-    // ave_lifterとの距離を計算し、本人か確認するための関数
-    let get_distance = |lifter: &Array1<f64>| {
-        ave_lifter
-            .iter()
-            .zip(lifter.iter())
-            .map(|(a, b)| (a - b).abs())
-            .sum::<f64>()
-    };
-
-    let get_distance_by_path = |path: &str| {
-        let lifter = get_lifter(path);
-
-        get_distance(&lifter)
-    };
-
-    let check_speaker = |path: &str| {
-        let distance = get_distance_by_path(path);
-
-        // println!("distance: {}", distance);
-
-        distance < THRESHOLD
-    };
-
-    // 自身のデータに対して、本人か確認する
-    let mut correct_self = 0;
-    for i in 0..9 {
-        for j in 0..50 {
-            let path = gen_path(speaker_n, i, j);
-
-            if check_speaker(&path) {
-                correct_self += 1;
-            }
-        }
-    }
-    // 自身への正答率
-    let correct_self_rate = correct_self as f64 / 450.;
-
-    // その他のデータに対して、他人か確認する
-    let mut correct_other = 0;
-    for i in 1..=60 {
-        if i == speaker_n {
-            continue;
-        }
-
-        for j in 0..9 {
-            for k in 0..50 {
-                let path = gen_path(i, j, k);
-
-                if !check_speaker(&path) {
-                    correct_other += 1;
-                }
-            }
-        }
-    }
-
-    // 他人への正答率
-    let correct_other_rate = correct_other as f64 / (59. * 9. * 50.);
-
-    println!("correct_self_rate: {}", correct_self_rate);
-    println!("correct_other_rate: {}", correct_other_rate);
+    let correct_self_rate = correct.iter().map(|(a, _)| a).sum::<f64>() / 60.;
+    let correct_other_rate = correct.iter().map(|(_, b)| b).sum::<f64>() / 60.;
 
     Ok((correct_self_rate, correct_other_rate))
 }
 
 pub fn check_speaker(
     ave_lifter: ArrayView1<f64>,
-    self_datas: Vec<ArrayView1<f64>>,
-    other_datas: Vec<ArrayView1<f64>>,
+    self_datas: Vec<Array1<f64>>,
+    other_datas: Vec<Array1<f64>>,
 ) -> anyhow::Result<(f64, f64)> {
     let get_distance = |lifter: &Array1<f64>| {
         ave_lifter
@@ -186,4 +79,94 @@ pub fn check_speaker(
     Ok((correct_self_rate, correct_other_rate))
 }
 
-pub fn get_all_data
+pub fn get_all_data() -> anyhow::Result<Vec<Vec<Array1<f64>>>> {
+    let base_path = "AudioMNIST/data";
+
+    let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
+        assert!(say_n <= 9);
+
+        assert!(num_n <= 49);
+
+        let path = format!("{base_path}/{speaker_n:02}/{say_n}_{speaker_n:02}_{num_n}.wav");
+
+        path
+    };
+
+    let get_lifter = |path: &str| {
+        let mut data = TestData::new_with_path(path.to_owned());
+
+        data.start();
+
+        let lifter = get_lifters(data, ANALYZE_SECOND);
+
+        //平均を取る
+        let lifter = (0..lifter[0].len())
+            .map(|i| {
+                lifter.iter().map(|lifter| lifter[i].clone()).sum::<f64>() / lifter.len() as f64
+            })
+            .collect::<Array1<_>>();
+
+        lifter
+    };
+
+    let datas = (1..=60)
+        .into_par_iter()
+        .map(|speaker_n| {
+            (0..9)
+                .into_iter()
+                .flat_map(|j| {
+                    (0..50).into_iter().map(move |k| {
+                        let path = gen_path(speaker_n, j, k);
+
+                        get_lifter(&path)
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    Ok(datas)
+}
+
+// 本人のデータと他人のデータを取得する
+pub fn get_ident_data(
+    datas: &Vec<Vec<Array1<f64>>>,
+    speaker_n: usize,
+) -> anyhow::Result<(Vec<Array1<f64>>, Vec<Array1<f64>>)> {
+    let self_datas = datas[speaker_n - 1].clone();
+
+    let mut other_datas = Vec::new();
+
+    for i in 0..60 {
+        if i == speaker_n - 1 {
+            continue;
+        }
+
+        other_datas.extend(datas[i].clone());
+    }
+
+    Ok((self_datas, other_datas))
+}
+
+// 本人のデータからランダムにn個のデータを取得し、平均を取って、個人を識別するためのデータとする
+pub fn gen_ident_data(
+    datas: &Vec<Vec<Array1<f64>>>,
+    speaker_n: usize,
+    n: usize,
+) -> anyhow::Result<Array1<f64>> {
+    let self_datas = &datas[speaker_n - 1];
+
+    let mut rng = rand::thread_rng();
+
+    let mut ave_lifter = Array1::zeros(self_datas[0].len());
+
+    for _ in 0..n {
+        let lifter = &self_datas[rng.gen_range(0..self_datas.len())];
+
+        ave_lifter += lifter;
+    }
+
+    ave_lifter /= n as f64;
+
+    Ok(ave_lifter)
+}
