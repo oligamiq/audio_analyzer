@@ -1,10 +1,9 @@
 use audio_analyzer_core::prelude::*;
+use bench_data::{lifter, line_graph, log_amplitude_spectrum, quefrency};
 use mel_spec::mel::{hz_to_mel, mel_to_hz};
 use ndarray::prelude::*;
 use num_complex::Complex;
 use plotters::prelude::*;
-
-pub mod line_graph;
 
 fn main() {
     let mut data = TestData::new_with_path("../test_data/jfk_f32le.wav".into());
@@ -77,7 +76,7 @@ fn main() {
                     &format!("out/mel_{n}.png"),
                     sample_rate as f64,
                     (800, 600),
-                    false,
+                    true,
                 )
                 .unwrap();
             }
@@ -86,37 +85,6 @@ fn main() {
 
     plot.plot_3d("out/3d.svg", sample_rate as f64, (8000, 6000))
         .unwrap();
-}
-
-fn log_amplitude_spectrum(fft: &ArrayView1<Complex<f64>>) -> Array1<f64> {
-    fft.mapv(|x| 10.0 * x.norm_sqr().log10())
-}
-
-fn quefrency(log_amplitude_spectrum: Array1<f64>) -> Array1<f64> {
-    let ifft = rustfft::FftPlanner::new().plan_fft_inverse(log_amplitude_spectrum.len());
-
-    let mut ifft_input = log_amplitude_spectrum
-        .iter()
-        .map(|x| Complex::new(*x, 0.0))
-        .collect::<Vec<_>>();
-
-    ifft.process(&mut ifft_input);
-
-    let quefrency = ifft_input.iter().map(|x| x.re).collect::<Array1<_>>();
-
-    quefrency
-}
-
-fn lifter(quefrency: Array1<f64>, index: usize) -> Array1<f64> {
-    let mut quefrency = quefrency.clone();
-
-    for i in 0..quefrency.len() {
-        if i > index && i < quefrency.len() - index {
-            quefrency[i] = 0.0;
-        }
-    }
-
-    quefrency
 }
 
 fn spectral_envelope(quefrency: Array1<f64>, n: usize) -> Array1<f64> {
