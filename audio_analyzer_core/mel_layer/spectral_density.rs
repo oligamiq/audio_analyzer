@@ -34,15 +34,15 @@ impl ToPowerSpectralDensityLayer {
 
     pub fn through_inner<'a>(
         &mut self,
-        data: &'a Array2<f64>,
+        data: &'a Array1<f64>,
     ) -> Result<Option<Array1<(f64, f64)>>> {
         let Self { config, holder } = self;
 
         // debug!("Data: {:?}", data);
 
-        if data.shape()[1] != 1 || data.shape()[0] != config.n_mels {
+        if data.shape()[0] != config.n_mels {
             log::error!(
-                "Data shape is invalid. Expected: ({}, 1), Got: {:?}",
+                "Data shape is invalid. Expected: {}, Got: {:?}",
                 config.n_mels,
                 data.shape()
             );
@@ -50,16 +50,12 @@ impl ToPowerSpectralDensityLayer {
             return Ok(None);
         }
 
-        assert!(data.shape()[1] == 1);
-        assert!(data.shape()[0] == config.n_mels);
-
-        // dataから取り出す
-        // let data = data.t()
-
-        // holder.assign_elem(data);
-
         assert!(holder.shape()[0] == config.n_mels);
 
+        // *holder = ndarray::concatenate(Axis(1), &[holder.view(), data.view()]).unwrap();
+
+        // push data(array1) to holder(array2)
+        let data = data.clone().insert_axis(Axis(1));
         *holder = ndarray::concatenate(Axis(1), &[holder.view(), data.view()]).unwrap();
 
         // holder.axis_iter_mut(Axis(1)).for_each(|mut x| {
@@ -105,27 +101,27 @@ impl ToPowerSpectralDensityLayer {
     }
 }
 
-impl Layer for ToPowerSpectralDensityLayer {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+// impl Layer for ToPowerSpectralDensityLayer {
+//     fn as_any(&self) -> &dyn Any {
+//         self
+//     }
 
-    fn through<'a>(&mut self, input: &'a dyn Any) -> Result<Vec<Box<(dyn Any + 'static)>>> {
-        let data = input.downcast_ref::<Array2<f64>>().unwrap();
+//     fn through<'a>(&mut self, input: &'a dyn Any) -> Result<Vec<Box<(dyn Any + 'static)>>> {
+//         let data = input.downcast_ref::<Array2<f64>>().unwrap();
 
-        let ret = self.through_inner(data)?;
+//         let ret = self.through_inner(data)?;
 
-        Ok(ret
-            .into_iter()
-            .map(|x| Box::new(x) as Box<dyn Any>)
-            .collect())
-    }
+//         Ok(ret
+//             .into_iter()
+//             .map(|x| Box::new(x) as Box<dyn Any>)
+//             .collect())
+//     }
 
-    fn input_type(&self) -> &'static str {
-        "Array2<f64>"
-    }
+//     fn input_type(&self) -> &'static str {
+//         "Array2<f64>"
+//     }
 
-    fn output_type(&self) -> &'static str {
-        "Array1<(f64, f64)>"
-    }
-}
+//     fn output_type(&self) -> &'static str {
+//         "Array1<(f64, f64)>"
+//     }
+// }

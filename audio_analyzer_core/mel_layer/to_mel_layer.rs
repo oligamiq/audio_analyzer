@@ -1,7 +1,7 @@
 use std::{any::Any, fmt::Debug};
 
 use mel_spec::{config::MelConfig, mel::MelSpectrogram};
-use ndarray::{Array1, Array2};
+use ndarray::Array1;
 use num_complex::Complex;
 
 use crate::layer::Layer;
@@ -32,10 +32,10 @@ impl ToMelSpectrogramLayer {
     pub fn through_inner<'a>(
         &mut self,
         data: &'a Array1<Complex<f64>>,
-    ) -> Result<Option<Array2<f64>>> {
+    ) -> Result<Option<Array1<f64>>> {
         let Self { mel } = self;
 
-        let mel_spec: Array2<f64> = mel.add(data);
+        let mel_spec: Array1<f64> = mel.add(data);
 
         Ok(Some(mel_spec))
     }

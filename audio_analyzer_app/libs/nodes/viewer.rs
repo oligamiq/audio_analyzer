@@ -88,6 +88,11 @@ impl DataPlotterNode {
                 NodeInfoTypesWithData::VecF32(vec_f32) => {
                     self.show_vec_f32(ui, vec_f32, scale);
                 }
+                NodeInfoTypesWithData::Array1F64(array1_f64) => {
+                    // todo show_array1_f64
+
+                    self.show_vec_f32(ui, array1_f64.iter().map(|x| *x as f32).collect(), scale);
+                }
                 NodeInfoTypesWithData::Array1TupleF64F64(array1_tuple_f64_f64) => {
                     self.show_array1_tuple_f64_f64(ui, array1_tuple_f64_f64, scale);
                 }

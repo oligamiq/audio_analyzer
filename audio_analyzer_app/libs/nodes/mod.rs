@@ -23,6 +23,7 @@ pub enum NodeInfoTypes {
     Number,
     VecF32,
     Array1TupleF64F64,
+    Array1F64,
     Array2F64,
     Array1ComplexF64,
     AnyInput,
@@ -94,6 +95,7 @@ pub enum NodeInfoTypesWithData {
     Number(f64),
     VecF32(Vec<f32>),
     Array1TupleF64F64(Array1<(f64, f64)>),
+    Array1F64(Array1<f64>),
     Array2F64(Array2<f64>),
     Array1ComplexF64(Array1<num_complex::Complex<f64>>),
 }

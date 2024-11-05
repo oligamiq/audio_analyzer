@@ -14,10 +14,10 @@ impl<'a> DeferredReturn<'a> {
             Self::VecF32(data)
         } else if let Some(data) = input.downcast_ref::<Array1<Complex<f64>>>() {
             Self::Array1ComplexF64(data)
-        } else if let Some(data) = input.downcast_ref::<Array2<f64>>() {
-            Self::Array2F64(data)
         } else if let Some(data) = input.downcast_ref::<Array1<(f64, f64)>>() {
             Self::Array1F64F64(data)
+        } else if let Some(data) = input.downcast_ref::<Array2<f64>>() {
+            Self::Array2F64(data)
         } else {
             panic!("Invalid type");
         }

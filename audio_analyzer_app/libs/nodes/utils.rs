@@ -7,9 +7,12 @@ impl FlowNodes {
                 LayerNodes::STFTLayer(stft_layer_node) => Some(
                     NodeInfoTypesWithData::Array1ComplexF64(stft_layer_node.get_result()?),
                 ),
-                LayerNodes::MelLayer(mel_layer_node) => Some(NodeInfoTypesWithData::Array2F64(
-                    mel_layer_node.get_result()?,
-                )),
+                // LayerNodes::MelLayer(mel_layer_node) => Some(NodeInfoTypesWithData::Array2F64(
+                //     mel_layer_node.get_result()?,
+                // )),
+                LayerNodes::MelLayer(to_mel_spectrogram_layer_node) => Some(
+                    NodeInfoTypesWithData::Array1F64(to_mel_spectrogram_layer_node.get_result()?),
+                ),
                 LayerNodes::SpectrogramDensityLayer(spectrogram_density_layer_node) => {
                     Some(NodeInfoTypesWithData::Array1TupleF64F64(
                         spectrogram_density_layer_node.get_result()?,

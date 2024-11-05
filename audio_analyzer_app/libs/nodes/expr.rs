@@ -395,6 +395,43 @@ impl ExprNodes {
                         _ => {}
                     }
                 }
+                NodeInfoTypesWithData::Array1F64(array) => {
+                    self.inputs_num.set(1);
+                    self.input_var_names = vec!["x".to_string()];
+
+                    match self.outputs_num.get() {
+                        1 => {
+                            let y = array
+                                .iter()
+                                .map(|x| self.eval(vec![*x as f64]).map(|y| y[0] as f32))
+                                .collect::<Option<Vec<_>>>();
+
+                            if let Some(y) = y {
+                                self.calculated = Some(NodeInfoTypesWithData::VecF32(y));
+
+                                return PinInfo::circle()
+                                    .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                            }
+                        }
+                        2 => {
+                            let y = array
+                                .iter()
+                                .map(|x| {
+                                    self.eval(vec![*x as f64])
+                                        .map(|y| (y[0] as f64, y[1] as f64))
+                                })
+                                .collect::<Option<ndarray::Array1<_>>>();
+
+                            if let Some(y) = y {
+                                self.calculated = Some(NodeInfoTypesWithData::Array1TupleF64F64(y));
+
+                                return PinInfo::circle()
+                                    .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 NodeInfoTypesWithData::Array1TupleF64F64(array) => {
                     self.inputs_num.set(2);
                     self.input_var_names = vec!["x".to_string(), "y".to_string()];
