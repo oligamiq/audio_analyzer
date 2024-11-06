@@ -1,10 +1,9 @@
 // PSD layer
 
-use std::{any::Any, fmt::Debug};
+use std::fmt::Debug;
 
 use ndarray::{s, Array1, Array2, Axis};
 
-use crate::layer::Layer;
 use crate::Result;
 
 #[derive(Debug, Clone)]

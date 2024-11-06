@@ -1,13 +1,11 @@
 // stft layer
 
-use std::{any::Any, fmt::Debug};
+use std::fmt::Debug;
 
-use color_eyre::eyre::eyre;
 use mel_spec::stft::Spectrogram;
 use ndarray::Array1;
 use num_complex::Complex;
 
-use crate::layer::Layer;
 use crate::Result;
 
 #[derive(Debug)]
@@ -87,35 +85,5 @@ impl ToSpectrogramLayer {
         }
 
         Ok(ret)
-    }
-}
-
-impl Layer for ToSpectrogramLayer {
-    fn through<'a>(
-        &mut self,
-        input: &'a dyn std::any::Any,
-    ) -> Result<Vec<Box<(dyn Any + 'static)>>> {
-        let input = input
-            .downcast_ref::<Vec<f32>>()
-            .ok_or_else(|| eyre!("Invalid input type"))?;
-
-        let ret = self.through_inner(input)?;
-
-        Ok(ret
-            .into_iter()
-            .map(|x| Box::new(x) as Box<dyn Any>)
-            .collect())
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn input_type(&self) -> &'static str {
-        "Vec<f32>"
-    }
-
-    fn output_type(&self) -> &'static str {
-        "Array1<Complex<f64>>"
     }
 }
