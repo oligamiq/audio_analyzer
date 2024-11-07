@@ -52,7 +52,7 @@ impl Default for DataPlotterNode {
 }
 
 impl DataPlotterNode {
-    pub fn new(name: String) -> Self {
+    fn new(name: String) -> Self {
         Self {
             name,
             hold_data: None,
@@ -65,19 +65,15 @@ impl DataPlotterNode {
         }
     }
 
-    pub fn set_hold_data(&mut self, hold_data: NodeInfoTypesWithData) {
+    fn set_hold_data(&mut self, hold_data: NodeInfoTypesWithData) {
         self.hold_data = Some(hold_data);
     }
 
-    pub fn get_hold_data(&self) -> Option<&NodeInfoTypesWithData> {
+    fn get_hold_data(&self) -> Option<&NodeInfoTypesWithData> {
         self.hold_data.as_ref()
     }
 
-    pub fn to_info(&self) -> DataPlotterNodeInfo {
-        DataPlotterNodeInfo
-    }
-
-    pub fn show(&mut self, ui: &mut egui::Ui, _is_new: bool, scale: f32) {
+    fn show(&mut self, ui: &mut egui::Ui, _is_new: bool, scale: f32) {
         let hold_data = self.hold_data.clone();
 
         if let Some(hold_data) = hold_data {
@@ -106,7 +102,7 @@ impl DataPlotterNode {
         }
     }
 
-    pub fn show_vec_f32(&mut self, ui: &mut egui::Ui, vec_f32: Vec<f32>, scale: f32) {
+    fn show_vec_f32(&mut self, ui: &mut egui::Ui, vec_f32: Vec<f32>, scale: f32) {
         self.plot(ui, scale, |ui, scale, _| {
             let root = EguiBackend::new(&ui).into_drawing_area();
 
@@ -151,7 +147,7 @@ impl DataPlotterNode {
         });
     }
 
-    pub fn show_array1_tuple_f64_f64(
+    fn show_array1_tuple_f64_f64(
         &mut self,
         ui: &mut egui::Ui,
         array1_tuple_f64_f64: Array1<(f64, f64)>,
@@ -218,7 +214,7 @@ impl DataPlotterNode {
         });
     }
 
-    pub fn show_array1_complex_f64(
+    fn show_array1_complex_f64(
         &mut self,
         ui: &mut egui::Ui,
         complex_array: Array1<num_complex::Complex<f64>>,
@@ -318,7 +314,7 @@ impl DataPlotterNode {
         });
     }
 
-    pub fn plot<F: FnMut(&mut egui::Ui, f32, &mut DataPlotterNode)>(
+    fn plot<F: FnMut(&mut egui::Ui, f32, &mut DataPlotterNode)>(
         &mut self,
         ui: &mut egui::Ui,
         scale: f32,
@@ -411,5 +407,13 @@ impl FlowNodesViewerTrait for DataPlotterNode {
         }
 
         return Box::new(|_, _| PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255)));
+    }
+}
+
+impl GraphNode for DataPlotterNode {
+    type NodeInfoType = DataPlotterNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        DataPlotterNodeInfo
     }
 }

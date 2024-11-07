@@ -124,3 +124,11 @@ pub trait SerdeClone: serde::Serialize + serde::de::DeserializeOwned {
 }
 
 impl<T> SerdeClone for T where T: serde::Serialize + serde::de::DeserializeOwned {}
+
+pub trait GraphNode {
+    type NodeInfoType: NodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType;
+
+    fn update(&mut self) {}
+}

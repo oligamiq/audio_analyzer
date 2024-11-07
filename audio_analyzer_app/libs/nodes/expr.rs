@@ -106,7 +106,7 @@ impl Default for ExprNodes {
 }
 
 impl ExprNodes {
-    pub fn new(
+    fn new(
         inputs_num: usize,
         input_var_names: Vec<String>,
         expr: String,
@@ -132,11 +132,7 @@ impl ExprNodes {
         sl
     }
 
-    pub fn to_info(&self) -> ExprNodeInfo {
-        ExprNodeInfo
-    }
-
-    pub fn create_cb() -> (
+    fn create_cb() -> (
         Box<dyn Fn(&str, Vec<f64>) -> Option<f64>>,
         Rc<RefCell<BTreeMap<String, f64>>>,
         Rc<RefCell<Vec<f64>>>,
@@ -178,21 +174,7 @@ impl ExprNodes {
         (cb, access_vars, ret_values)
     }
 
-    pub fn update(&mut self) {
-        let Self { expr, slab, .. } = self;
-
-        let parser = fasteval3::Parser::new();
-        if let Ok(parsed) = parser.parse(expr, &mut slab.ps) {
-            let compiled =
-                parsed
-                    .from(&slab.ps)
-                    .compile(&slab.ps, &mut slab.cs, &mut EmptyNamespace);
-
-            self.compiled = Some(compiled);
-        }
-    }
-
-    pub fn eval(&mut self, inputs: Vec<f64>) -> Option<Vec<f64>> {
+    fn eval(&mut self, inputs: Vec<f64>) -> Option<Vec<f64>> {
         use fasteval3::Evaler;
 
         let Self {
@@ -261,7 +243,7 @@ impl ExprNodes {
         None
     }
 
-    pub fn show_and_calc(
+    fn show_and_calc(
         &mut self,
         ui: &mut egui::Ui,
         data: Option<NodeInfoTypesWithData>,
@@ -508,5 +490,27 @@ impl FlowNodesViewerTrait for ExprNodes {
 
             PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
         });
+    }
+}
+
+impl GraphNode for ExprNodes {
+    type NodeInfoType = ExprNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        ExprNodeInfo
+    }
+
+    fn update(&mut self) {
+        let Self { expr, slab, .. } = self;
+
+        let parser = fasteval3::Parser::new();
+        if let Ok(parsed) = parser.parse(expr, &mut slab.ps) {
+            let compiled =
+                parsed
+                    .from(&slab.ps)
+                    .compile(&slab.ps, &mut slab.cs, &mut EmptyNamespace);
+
+            self.compiled = Some(compiled);
+        }
     }
 }

@@ -15,7 +15,7 @@ pub mod nodes {
         },
         utils::{config_ui, extract_node},
         viewer::{DataPlotterNode, DataPlotterNodeInfo},
-        NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
+        GraphNode, NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
     };
     pub use egui_editable_num::EditableOnText;
     pub use ndarray::{Array1, Array2};

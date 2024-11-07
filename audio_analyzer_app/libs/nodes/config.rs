@@ -1,5 +1,7 @@
 use crate::prelude::nodes::*;
 
+use super::GraphNode;
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {
     NumberNode(NumberNode),
@@ -68,18 +70,10 @@ impl Default for NumberNode {
     }
 }
 
-impl NumberNode {
-    pub const fn inputs() -> usize {
-        0
-    }
+impl GraphNode for NumberNode {
+    type NodeInfoType = NumberNodeInfo;
 
-    pub const fn outputs() -> usize {
-        1
-    }
-
-    pub fn to_info(&self) -> NumberNodeInfo {
+    fn to_info(&self) -> Self::NodeInfoType {
         NumberNodeInfo
     }
-
-    pub fn update(&self) {}
 }
