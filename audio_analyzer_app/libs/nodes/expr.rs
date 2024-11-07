@@ -160,6 +160,11 @@ impl ExprNodes {
                         return Some(args[0].sqrt());
                     }
                 }
+                "log_10" => {
+                    if args.len() == 1 {
+                        return Some(args[0].log10());
+                    }
+                }
                 _ => {}
             }
 
