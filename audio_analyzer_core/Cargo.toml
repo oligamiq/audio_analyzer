@@ -15,9 +15,6 @@ cpal = { version = "0.15", features = ["wasm-bindgen"] }
 # locad music file
 symphonia = { version = "0.5.4", default-features = false, features = ["all-formats", "all-codecs", "mpa", "opt-simd", "all"] }
 
-# debugging
-color-eyre.workspace = true
-
 # log
 # utils
 # directories = "5.0.1"
@@ -31,13 +28,11 @@ parking_lot = "0.12.3"
 # smallvec = "1.13.2"
 # hound = "3.5.1"
 
-# others
-# https://ratatui.rs/recipes/apps/color-eyre/
-
 ndarray.workspace = true
 num-complex.workspace = true
 log.workspace = true
 mel_spec.workspace = true
+anyhow.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.95"

@@ -4,7 +4,7 @@ pub mod apps;
 pub mod libs;
 pub(crate) mod prelude;
 
-pub type Result<T> = color_eyre::Result<T>;
+pub type Result<T> = anyhow::Result<T>;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]

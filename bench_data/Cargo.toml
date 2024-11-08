@@ -18,7 +18,7 @@ audio_analyzer_core.workspace = true
 ndarray.workspace = true
 plotters.workspace = true
 num-complex.workspace = true
-anyhow = "1.0"
+anyhow.workspace = true
 image = { version = "0.25.4", default-features = false, features = ["png"] }
 mel_spec.workspace = true
 rustfft = "6.2"
