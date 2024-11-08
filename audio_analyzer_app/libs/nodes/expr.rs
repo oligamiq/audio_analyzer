@@ -106,7 +106,7 @@ impl Default for ExprNodes {
 }
 
 impl ExprNodes {
-    pub fn new(
+    fn new(
         inputs_num: usize,
         input_var_names: Vec<String>,
         expr: String,
@@ -132,11 +132,7 @@ impl ExprNodes {
         sl
     }
 
-    pub fn to_info(&self) -> ExprNodeInfo {
-        ExprNodeInfo
-    }
-
-    pub fn create_cb() -> (
+    fn create_cb() -> (
         Box<dyn Fn(&str, Vec<f64>) -> Option<f64>>,
         Rc<RefCell<BTreeMap<String, f64>>>,
         Rc<RefCell<Vec<f64>>>,
@@ -164,6 +160,11 @@ impl ExprNodes {
                         return Some(args[0].sqrt());
                     }
                 }
+                "log_10" => {
+                    if args.len() == 1 {
+                        return Some(args[0].log10());
+                    }
+                }
                 _ => {}
             }
 
@@ -178,21 +179,7 @@ impl ExprNodes {
         (cb, access_vars, ret_values)
     }
 
-    pub fn update(&mut self) {
-        let Self { expr, slab, .. } = self;
-
-        let parser = fasteval3::Parser::new();
-        if let Ok(parsed) = parser.parse(expr, &mut slab.ps) {
-            let compiled =
-                parsed
-                    .from(&slab.ps)
-                    .compile(&slab.ps, &mut slab.cs, &mut EmptyNamespace);
-
-            self.compiled = Some(compiled);
-        }
-    }
-
-    pub fn eval(&mut self, inputs: Vec<f64>) -> Option<Vec<f64>> {
+    fn eval(&mut self, inputs: Vec<f64>) -> Option<Vec<f64>> {
         use fasteval3::Evaler;
 
         let Self {
@@ -261,11 +248,7 @@ impl ExprNodes {
         None
     }
 
-    pub fn show_and_calc(
-        &mut self,
-        ui: &mut egui::Ui,
-        data: Option<NodeInfoTypesWithData>,
-    ) -> PinInfo {
+    fn show_and_calc(&mut self, ui: &mut egui::Ui, data: Option<NodeInfoTypesWithData>) -> PinInfo {
         ui.label("outputs_num");
 
         if egui::TextEdit::singleline(&mut self.outputs_num)
@@ -329,11 +312,11 @@ impl ExprNodes {
                         1 => {
                             let y = array
                                 .iter()
-                                .map(|x| self.eval(vec![x.re, x.im]).map(|y| y[0] as f32))
-                                .collect::<Option<Vec<_>>>();
+                                .map(|x| self.eval(vec![x.re, x.im]).map(|y| y[0]))
+                                .collect::<Option<Array1<_>>>();
 
                             if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::VecF32(y));
+                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
 
                                 return PinInfo::circle()
                                     .with_fill(egui::Color32::from_rgb(0, 255, 0));
@@ -358,7 +341,7 @@ impl ExprNodes {
                         _ => {}
                     }
                 }
-                NodeInfoTypesWithData::VecF32(array) => {
+                NodeInfoTypesWithData::Array1F64(array) => {
                     self.inputs_num.set(1);
                     self.input_var_names = vec!["x".to_string()];
 
@@ -366,11 +349,11 @@ impl ExprNodes {
                         1 => {
                             let y = array
                                 .iter()
-                                .map(|x| self.eval(vec![*x as f64]).map(|y| y[0] as f32))
-                                .collect::<Option<Vec<_>>>();
+                                .map(|x| self.eval(vec![*x as f64]).map(|y| y[0]))
+                                .collect::<Option<Array1<_>>>();
 
                             if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::VecF32(y));
+                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
 
                                 return PinInfo::circle()
                                     .with_fill(egui::Color32::from_rgb(0, 255, 0));
@@ -403,11 +386,11 @@ impl ExprNodes {
                         1 => {
                             let y = array
                                 .iter()
-                                .map(|x| self.eval(vec![x.0, x.1]).map(|y| y[0] as f32))
-                                .collect::<Option<Vec<_>>>();
+                                .map(|x| self.eval(vec![x.0, x.1]).map(|y| y[0]))
+                                .collect::<Option<Array1<_>>>();
 
                             if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::VecF32(y));
+                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
 
                                 return PinInfo::circle()
                                     .with_fill(egui::Color32::from_rgb(0, 255, 0));
@@ -471,5 +454,27 @@ impl FlowNodesViewerTrait for ExprNodes {
 
             PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
         });
+    }
+}
+
+impl GraphNode for ExprNodes {
+    type NodeInfoType = ExprNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        ExprNodeInfo
+    }
+
+    fn update(&mut self) {
+        let Self { expr, slab, .. } = self;
+
+        let parser = fasteval3::Parser::new();
+        if let Ok(parsed) = parser.parse(expr, &mut slab.ps) {
+            let compiled =
+                parsed
+                    .from(&slab.ps)
+                    .compile(&slab.ps, &mut slab.cs, &mut EmptyNamespace);
+
+            self.compiled = Some(compiled);
+        }
     }
 }

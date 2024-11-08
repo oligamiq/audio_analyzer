@@ -3,6 +3,7 @@ use crate::prelude::nodes::*;
 pub mod config;
 pub mod editor;
 pub mod expr;
+pub mod frame_queue;
 pub mod layer;
 pub mod pin_info;
 pub mod raw_input;
@@ -23,6 +24,7 @@ pub enum NodeInfoTypes {
     Number,
     VecF32,
     Array1TupleF64F64,
+    Array1F64,
     Array2F64,
     Array1ComplexF64,
     AnyInput,
@@ -92,8 +94,8 @@ impl NodeInfoTypes {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum NodeInfoTypesWithData {
     Number(f64),
-    VecF32(Vec<f32>),
     Array1TupleF64F64(Array1<(f64, f64)>),
+    Array1F64(Array1<f64>),
     Array2F64(Array2<f64>),
     Array1ComplexF64(Array1<num_complex::Complex<f64>>),
 }
@@ -122,3 +124,11 @@ pub trait SerdeClone: serde::Serialize + serde::de::DeserializeOwned {
 }
 
 impl<T> SerdeClone for T where T: serde::Serialize + serde::de::DeserializeOwned {}
+
+pub trait GraphNode {
+    type NodeInfoType: NodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType;
+
+    fn update(&mut self) {}
+}

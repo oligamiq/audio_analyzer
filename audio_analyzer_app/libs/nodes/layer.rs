@@ -163,21 +163,21 @@ impl FlowNodesViewerTrait for STFTLayerNode {
                 ui.label("raw stream");
 
                 if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::RawInputNodes(node) = &snarl[out_pin.node] {
-                        if let Some(data) = node.get() {
-                            return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
-                                extract_node!(
-                                    &mut snarl[pin_id.node],
-                                    FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
-                                        if let Err(err) = node.calc(&data) {
-                                            log::error!("STFTLayerNode: {}", err);
-                                        }
-                                    }
-                                );
+                    let data = snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
 
-                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
-                            });
-                        }
+                    if let Some(NodeInfoTypesWithData::Array1F64(data)) = data {
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
+                                    if let Err(err) = node.calc(&Array1::from(data.clone())) {
+                                        log::error!("STFTLayerNode: {}", err);
+                                    }
+                                }
+                            );
+
+                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                        });
                     }
                 }
 
@@ -267,8 +267,8 @@ impl STFTLayerNode {
         }
     }
 
-    pub fn calc(&mut self, data: &Vec<f32>) -> crate::Result<()> {
-        self.result = self.layer.through_inner(data)?.pop();
+    pub fn calc(&mut self, data: &Array1<f64>) -> crate::Result<()> {
+        self.result = self.layer.through_inner(&data.to_vec())?.pop();
 
         Ok(())
     }
@@ -313,7 +313,7 @@ pub struct MelLayerNode {
     layer: ToMelSpectrogramLayer,
 
     #[serde(skip)]
-    result: Option<Array2<f64>>,
+    result: Option<Array1<f64>>,
 }
 
 impl FlowNodesViewerTrait for MelLayerNode {
@@ -448,7 +448,7 @@ impl NodeInfo for MelLayerNodeInfo {
     }
 
     fn output_types(&self) -> Vec<NodeInfoTypes> {
-        vec![NodeInfoTypes::Array2F64]
+        vec![NodeInfoTypes::Array1F64]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -530,7 +530,7 @@ impl MelLayerNode {
         ));
     }
 
-    pub fn get_result(&self) -> Option<Array2<f64>> {
+    pub fn get_result(&self) -> Option<Array1<f64>> {
         self.result.clone()
     }
 
@@ -608,7 +608,7 @@ impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
                         snarl[remote_node.node].to_node_info_types_with_data(remote_node.output);
 
                     match data {
-                        Some(NodeInfoTypesWithData::Array2F64(data)) => {
+                        Some(NodeInfoTypesWithData::Array1F64(data)) => {
                             return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
                                 extract_node!(
                                     &mut snarl[pin_id.node],
@@ -660,7 +660,7 @@ impl NodeInfo for SpectrogramDensityLayerNodeInfo {
             NodeInfoTypes::Number,
             NodeInfoTypes::Number,
             NodeInfoTypes::Number,
-            NodeInfoTypes::Array2F64,
+            NodeInfoTypes::Array1F64,
         ]
     }
 
@@ -725,7 +725,7 @@ impl SpectrogramDensityLayerNode {
         }
     }
 
-    pub fn calc(&mut self, data: Array2<f64>) -> crate::Result<()> {
+    pub fn calc(&mut self, data: Array1<f64>) -> crate::Result<()> {
         self.result = self.layer.through_inner(&data)?;
 
         Ok(())

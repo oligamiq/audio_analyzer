@@ -5,6 +5,7 @@ pub mod nodes {
         config::{ConfigNodes, NumberNode, NumberNodeInfo},
         editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerTrait},
         expr::{ExprNodeInfo, ExprNodes},
+        frame_queue::{CycleBuffer, CycleBufferInfo, FrameBuffer, FrameQueue, FrameQueueInfo},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
@@ -15,7 +16,7 @@ pub mod nodes {
         },
         utils::{config_ui, extract_node},
         viewer::{DataPlotterNode, DataPlotterNodeInfo},
-        NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
+        GraphNode, NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
     };
     pub use egui_editable_num::EditableOnText;
     pub use ndarray::{Array1, Array2};

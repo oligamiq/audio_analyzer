@@ -22,10 +22,10 @@ impl RawInputNodes {
         }
     }
 
-    pub const fn inputs(&self) -> usize {
+    pub fn inputs(&self) -> usize {
         match self {
-            RawInputNodes::MicrophoneInputNode(node) => node.inputs(),
-            RawInputNodes::FileInputNode(node) => node.inputs(),
+            RawInputNodes::MicrophoneInputNode(_) => MicrophoneInputNodeInfo.inputs(),
+            RawInputNodes::FileInputNode(_) => FileInputNodeInfo.inputs(),
         }
     }
 
@@ -40,7 +40,7 @@ impl RawInputNodes {
         }
     }
 
-    pub fn get(&self) -> Option<Vec<f32>> {
+    pub fn get(&self) -> Option<Array1<f64>> {
         match self {
             RawInputNodes::MicrophoneInputNode(node) => match node {
                 #[cfg(not(target_family = "wasm"))]
@@ -53,12 +53,33 @@ impl RawInputNodes {
     }
 }
 
+impl GraphNode for MicrophoneInputNode {
+    type NodeInfoType = MicrophoneInputNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        MicrophoneInputNodeInfo
+    }
+
+    fn update(&mut self) {
+        match self {
+            #[cfg(not(target_family = "wasm"))]
+            MicrophoneInputNode::Device(node, vec) => {
+                *vec = node.try_recv().map(|x| x.into_iter().collect())
+            }
+            #[cfg(target_family = "wasm")]
+            MicrophoneInputNode::WebAudioStream(node, vec) => {
+                *vec = node.try_recv().map(|x| x.into_iter().collect())
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum MicrophoneInputNode {
     #[cfg(not(target_family = "wasm"))]
-    Device(Device, Option<Vec<f32>>),
+    Device(Device, Option<Array1<f64>>),
     #[cfg(target_family = "wasm")]
-    WebAudioStream(WebAudioStream, Option<Vec<f32>>),
+    WebAudioStream(WebAudioStream, Option<Array1<f64>>),
 }
 
 pub struct MicrophoneInputNodeInfo;
@@ -166,7 +187,7 @@ impl<'a> serde::Serialize for MicrophoneInputNode {
 }
 
 impl MicrophoneInputNode {
-    pub fn get_sample_rate(&self) -> u32 {
+    fn get_sample_rate(&self) -> u32 {
         match self {
             #[cfg(not(target_family = "wasm"))]
             MicrophoneInputNode::Device(node, _) => {
@@ -177,42 +198,21 @@ impl MicrophoneInputNode {
         }
     }
 
-    pub fn start(&mut self) {
-        match self {
-            #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node, _) => node.start(),
-            #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node, _) => node.start(),
-        }
-    }
-
-    pub const fn inputs(&self) -> usize {
-        0
-    }
-
-    pub const fn outputs(&self) -> usize {
-        2
-    }
-
-    pub fn update(&mut self) {
-        match self {
-            #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node, vec) => *vec = node.try_recv(),
-            #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node, vec) => *vec = node.try_recv(),
-        }
-    }
-
-    pub fn to_info(&self) -> MicrophoneInputNodeInfo {
-        MicrophoneInputNodeInfo
-    }
+    // fn start(&mut self) {
+    //     match self {
+    //         #[cfg(not(target_family = "wasm"))]
+    //         MicrophoneInputNode::Device(node, _) => node.start(),
+    //         #[cfg(target_family = "wasm")]
+    //         MicrophoneInputNode::WebAudioStream(node, _) => node.start(),
+    //     }
+    // }
 }
 
 #[derive(Debug, serde::Serialize)]
 pub struct FileInputNode {
     pub file_path: EditableOnText<String>,
 
-    vec: Option<Vec<f32>>,
+    vec: Option<Array1<f64>>,
 
     #[serde(skip)]
     data: TestData,
@@ -271,7 +271,7 @@ impl<'a> serde::Deserialize<'a> for FileInputNode {
 }
 
 impl FileInputNode {
-    pub fn new(file_path: String) -> Self {
+    fn new(file_path: String) -> Self {
         Self {
             file_path: EditableOnText::new(file_path.clone()),
             data: TestData::new_with_path(file_path),
@@ -279,27 +279,23 @@ impl FileInputNode {
         }
     }
 
-    pub fn get_sample_rate(&self) -> u32 {
+    fn get_sample_rate(&self) -> u32 {
         self.data.sample_rate()
     }
 
-    pub fn start(&mut self) {
+    fn start(&mut self) {
         self.data.start();
     }
+}
 
-    pub const fn inputs(&self) -> usize {
-        1
-    }
+impl GraphNode for FileInputNode {
+    type NodeInfoType = FileInputNodeInfo;
 
-    pub const fn outputs(&self) -> usize {
-        2
-    }
-
-    pub fn update(&mut self) {
-        self.vec = self.data.try_recv();
-    }
-
-    pub fn to_info(&self) -> FileInputNodeInfo {
+    fn to_info(&self) -> Self::NodeInfoType {
         FileInputNodeInfo
+    }
+
+    fn update(&mut self) {
+        self.vec = self.data.try_recv().map(|x| x.into_iter().collect());
     }
 }

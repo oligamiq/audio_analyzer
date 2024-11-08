@@ -128,7 +128,7 @@ impl RawDataStreamLayer for TestData {
         self.sample_rate()
     }
 
-    fn try_recv(&mut self) -> Option<Vec<f32>> {
+    fn try_recv(&mut self) -> Option<Vec<f64>> {
         let Self {
             format,
             track_id,
@@ -157,16 +157,72 @@ impl RawDataStreamLayer for TestData {
         // Decode the packet into audio samples, ignoring any decode errors.
         match decoder.decode(&packet) {
             Ok(audio_buf) => {
-                let buf = match audio_buf {
-                    symphonia::core::audio::AudioBufferRef::F32(buf) => buf,
-                    _ => {
-                        warn!("###This is not f32");
-                        return None;
+                match audio_buf {
+                    symphonia::core::audio::AudioBufferRef::F32(buf) => {
+                        let vec = buf.planes().planes()[0].iter().map(|x| *x as f64).collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::F64(buf) => {
+                        let vec = buf.planes().planes()[0].to_vec();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::S8(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::i8::MAX as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::S16(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::i16::MAX as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::S24(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| x.0 as f64 / (1 << 23) as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::S32(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::i32::MAX as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::U8(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::u8::MAX as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::U16(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::u16::MAX as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::U24(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| x.0 as f64 / (1 << 24) as f64)
+                            .collect();
+                        return Some(vec);
+                    }
+                    symphonia::core::audio::AudioBufferRef::U32(buf) => {
+                        let vec = buf.planes().planes()[0]
+                            .iter()
+                            .map(|x| *x as f64 / std::u32::MAX as f64)
+                            .collect();
+                        return Some(vec);
                     }
                 };
-
-                let vec = buf.planes().planes()[0].to_vec();
-                Some(vec)
             }
             Err(symphonia::core::errors::Error::DecodeError(_)) => {
                 warn!("###Decode error");
