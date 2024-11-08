@@ -102,7 +102,7 @@ impl NodeInfo for MicrophoneInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
+        vec![NodeInfoTypes::Array1F64, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
@@ -238,7 +238,7 @@ impl NodeInfo for FileInputNodeInfo {
     }
 
     fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![NodeInfoTypes::VecF32, NodeInfoTypes::Number]
+        vec![NodeInfoTypes::Array1F64, NodeInfoTypes::Number]
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {

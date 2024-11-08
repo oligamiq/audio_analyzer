@@ -1,5 +1,12 @@
 use crate::prelude::{egui::*, nodes::*};
 use egui_plotter::EguiBackend;
+use ndarray::prelude::*;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub enum DataInspectorNode {
+    DataPlotterNode(DataPlotterNode),
+    SchemaViewerNode(SchemaViewerNode),
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataPlotterNode {
@@ -40,8 +47,10 @@ impl super::NodeInfo for DataPlotterNodeInfo {
         vec![]
     }
 
-    fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::DataPlotterNode(DataPlotterNode::default())
+    fn flow_node(&self) -> FlowNodes {
+        FlowNodes::DataInspectorNode(DataInspectorNode::DataPlotterNode(
+            DataPlotterNode::default(),
+        ))
     }
 }
 
@@ -384,7 +393,7 @@ impl FlowNodesViewerTrait for DataPlotterNode {
             return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
                 extract_node!(
                     &mut snarl[pin_id.node],
-                    FlowNodes::DataPlotterNode(node) => {
+                    FlowNodes::DataInspectorNode(DataInspectorNode::DataPlotterNode(node)) => {
                         if let Some(data) = &data {
                             node.set_hold_data(data.clone());
                             node.show(ui, true, scale);
@@ -410,5 +419,172 @@ impl GraphNode for DataPlotterNode {
 
     fn to_info(&self) -> Self::NodeInfoType {
         DataPlotterNodeInfo
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct SchemaViewerNode {
+    #[serde(skip)]
+    pub hold_data: Option<NodeInfoTypesWithData>,
+}
+
+pub struct SchemaViewerNodeInfo;
+
+impl NodeInfo for SchemaViewerNodeInfo {
+    fn name(&self) -> &str {
+        "SchemaViewerNode"
+    }
+
+    fn inputs(&self) -> usize {
+        1
+    }
+
+    fn outputs(&self) -> usize {
+        2
+    }
+
+    fn input_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::AnyInput]
+    }
+
+    fn output_types(&self) -> Vec<NodeInfoTypes> {
+        vec![NodeInfoTypes::Number, NodeInfoTypes::Number]
+    }
+
+    fn flow_node(&self) -> FlowNodes {
+        FlowNodes::DataInspectorNode(DataInspectorNode::SchemaViewerNode(
+            SchemaViewerNode::default(),
+        ))
+    }
+}
+
+impl SchemaViewerNode {
+    fn set_hold_data(&mut self, hold_data: NodeInfoTypesWithData) {
+        self.hold_data = Some(hold_data);
+    }
+
+    fn get_hold_data(&self) -> Option<&NodeInfoTypesWithData> {
+        self.hold_data.as_ref()
+    }
+
+    pub fn get_shape(&self) -> Option<Array1<f64>> {
+        if let Some(hold_data) = &self.hold_data {
+            match hold_data {
+                NodeInfoTypesWithData::Array1F64(array1_f64) => Some(arr1(
+                    &array1_f64
+                        .shape()
+                        .iter()
+                        .map(|x| *x as f64)
+                        .collect::<Vec<_>>(),
+                )),
+                NodeInfoTypesWithData::Array1TupleF64F64(array1_tuple_f64_f64) => Some(arr1(
+                    &array1_tuple_f64_f64
+                        .shape()
+                        .iter()
+                        .map(|x| *x as f64)
+                        .collect::<Vec<_>>(),
+                )),
+                NodeInfoTypesWithData::Array2F64(array2_f64) => Some(arr1(
+                    &array2_f64
+                        .shape()
+                        .iter()
+                        .map(|x| *x as f64)
+                        .collect::<Vec<_>>(),
+                )),
+                NodeInfoTypesWithData::Array1ComplexF64(array1_complex_f64) => Some(arr1(
+                    &array1_complex_f64
+                        .shape()
+                        .iter()
+                        .map(|x| *x as f64)
+                        .collect::<Vec<_>>(),
+                )),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    fn show(&mut self, ui: &mut egui::Ui, _is_new: bool, _scale: f32) {
+        let hold_data = self.hold_data.clone();
+
+        if let Some(hold_data) = hold_data {
+            match hold_data {
+                NodeInfoTypesWithData::Number(_) => {
+                    ui.label(format!("Number(f64)"));
+                }
+                NodeInfoTypesWithData::Array1F64(array1_f64) => {
+                    ui.label(format!("Array1F64: {:?}", array1_f64.shape()));
+                }
+                NodeInfoTypesWithData::Array1TupleF64F64(array1_tuple_f64_f64) => {
+                    ui.label(format!(
+                        "Array1TupleF64F64: {:?}",
+                        array1_tuple_f64_f64.shape()
+                    ));
+                }
+                NodeInfoTypesWithData::Array2F64(array2_f64) => {
+                    ui.label(format!("Array2F64: {:?}", array2_f64.shape()));
+                }
+                NodeInfoTypesWithData::Array1ComplexF64(array1_complex_f64) => {
+                    ui.label(format!(
+                        "Array1ComplexF64: {:?}",
+                        array1_complex_f64.shape()
+                    ));
+                }
+            }
+        }
+    }
+}
+
+impl Default for SchemaViewerNode {
+    fn default() -> Self {
+        Self { hold_data: None }
+    }
+}
+
+impl FlowNodesViewerTrait for SchemaViewerNode {
+    fn show_input(
+        &self,
+        pin: &egui_snarl::InPin,
+        _: &mut egui::Ui,
+        scale: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let pin_id = pin.id;
+
+        if let Some(out_pin) = pin.remotes.get(0) {
+            let remote = &snarl[out_pin.node];
+
+            let data = remote.to_node_info_types_with_data(out_pin.output);
+
+            return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                extract_node!(
+                    &mut snarl[pin_id.node],
+                    FlowNodes::DataInspectorNode(DataInspectorNode::SchemaViewerNode(node)) => {
+                        if let Some(data) = &data {
+                            node.set_hold_data(data.clone());
+                            node.show(ui, true, scale);
+
+                            return PinInfo::circle()
+                                .with_fill(egui::Color32::from_rgb(0, 255, 0));
+                        } else {
+                            node.show(ui, false, scale);
+                        }
+                    }
+                );
+
+                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
+            });
+        }
+
+        return Box::new(|_, _| PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255)));
+    }
+}
+
+impl GraphNode for SchemaViewerNode {
+    type NodeInfoType = SchemaViewerNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        SchemaViewerNodeInfo
     }
 }

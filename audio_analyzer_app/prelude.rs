@@ -5,7 +5,10 @@ pub mod nodes {
         config::{ConfigNodes, NumberNode, NumberNodeInfo},
         editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerTrait},
         expr::{ExprNodeInfo, ExprNodes},
-        frame_queue::{CycleBuffer, CycleBufferInfo, FrameBuffer, FrameQueue, FrameQueueInfo},
+        frame_queue::{
+            CycleBufferNode, CycleBufferNodeInfo, FrameBufferNode, FrameQueueNode,
+            FrameQueueNodeInfo,
+        },
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
@@ -15,7 +18,10 @@ pub mod nodes {
             RawInputNodes,
         },
         utils::{config_ui, extract_node},
-        viewer::{DataPlotterNode, DataPlotterNodeInfo},
+        viewer::{
+            DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,
+            SchemaViewerNodeInfo,
+        },
         GraphNode, NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
     };
     pub use egui_editable_num::EditableOnText;

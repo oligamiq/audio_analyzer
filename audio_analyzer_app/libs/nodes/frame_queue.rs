@@ -3,35 +3,35 @@ use ndarray::{concatenate, prelude::*};
 use crate::prelude::nodes::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub enum FrameBuffer {
-    FrameQueue(FrameQueue),
-    CycleBuffer(CycleBuffer),
+pub enum FrameBufferNode {
+    FrameQueueNode(FrameQueueNode),
+    CycleBufferNode(CycleBufferNode),
 }
 
-impl FrameBuffer {
+impl FrameBufferNode {
     pub fn name(&self) -> &str {
         match self {
-            Self::FrameQueue(_) => "FrameQueue",
-            Self::CycleBuffer(_) => "CycleBuffer",
+            Self::FrameQueueNode(_) => "FrameQueueNode",
+            Self::CycleBufferNode(_) => "CycleBufferNode",
         }
     }
 
     pub fn inputs(&self) -> usize {
         match self {
-            Self::FrameQueue(_) => FrameQueueInfo.inputs(),
-            Self::CycleBuffer(_) => CycleBufferInfo.inputs(),
+            Self::FrameQueueNode(_) => FrameQueueNodeInfo.inputs(),
+            Self::CycleBufferNode(_) => CycleBufferNodeInfo.inputs(),
         }
     }
 
     pub fn outputs(&self) -> usize {
         match self {
-            Self::FrameQueue(_) => FrameQueueInfo.outputs(),
-            Self::CycleBuffer(_) => CycleBufferInfo.outputs(),
+            Self::FrameQueueNode(_) => FrameQueueNodeInfo.outputs(),
+            Self::CycleBufferNode(_) => CycleBufferNodeInfo.outputs(),
         }
     }
 }
 
-/// FrameQueue
+/// FrameQueueNode
 /// This node holds a queue of frames.
 /// FIFO
 ///
@@ -40,23 +40,23 @@ impl FrameBuffer {
 ///
 /// hold n frames
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct FrameQueue {
+pub struct FrameQueueNode {
     queue: NodeInfoTypesWithData,
 
     pub len: EditableOnText<usize>,
 }
 
-impl FrameQueue {
+impl FrameQueueNode {
     pub fn get_queue(&self) -> &NodeInfoTypesWithData {
         &self.queue
     }
 }
 
-pub struct FrameQueueInfo;
+pub struct FrameQueueNodeInfo;
 
-impl NodeInfo for FrameQueueInfo {
+impl NodeInfo for FrameQueueNodeInfo {
     fn name(&self) -> &str {
-        "FrameQueue"
+        "FrameQueueNode"
     }
 
     fn inputs(&self) -> usize {
@@ -76,11 +76,13 @@ impl NodeInfo for FrameQueueInfo {
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::FrameBuffer(FrameBuffer::FrameQueue(Default::default()))
+        super::editor::FlowNodes::FrameBufferNode(FrameBufferNode::FrameQueueNode(
+            Default::default(),
+        ))
     }
 }
 
-impl Default for FrameQueue {
+impl Default for FrameQueueNode {
     fn default() -> Self {
         Self {
             queue: NodeInfoTypesWithData::Array1F64(ndarray::Array1::zeros(0)),
@@ -89,15 +91,15 @@ impl Default for FrameQueue {
     }
 }
 
-impl GraphNode for FrameQueue {
-    type NodeInfoType = FrameQueueInfo;
+impl GraphNode for FrameQueueNode {
+    type NodeInfoType = FrameQueueNodeInfo;
 
     fn to_info(&self) -> Self::NodeInfoType {
-        FrameQueueInfo
+        FrameQueueNodeInfo
     }
 }
 
-impl FlowNodesViewerTrait for FrameQueue {
+impl FlowNodesViewerTrait for FrameQueueNode {
     fn show_input(
         &self,
         pin: &egui_snarl::InPin,
@@ -116,7 +118,9 @@ impl FlowNodesViewerTrait for FrameQueue {
             .flatten();
 
         return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-            if let FlowNodes::FrameBuffer(FrameBuffer::FrameQueue(node)) = &mut snarl[pin_id.node] {
+            if let FlowNodes::FrameBufferNode(FrameBufferNode::FrameQueueNode(node)) =
+                &mut snarl[pin_id.node]
+            {
                 config_ui!(node, ui, len);
 
                 if let Some(data) = data.clone() {
@@ -152,7 +156,7 @@ impl FlowNodesViewerTrait for FrameQueue {
                             static mut WARNED: bool = false;
 
                             if !unsafe { WARNED } {
-                                log::warn!("FrameQueue: Unsupported data type: {:?}", data);
+                                log::warn!("FrameQueueNode: Unsupported data type: {:?}", data);
                                 unsafe { WARNED = true };
                             }
                         }
@@ -165,7 +169,7 @@ impl FlowNodesViewerTrait for FrameQueue {
     }
 }
 
-/// CycleBuffer
+/// CycleBufferNode
 /// This node holds a buffer of frames.
 /// FIFO
 /// if the buffer is full, the oldest frame is removed
@@ -173,23 +177,23 @@ impl FlowNodesViewerTrait for FrameQueue {
 ///
 /// to extend the buffer, buffer size must be self.len
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct CycleBuffer {
+pub struct CycleBufferNode {
     buffer: NodeInfoTypesWithData,
 
     pub len: EditableOnText<usize>,
 }
 
-impl CycleBuffer {
+impl CycleBufferNode {
     pub fn get_queue(&self) -> &NodeInfoTypesWithData {
         &self.buffer
     }
 }
 
-pub struct CycleBufferInfo;
+pub struct CycleBufferNodeInfo;
 
-impl NodeInfo for CycleBufferInfo {
+impl NodeInfo for CycleBufferNodeInfo {
     fn name(&self) -> &str {
-        "CycleBuffer"
+        "CycleBufferNode"
     }
 
     fn inputs(&self) -> usize {
@@ -209,11 +213,13 @@ impl NodeInfo for CycleBufferInfo {
     }
 
     fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::FrameBuffer(FrameBuffer::CycleBuffer(Default::default()))
+        super::editor::FlowNodes::FrameBufferNode(FrameBufferNode::CycleBufferNode(
+            Default::default(),
+        ))
     }
 }
 
-impl Default for CycleBuffer {
+impl Default for CycleBufferNode {
     fn default() -> Self {
         Self {
             buffer: NodeInfoTypesWithData::Array1F64(ndarray::Array1::zeros(0)),
@@ -222,15 +228,15 @@ impl Default for CycleBuffer {
     }
 }
 
-impl GraphNode for CycleBuffer {
-    type NodeInfoType = CycleBufferInfo;
+impl GraphNode for CycleBufferNode {
+    type NodeInfoType = CycleBufferNodeInfo;
 
     fn to_info(&self) -> Self::NodeInfoType {
-        CycleBufferInfo
+        CycleBufferNodeInfo
     }
 }
 
-impl FlowNodesViewerTrait for CycleBuffer {
+impl FlowNodesViewerTrait for CycleBufferNode {
     fn show_input(
         &self,
         pin: &egui_snarl::InPin,
@@ -249,7 +255,8 @@ impl FlowNodesViewerTrait for CycleBuffer {
             .flatten();
 
         return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-            if let FlowNodes::FrameBuffer(FrameBuffer::CycleBuffer(node)) = &mut snarl[pin_id.node]
+            if let FlowNodes::FrameBufferNode(FrameBufferNode::CycleBufferNode(node)) =
+                &mut snarl[pin_id.node]
             {
                 config_ui!(node, ui, len);
 
@@ -398,7 +405,7 @@ impl FlowNodesViewerTrait for CycleBuffer {
                             static mut WARNED: bool = false;
 
                             if !unsafe { WARNED } {
-                                log::warn!("CycleBuffer: Unsupported data type: {:?}", data);
+                                log::warn!("CycleBufferNode: Unsupported data type: {:?}", data);
                                 unsafe { WARNED = true };
                             }
                         }

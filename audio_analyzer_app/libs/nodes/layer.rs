@@ -177,7 +177,7 @@ impl NodeInfo for STFTLayerNodeInfo {
         vec![
             NodeInfoTypes::Number,
             NodeInfoTypes::Number,
-            NodeInfoTypes::VecF32,
+            NodeInfoTypes::Array1F64,
         ]
     }
 
