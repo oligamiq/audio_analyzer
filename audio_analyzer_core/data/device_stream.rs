@@ -11,7 +11,7 @@ use super::RawDataStreamLayer;
 pub struct Device {
     _host: cpal::Host,
     device: Option<cpal::Device>,
-    data: Arc<Mutex<Vec<f32>>>,
+    data: Arc<Mutex<Vec<f64>>>,
     sample_rate: Option<u32>,
     stream: Option<cpal::Stream>,
 }
@@ -77,25 +77,138 @@ impl Device {
 
         let data = self.data.clone();
 
+        let callback = move |_data: Vec<f64>| {
+            if _data.len() == 0 {
+                return;
+            }
+
+            let mut data = data.lock();
+            data.extend(_data);
+            std::mem::drop(data);
+        };
+
         let stream = match config.sample_format() {
             cpal::SampleFormat::F32 => device.build_input_stream(
                 &config.into(),
                 move |_data: &[f32], _: &_| {
-                    let _data = _data.to_vec();
-                    if _data.len() == 0 {
-                        return;
-                    }
-
-                    // tracing::debug!("##data: {:?}", _data);
-
-                    let mut data = data.lock();
-                    data.extend(_data);
-                    std::mem::drop(data);
+                    callback(_data.iter().map(|x| *x as f64).collect());
                 },
                 err_fn,
                 None,
             ),
-            _ => panic!("Unsupported format"),
+            cpal::SampleFormat::F64 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[f64], _: &_| {
+                    callback(_data.to_vec());
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::I8 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[i8], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::i8::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::U8 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[u8], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::u8::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::I16 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[i16], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::i16::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::U16 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[u16], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::u16::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::I32 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[i32], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::i32::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::U32 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[u32], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::u32::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::I64 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[i64], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::i64::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            cpal::SampleFormat::U64 => device.build_input_stream(
+                &config.into(),
+                move |_data: &[u64], _: &_| {
+                    callback(
+                        _data
+                            .iter()
+                            .map(|x| *x as f64 / std::u64::MAX as f64)
+                            .collect(),
+                    );
+                },
+                err_fn,
+                None,
+            ),
+            _ => unreachable!(),
         }
         .unwrap();
 
@@ -114,7 +227,7 @@ impl RawDataStreamLayer for Device {
         self.run();
     }
 
-    fn try_recv(&mut self) -> Option<Vec<f32>> {
+    fn try_recv(&mut self) -> Option<Vec<f64>> {
         // tracing::debug!("try_recv: {:?}", self.data);
 
         let mut data = self.data.lock();

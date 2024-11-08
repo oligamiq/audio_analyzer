@@ -19,7 +19,7 @@ use web_sys::BlobPropertyBag;
 // https://qiita.com/okaxaki/items/c807bdfe3e96d6ef7960
 
 #[derive(Debug)]
-pub struct WebAudioStream(pub Arc<Mutex<Vec<f32>>>);
+pub struct WebAudioStream(pub Arc<Mutex<Vec<f64>>>);
 
 impl WebAudioStream {
     pub fn new() -> Self {
@@ -28,7 +28,7 @@ impl WebAudioStream {
 }
 
 impl RawDataStreamLayer for WebAudioStream {
-    fn try_recv(&mut self) -> Option<Vec<f32>> {
+    fn try_recv(&mut self) -> Option<Vec<f64>> {
         // this is -1.0 to 1.0
         let mut data = self.0.lock();
 
@@ -50,7 +50,7 @@ impl RawDataStreamLayer for WebAudioStream {
     }
 }
 
-static WEB_INPUT: OnceLock<Arc<Mutex<Vec<f32>>>> = OnceLock::new();
+static WEB_INPUT: OnceLock<Arc<Mutex<Vec<f64>>>> = OnceLock::new();
 static SAMPLE_RATE: OnceLock<u32> = OnceLock::new();
 
 pub async fn init_on_web_struct() {
@@ -68,7 +68,7 @@ pub async fn init_on_web_struct() {
 }
 
 pub struct OnWebStruct {
-    pub data: Arc<Mutex<Vec<f32>>>,
+    pub data: Arc<Mutex<Vec<f64>>>,
     sample_rate: Option<f32>,
     _audio_ctx: web_sys::AudioContext,
     _source: web_sys::MediaStreamAudioSourceNode,
@@ -167,7 +167,7 @@ impl OnWebStruct {
 
             let data = msg_event.data();
 
-            let data: Vec<f32> = serde_wasm_bindgen::from_value(data).unwrap();
+            let data: Vec<f64> = serde_wasm_bindgen::from_value(data).unwrap();
 
             let mut data_clone = data_clone.lock();
 

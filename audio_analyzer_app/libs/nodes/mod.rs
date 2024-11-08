@@ -3,6 +3,7 @@ use crate::prelude::nodes::*;
 pub mod config;
 pub mod editor;
 pub mod expr;
+pub mod frame_queue;
 pub mod layer;
 pub mod pin_info;
 pub mod raw_input;
@@ -93,7 +94,6 @@ impl NodeInfoTypes {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum NodeInfoTypesWithData {
     Number(f64),
-    VecF32(Vec<f32>),
     Array1TupleF64F64(Array1<(f64, f64)>),
     Array1F64(Array1<f64>),
     Array2F64(Array2<f64>),

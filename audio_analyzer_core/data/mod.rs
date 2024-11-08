@@ -5,7 +5,7 @@ pub mod test_data;
 pub mod web_stream;
 
 pub trait RawDataStreamLayer {
-    fn try_recv(&mut self) -> Option<Vec<f32>>;
+    fn try_recv(&mut self) -> Option<Vec<f64>>;
     fn sample_rate(&self) -> u32;
     fn start(&mut self);
 }

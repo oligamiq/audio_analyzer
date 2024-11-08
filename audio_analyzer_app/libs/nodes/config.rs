@@ -1,7 +1,5 @@
 use crate::prelude::nodes::*;
 
-use super::GraphNode;
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ConfigNodes {
     NumberNode(NumberNode),

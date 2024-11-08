@@ -7,6 +7,7 @@ pub enum FlowNodes {
     DataPlotterNode(DataPlotterNode),
     RawInputNodes(RawInputNodes),
     ExprNode(ExprNodes),
+    FrameBuffer(FrameBuffer),
 }
 
 impl FlowNodes {
@@ -26,6 +27,10 @@ impl FlowNodes {
             },
             FlowNodes::DataPlotterNode(node) => Box::new(node.to_info()),
             FlowNodes::ExprNode(expr_nodes) => Box::new(expr_nodes.to_info()),
+            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
+                FrameBuffer::FrameQueue(node) => Box::new(node.to_info()),
+                FrameBuffer::CycleBuffer(node) => Box::new(node.to_info()),
+            },
         }
     }
 }
@@ -65,6 +70,10 @@ impl FlowNodesViewer {
             },
             FlowNodes::DataPlotterNode(node) => node.show_input(pin, ui, scale, snarl),
             FlowNodes::ExprNode(node) => node.show_input(pin, ui, scale, snarl),
+            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
+                FrameBuffer::FrameQueue(node) => node.show_input(pin, ui, scale, snarl),
+                FrameBuffer::CycleBuffer(node) => node.show_input(pin, ui, scale, snarl),
+            },
         }
     }
 }
@@ -167,6 +176,16 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             },
             FlowNodes::DataPlotterNode(_) => unreachable!(),
             FlowNodes::ExprNode(_) => PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0)),
+            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
+                FrameBuffer::FrameQueue(_) => {
+                    ui.label("FrameQueue");
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                }
+                FrameBuffer::CycleBuffer(_) => {
+                    ui.label("CycleBuffer");
+                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                }
+            },
         }
     }
 

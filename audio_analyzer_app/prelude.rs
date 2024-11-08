@@ -5,6 +5,7 @@ pub mod nodes {
         config::{ConfigNodes, NumberNode, NumberNodeInfo},
         editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerTrait},
         expr::{ExprNodeInfo, ExprNodes},
+        frame_queue::{CycleBuffer, CycleBufferInfo, FrameBuffer, FrameQueue, FrameQueueInfo},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,

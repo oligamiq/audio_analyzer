@@ -40,7 +40,7 @@ impl RawInputNodes {
         }
     }
 
-    pub fn get(&self) -> Option<Vec<f32>> {
+    pub fn get(&self) -> Option<Array1<f64>> {
         match self {
             RawInputNodes::MicrophoneInputNode(node) => match node {
                 #[cfg(not(target_family = "wasm"))]
@@ -63,9 +63,13 @@ impl GraphNode for MicrophoneInputNode {
     fn update(&mut self) {
         match self {
             #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node, vec) => *vec = node.try_recv(),
+            MicrophoneInputNode::Device(node, vec) => {
+                *vec = node.try_recv().map(|x| x.into_iter().collect())
+            }
             #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node, vec) => *vec = node.try_recv(),
+            MicrophoneInputNode::WebAudioStream(node, vec) => {
+                *vec = node.try_recv().map(|x| x.into_iter().collect())
+            }
         }
     }
 }
@@ -73,9 +77,9 @@ impl GraphNode for MicrophoneInputNode {
 #[derive(Debug)]
 pub enum MicrophoneInputNode {
     #[cfg(not(target_family = "wasm"))]
-    Device(Device, Option<Vec<f32>>),
+    Device(Device, Option<Array1<f64>>),
     #[cfg(target_family = "wasm")]
-    WebAudioStream(WebAudioStream, Option<Vec<f32>>),
+    WebAudioStream(WebAudioStream, Option<Array1<f64>>),
 }
 
 pub struct MicrophoneInputNodeInfo;
@@ -208,7 +212,7 @@ impl MicrophoneInputNode {
 pub struct FileInputNode {
     pub file_path: EditableOnText<String>,
 
-    vec: Option<Vec<f32>>,
+    vec: Option<Array1<f64>>,
 
     #[serde(skip)]
     data: TestData,
@@ -292,6 +296,6 @@ impl GraphNode for FileInputNode {
     }
 
     fn update(&mut self) {
-        self.vec = self.data.try_recv();
+        self.vec = self.data.try_recv().map(|x| x.into_iter().collect());
     }
 }

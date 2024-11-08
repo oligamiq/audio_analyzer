@@ -163,21 +163,21 @@ impl FlowNodesViewerTrait for STFTLayerNode {
                 ui.label("raw stream");
 
                 if let Some(out_pin) = pin.remotes.get(0) {
-                    if let FlowNodes::RawInputNodes(node) = &snarl[out_pin.node] {
-                        if let Some(data) = node.get() {
-                            return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
-                                extract_node!(
-                                    &mut snarl[pin_id.node],
-                                    FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
-                                        if let Err(err) = node.calc(&data) {
-                                            log::error!("STFTLayerNode: {}", err);
-                                        }
-                                    }
-                                );
+                    let data = snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
 
-                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
-                            });
-                        }
+                    if let Some(NodeInfoTypesWithData::Array1F64(data)) = data {
+                        return Box::new(move |snarl: &mut Snarl<FlowNodes>, _| {
+                            extract_node!(
+                                &mut snarl[pin_id.node],
+                                FlowNodes::LayerNodes(LayerNodes::STFTLayer(node)) => {
+                                    if let Err(err) = node.calc(&Array1::from(data.clone())) {
+                                        log::error!("STFTLayerNode: {}", err);
+                                    }
+                                }
+                            );
+
+                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                        });
                     }
                 }
 
@@ -267,8 +267,8 @@ impl STFTLayerNode {
         }
     }
 
-    pub fn calc(&mut self, data: &Vec<f32>) -> crate::Result<()> {
-        self.result = self.layer.through_inner(data)?.pop();
+    pub fn calc(&mut self, data: &Array1<f64>) -> crate::Result<()> {
+        self.result = self.layer.through_inner(&data.to_vec())?.pop();
 
         Ok(())
     }

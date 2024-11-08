@@ -28,7 +28,7 @@ impl FlowNodes {
             FlowNodes::RawInputNodes(raw_input_nodes) => {
                 match pin {
                     // raw stream
-                    0 => Some(NodeInfoTypesWithData::VecF32(raw_input_nodes.get()?)),
+                    0 => Some(NodeInfoTypesWithData::Array1F64(raw_input_nodes.get()?)),
 
                     // sample rate
                     1 => Some(NodeInfoTypesWithData::Number(
@@ -39,6 +39,10 @@ impl FlowNodes {
                 }
             }
             FlowNodes::ExprNode(expr_nodes) => expr_nodes.calculated.clone(),
+            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
+                FrameBuffer::FrameQueue(frame_queue) => Some(frame_queue.get_queue().clone()),
+                FrameBuffer::CycleBuffer(cycle_buffer) => Some(cycle_buffer.get_queue().clone()),
+            },
         }
     }
 }
