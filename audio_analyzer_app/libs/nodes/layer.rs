@@ -2,7 +2,6 @@ use crate::prelude::{egui::*, nodes::*};
 use audio_analyzer_core::prelude::*;
 
 use serde::de;
-use std::any::TypeId;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum LayerNodes {
@@ -28,54 +27,22 @@ impl LayerNodes {
         }
     }
 
-    pub const fn inputs(&self) -> usize {
+    pub fn inputs(&self) -> usize {
         // input is layer data and config
         match self {
-            LayerNodes::STFTLayer(_) => STFTLayerNode::input(),
-            LayerNodes::MelLayer(_) => MelLayerNode::input(),
-            LayerNodes::SpectrogramDensityLayer(_) => SpectrogramDensityLayerNode::input(),
+            LayerNodes::STFTLayer(_) => STFTLayerNodeInfo.inputs(),
+            LayerNodes::MelLayer(_) => MelLayerNodeInfo.inputs(),
+            LayerNodes::SpectrogramDensityLayer(_) => SpectrogramDensityLayerNodeInfo.inputs(),
         }
     }
 
-    pub const fn outputs(&self) -> usize {
-        1
-    }
-
-    pub fn input_type_id(&self) -> TypeId {
+    pub fn outputs(&self) -> usize {
         match self {
-            LayerNodes::STFTLayer(_) => {
-                TypeId::of::<<STFTLayerNode as InputAndOutputType>::Input>()
-            }
-            LayerNodes::MelLayer(_) => TypeId::of::<<MelLayerNode as InputAndOutputType>::Input>(),
-            LayerNodes::SpectrogramDensityLayer(_) => {
-                TypeId::of::<<SpectrogramDensityLayerNode as InputAndOutputType>::Input>()
-            }
+            LayerNodes::STFTLayer(_) => STFTLayerNodeInfo.outputs(),
+            LayerNodes::MelLayer(_) => MelLayerNodeInfo.outputs(),
+            LayerNodes::SpectrogramDensityLayer(_) => SpectrogramDensityLayerNodeInfo.outputs(),
         }
     }
-
-    pub fn output_type_id(&self) -> TypeId {
-        match self {
-            LayerNodes::STFTLayer(_) => {
-                TypeId::of::<<STFTLayerNode as InputAndOutputType>::Output>()
-            }
-            LayerNodes::MelLayer(_) => TypeId::of::<<MelLayerNode as InputAndOutputType>::Output>(),
-            LayerNodes::SpectrogramDensityLayer(_) => {
-                TypeId::of::<<SpectrogramDensityLayerNode as InputAndOutputType>::Output>()
-            }
-        }
-    }
-
-    pub fn validate_connections(&self, to: &LayerNodes) -> bool {
-        let input_type_id = self.output_type_id();
-        let output_type_id = to.input_type_id();
-
-        input_type_id == output_type_id
-    }
-}
-
-pub trait InputAndOutputType {
-    type Input: 'static;
-    type Output: 'static;
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -197,8 +164,9 @@ impl NodeInfo for STFTLayerNodeInfo {
         "STFTLayer"
     }
 
+    /// input_num is layer data and config num
     fn inputs(&self) -> usize {
-        STFTLayerNode::input()
+        1 + 2
     }
 
     fn outputs(&self) -> usize {
@@ -250,11 +218,6 @@ impl Default for STFTLayerNode {
     }
 }
 
-impl InputAndOutputType for STFTLayerNode {
-    type Input = Vec<f32>;
-    type Output = Array1<Complex<f64>>;
-}
-
 impl STFTLayerNode {
     pub fn new(fft_size: usize, hop_size: usize) -> Self {
         let layer = ToSpectrogramLayer::new(FftConfig::new(fft_size, hop_size));
@@ -273,7 +236,19 @@ impl STFTLayerNode {
         Ok(())
     }
 
-    pub fn update(&mut self) {
+    pub fn get_result(&self) -> Option<Array1<Complex<f64>>> {
+        self.result.clone()
+    }
+}
+
+impl GraphNode for STFTLayerNode {
+    type NodeInfoType = STFTLayerNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        STFTLayerNodeInfo
+    }
+
+    fn update(&mut self) {
         if self.fft_size.get() <= self.hop_size.get() {
             log::warn!(
                 "hop_size must be smaller than fft_size. so hop_size is set to fft_size / 2"
@@ -284,19 +259,6 @@ impl STFTLayerNode {
 
         self.layer =
             ToSpectrogramLayer::new(FftConfig::new(self.fft_size.get(), self.hop_size.get()));
-    }
-
-    pub fn get_result(&self) -> Option<Array1<Complex<f64>>> {
-        self.result.clone()
-    }
-
-    // input_num is layer data and config num
-    pub const fn input() -> usize {
-        1 + 2
-    }
-
-    pub fn to_info(&self) -> STFTLayerNodeInfo {
-        STFTLayerNodeInfo
     }
 }
 
@@ -429,8 +391,9 @@ impl NodeInfo for MelLayerNodeInfo {
         "MelLayer"
     }
 
+    /// input_num is layer data and config num
     fn inputs(&self) -> usize {
-        MelLayerNode::input()
+        1 + 4
     }
 
     fn outputs(&self) -> usize {
@@ -488,11 +451,6 @@ impl Default for MelLayerNode {
     }
 }
 
-impl InputAndOutputType for MelLayerNode {
-    type Input = Array1<Complex<f64>>;
-    type Output = Array2<f64>;
-}
-
 impl MelLayerNode {
     pub fn new(
         fft_size: usize,
@@ -521,26 +479,25 @@ impl MelLayerNode {
         Ok(())
     }
 
-    pub fn update(&mut self) {
+    pub fn get_result(&self) -> Option<Array1<f64>> {
+        self.result.clone()
+    }
+}
+
+impl GraphNode for MelLayerNode {
+    type NodeInfoType = MelLayerNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        MelLayerNodeInfo
+    }
+
+    fn update(&mut self) {
         self.layer = ToMelSpectrogramLayer::new(MelConfig::new(
             self.fft_size.get(),
             self.hop_size.get(),
             self.n_mels.get(),
             self.sample_rate.get(),
         ));
-    }
-
-    pub fn get_result(&self) -> Option<Array1<f64>> {
-        self.result.clone()
-    }
-
-    // input_num is layer data and config num
-    pub const fn input() -> usize {
-        1 + 4
-    }
-
-    pub fn to_info(&self) -> MelLayerNodeInfo {
-        MelLayerNodeInfo
     }
 }
 
@@ -647,8 +604,9 @@ impl NodeInfo for SpectrogramDensityLayerNodeInfo {
         "SpectrogramDensityLayer"
     }
 
+    /// input_num is layer data and config num
     fn inputs(&self) -> usize {
-        SpectrogramDensityLayerNode::input()
+        1 + 3
     }
 
     fn outputs(&self) -> usize {
@@ -703,11 +661,6 @@ impl Default for SpectrogramDensityLayerNode {
     }
 }
 
-impl InputAndOutputType for SpectrogramDensityLayerNode {
-    type Input = Array2<f64>;
-    type Output = Array1<(f64, f64)>;
-}
-
 impl SpectrogramDensityLayerNode {
     pub fn new(sample_rate: f64, time_range: usize, n_mels: usize) -> Self {
         let layer = ToPowerSpectralDensityLayer::new(ToPowerSpectralDensityLayerConfig {
@@ -731,24 +684,23 @@ impl SpectrogramDensityLayerNode {
         Ok(())
     }
 
-    pub fn update(&mut self) {
+    pub fn get_result(&self) -> Option<Array1<(f64, f64)>> {
+        self.result.clone()
+    }
+}
+
+impl GraphNode for SpectrogramDensityLayerNode {
+    type NodeInfoType = SpectrogramDensityLayerNodeInfo;
+
+    fn to_info(&self) -> Self::NodeInfoType {
+        SpectrogramDensityLayerNodeInfo
+    }
+
+    fn update(&mut self) {
         self.layer = ToPowerSpectralDensityLayer::new(ToPowerSpectralDensityLayerConfig {
             sample_rate: self.sample_rate.get().into(),
             time_range: self.time_range.get(),
             n_mels: self.n_mels.get(),
         });
-    }
-
-    pub fn get_result(&self) -> Option<Array1<(f64, f64)>> {
-        self.result.clone()
-    }
-
-    // input_num is layer data and config num
-    pub const fn input() -> usize {
-        1 + 3
-    }
-
-    pub fn to_info(&self) -> SpectrogramDensityLayerNodeInfo {
-        SpectrogramDensityLayerNodeInfo
     }
 }
