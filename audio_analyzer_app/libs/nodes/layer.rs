@@ -185,8 +185,8 @@ impl NodeInfo for STFTLayerNodeInfo {
         vec![NodeInfoTypes::Array1ComplexF64]
     }
 
-    fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::LayerNodes(LayerNodes::STFTLayer(Default::default()))
+    fn flow_node(&self) -> FlowNodes {
+        FlowNodes::LayerNodes(LayerNodes::STFTLayer(Default::default()))
     }
 }
 

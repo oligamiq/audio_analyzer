@@ -210,10 +210,23 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         snarl: &mut Snarl<FlowNodes>,
     ) {
         ui.label("Add node");
-        if ui.button("STFTLayer").clicked() {
-            snarl.insert_node(pos, STFTLayerNodeInfo.flow_node());
-            ui.close_menu();
-        }
+
+        ui.menu_button("layer", |ui| {
+            if ui.button("STFTLayer").clicked() {
+                snarl.insert_node(pos, STFTLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("MelLayer").clicked() {
+                snarl.insert_node(pos, MelLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("SpectrogramDensityLayer").clicked() {
+                snarl.insert_node(pos, SpectrogramDensityLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
 
         ui.menu_button("config", |ui| {
             if ui.button("number_node").clicked() {
