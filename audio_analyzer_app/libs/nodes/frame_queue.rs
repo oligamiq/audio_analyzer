@@ -164,7 +164,7 @@ impl FlowNodesViewerTrait for FrameQueueNode {
                 }
             }
 
-            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+            CustomPinInfo::none_status()
         });
     }
 }
@@ -413,7 +413,7 @@ impl FlowNodesViewerTrait for CycleBufferNode {
                 }
             }
 
-            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+            CustomPinInfo::none_status()
         });
     }
 }

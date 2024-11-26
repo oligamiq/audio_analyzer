@@ -273,7 +273,7 @@ impl ExprNodes {
                     // if let Some(y) = y {
                     //     self.calculated = Some(NodeInfoTypesWithData::Number(y[0] as f64));
 
-                    //     return PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0));
+                    //     return CustomPinInfo::ok_status();
                     // }
 
                     match self.outputs_num.get() {
@@ -302,7 +302,7 @@ impl ExprNodes {
                         _ => {}
                     }
 
-                    return PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0));
+                    return CustomPinInfo::ok_status();
                 }
                 NodeInfoTypesWithData::Array1ComplexF64(array) => {
                     self.inputs_num.set(2);
@@ -423,7 +423,7 @@ impl ExprNodes {
 
         self.calculated = None;
 
-        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+        CustomPinInfo::none_status()
     }
 }
 
@@ -452,7 +452,7 @@ impl FlowNodesViewerTrait for ExprNodes {
                 return node.show_and_calc(ui, data.clone());
             }
 
-            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+            CustomPinInfo::none_status()
         });
     }
 }

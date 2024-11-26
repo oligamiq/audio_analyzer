@@ -141,15 +141,15 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
                     ui.label("output STFTLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
                 LayerNodes::MelLayer(_) => {
                     ui.label("output MelLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
                 LayerNodes::SpectrogramDensityLayer(_) => {
                     ui.label("output SpectrogramDensityLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
             },
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
@@ -170,11 +170,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                         node.update();
 
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+                        CustomPinInfo::ng_status()
                     }
                     1 => {
                         ui.label("sample rate");
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                        CustomPinInfo::ok_status()
                     }
                     _ => unreachable!(),
                 },
@@ -182,17 +182,17 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             },
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
-                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                CustomPinInfo::none_status()
             }
-            FlowNodes::ExprNode(_) => PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0)),
+            FlowNodes::ExprNode(_) => CustomPinInfo::none_status(),
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
                 FrameBufferNode::CycleBufferNode(_) => {
                     ui.label("CycleBuffer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
             },
         }

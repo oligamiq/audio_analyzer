@@ -143,14 +143,12 @@ impl FlowNodesViewerTrait for STFTLayerNode {
                                 }
                             );
 
-                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                            CustomPinInfo::ok_status()
                         });
                     }
                 }
 
-                return Box::new(|_, _| {
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
-                });
+                return Box::new(|_, _| CustomPinInfo::ng_status());
             }
             _ => unreachable!(),
         }
@@ -361,7 +359,7 @@ impl FlowNodesViewerTrait for MelLayerNode {
                                     }
                                 );
 
-                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                                CustomPinInfo::ok_status()
                             });
                         }
                         _ => {}
@@ -374,7 +372,7 @@ impl FlowNodesViewerTrait for MelLayerNode {
                         FlowNodes::LayerNodes(LayerNodes::MelLayer(node)) => {
                             egui::Checkbox::new(&mut node.stop, "stop").ui(ui);
 
-                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                            CustomPinInfo::none_status()
                         }
                     )
                 });
@@ -576,7 +574,7 @@ impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
                                     }
                                 );
 
-                                PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                                CustomPinInfo::ok_status()
                             });
                         }
                         _ => {}
@@ -587,7 +585,7 @@ impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
                     extract_node!(
                         &mut snarl[pin_id.node],
                         FlowNodes::LayerNodes(LayerNodes::SpectrogramDensityLayer(_)) => {
-                            PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                            CustomPinInfo::none_status()
                         }
                     )
                 });
