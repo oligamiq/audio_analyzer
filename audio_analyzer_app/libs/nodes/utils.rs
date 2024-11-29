@@ -24,7 +24,23 @@ impl FlowNodes {
                     Some(NodeInfoTypesWithData::Number(number_node.number.get()))
                 }
             },
-            FlowNodes::DataPlotterNode(_) => None,
+            FlowNodes::DataInspectorNode(data_inspector_node) => match data_inspector_node {
+                DataInspectorNode::DataPlotterNode(_) => None,
+                DataInspectorNode::SchemaViewerNode(schema_viewer_node) => {
+                    let shape = schema_viewer_node.get_shape();
+                    match pin {
+                        0 => shape
+                            .map(|x| x.get(0).cloned())
+                            .flatten()
+                            .map(|x| NodeInfoTypesWithData::Number(x)),
+                        1 => shape
+                            .map(|x| x.get(1).cloned())
+                            .flatten()
+                            .map(|x| NodeInfoTypesWithData::Number(x)),
+                        _ => unreachable!(),
+                    }
+                }
+            },
             FlowNodes::RawInputNodes(raw_input_nodes) => {
                 match pin {
                     // raw stream
@@ -39,9 +55,13 @@ impl FlowNodes {
                 }
             }
             FlowNodes::ExprNode(expr_nodes) => expr_nodes.calculated.clone(),
-            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
-                FrameBuffer::FrameQueue(frame_queue) => Some(frame_queue.get_queue().clone()),
-                FrameBuffer::CycleBuffer(cycle_buffer) => Some(cycle_buffer.get_queue().clone()),
+            FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
+                FrameBufferNode::FrameQueueNode(frame_queue) => {
+                    Some(frame_queue.get_queue().clone())
+                }
+                FrameBufferNode::CycleBufferNode(cycle_buffer) => {
+                    Some(cycle_buffer.get_queue().clone())
+                }
             },
         }
     }

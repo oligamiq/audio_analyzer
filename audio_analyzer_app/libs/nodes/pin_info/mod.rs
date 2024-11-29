@@ -72,4 +72,16 @@ impl CustomPinInfo {
             painter.add(Shape::Path(shape));
         })
     }
+
+    pub fn ok_status() -> PinInfo {
+        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+    }
+
+    pub fn ng_status() -> PinInfo {
+        PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+    }
+
+    pub fn none_status() -> PinInfo {
+        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+    }
 }

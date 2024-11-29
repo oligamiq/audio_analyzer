@@ -4,10 +4,10 @@ use crate::prelude::{egui::*, nodes::*, snarl::*, utils::*};
 pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(ConfigNodes),
-    DataPlotterNode(DataPlotterNode),
+    DataInspectorNode(DataInspectorNode),
     RawInputNodes(RawInputNodes),
     ExprNode(ExprNodes),
-    FrameBuffer(FrameBuffer),
+    FrameBufferNode(FrameBufferNode),
 }
 
 impl FlowNodes {
@@ -25,11 +25,14 @@ impl FlowNodes {
                 RawInputNodes::MicrophoneInputNode(node) => Box::new(node.to_info()),
                 RawInputNodes::FileInputNode(node) => Box::new(node.to_info()),
             },
-            FlowNodes::DataPlotterNode(node) => Box::new(node.to_info()),
+            FlowNodes::DataInspectorNode(node) => match node {
+                DataInspectorNode::DataPlotterNode(node) => Box::new(node.to_info()),
+                DataInspectorNode::SchemaViewerNode(node) => Box::new(node.to_info()),
+            },
             FlowNodes::ExprNode(expr_nodes) => Box::new(expr_nodes.to_info()),
-            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
-                FrameBuffer::FrameQueue(node) => Box::new(node.to_info()),
-                FrameBuffer::CycleBuffer(node) => Box::new(node.to_info()),
+            FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
+                FrameBufferNode::FrameQueueNode(node) => Box::new(node.to_info()),
+                FrameBufferNode::CycleBufferNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -68,11 +71,14 @@ impl FlowNodesViewer {
                 RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
-            FlowNodes::DataPlotterNode(node) => node.show_input(pin, ui, scale, snarl),
+            FlowNodes::DataInspectorNode(node) => match node {
+                DataInspectorNode::DataPlotterNode(node) => node.show_input(pin, ui, scale, snarl),
+                DataInspectorNode::SchemaViewerNode(node) => node.show_input(pin, ui, scale, snarl),
+            },
             FlowNodes::ExprNode(node) => node.show_input(pin, ui, scale, snarl),
-            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
-                FrameBuffer::FrameQueue(node) => node.show_input(pin, ui, scale, snarl),
-                FrameBuffer::CycleBuffer(node) => node.show_input(pin, ui, scale, snarl),
+            FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
+                FrameBufferNode::FrameQueueNode(node) => node.show_input(pin, ui, scale, snarl),
+                FrameBufferNode::CycleBufferNode(node) => node.show_input(pin, ui, scale, snarl),
             },
         }
     }
@@ -135,15 +141,15 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
                     ui.label("output STFTLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
                 LayerNodes::MelLayer(_) => {
                     ui.label("output MelLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
                 LayerNodes::SpectrogramDensityLayer(_) => {
                     ui.label("output SpectrogramDensityLayer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
             },
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
@@ -164,26 +170,29 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                         node.update();
 
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(255, 0, 0))
+                        CustomPinInfo::ng_status()
                     }
                     1 => {
                         ui.label("sample rate");
-                        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
+                        CustomPinInfo::ok_status()
                     }
                     _ => unreachable!(),
                 },
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
-            FlowNodes::DataPlotterNode(_) => unreachable!(),
-            FlowNodes::ExprNode(_) => PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0)),
-            FlowNodes::FrameBuffer(frame_buffer) => match frame_buffer {
-                FrameBuffer::FrameQueue(_) => {
+            FlowNodes::DataInspectorNode(_) => {
+                ui.label(format!("shape.{:?}", pin.id.output));
+                CustomPinInfo::none_status()
+            }
+            FlowNodes::ExprNode(_) => CustomPinInfo::none_status(),
+            FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
+                FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
-                FrameBuffer::CycleBuffer(_) => {
+                FrameBufferNode::CycleBufferNode(_) => {
                     ui.label("CycleBuffer");
-                    PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 0))
+                    CustomPinInfo::none_status()
                 }
             },
         }
@@ -201,10 +210,23 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         snarl: &mut Snarl<FlowNodes>,
     ) {
         ui.label("Add node");
-        if ui.button("STFTLayer").clicked() {
-            snarl.insert_node(pos, STFTLayerNodeInfo.flow_node());
-            ui.close_menu();
-        }
+
+        ui.menu_button("layer", |ui| {
+            if ui.button("STFTLayer").clicked() {
+                snarl.insert_node(pos, STFTLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("MelLayer").clicked() {
+                snarl.insert_node(pos, MelLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("SpectrogramDensityLayer").clicked() {
+                snarl.insert_node(pos, SpectrogramDensityLayerNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
 
         ui.menu_button("config", |ui| {
             if ui.button("number_node").clicked() {
@@ -225,9 +247,14 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             }
         });
 
-        ui.menu_button("viewer", |ui| {
+        ui.menu_button("inspector", |ui| {
             if ui.button("DataPlotterNode").clicked() {
                 snarl.insert_node(pos, DataPlotterNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("SchemaViewerNode").clicked() {
+                snarl.insert_node(pos, SchemaViewerNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
@@ -235,6 +262,18 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui.menu_button("expr", |ui| {
             if ui.button("ExprNode").clicked() {
                 snarl.insert_node(pos, ExprNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("frame_buffer", |ui| {
+            if ui.button("FrameQueue").clicked() {
+                snarl.insert_node(pos, FrameQueueNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("CycleBuffer").clicked() {
+                snarl.insert_node(pos, CycleBufferNodeInfo.flow_node());
                 ui.close_menu();
             }
         });

@@ -22,7 +22,6 @@ pub trait NodeInfo {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeInfoTypes {
     Number,
-    VecF32,
     Array1TupleF64F64,
     Array1F64,
     Array2F64,
@@ -112,7 +111,10 @@ impl NodeInfos {
             Box::new(MicrophoneInputNodeInfo),
             Box::new(FileInputNodeInfo),
             Box::new(DataPlotterNodeInfo),
+            Box::new(SchemaViewerNodeInfo),
             Box::new(ExprNodeInfo),
+            Box::new(FrameQueueNodeInfo),
+            Box::new(CycleBufferNodeInfo),
         ]
     }
 }

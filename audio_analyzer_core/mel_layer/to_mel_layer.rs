@@ -4,7 +4,7 @@ use mel_spec::{config::MelConfig, mel::MelSpectrogram};
 use ndarray::Array1;
 use num_complex::Complex;
 
-use crate::Result;
+use anyhow::Result;
 
 // 今までのFFTの結果を受け取り、新たなメルスペクトログラムを生成する
 pub struct ToMelSpectrogramLayer {
