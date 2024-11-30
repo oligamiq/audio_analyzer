@@ -1,6 +1,6 @@
 use ndarray::{concatenate, prelude::*};
 
-use crate::prelude::nodes::*;
+use crate::{libs::nodes::layer::extract_snarl_ui_pin_member, prelude::nodes::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum FrameBufferNode {
@@ -60,7 +60,7 @@ impl NodeInfo for FrameQueueNodeInfo {
     }
 
     fn inputs(&self) -> usize {
-        1
+        2
     }
 
     fn outputs(&self) -> usize {
@@ -68,7 +68,7 @@ impl NodeInfo for FrameQueueNodeInfo {
     }
 
     fn input_types(&self) -> Vec<NodeInfoTypes> {
-        vec![NodeInfoTypes::AnyInput]
+        vec![NodeInfoTypes::Number, NodeInfoTypes::AnyInput]
     }
 
     fn output_types(&self) -> Vec<NodeInfoTypes> {
@@ -103,7 +103,7 @@ impl FlowNodesViewerTrait for FrameQueueNode {
     fn show_input(
         &self,
         pin: &egui_snarl::InPin,
-        _ui: &mut egui::Ui,
+        ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
@@ -111,61 +111,84 @@ impl FlowNodesViewerTrait for FrameQueueNode {
 
         let pin_id = pin.id;
 
-        let data = pin
-            .remotes
-            .get(0)
-            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
-            .flatten();
+        match pin_id.input {
+            0 => {
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::FrameBufferNode(FrameBufferNode::FrameQueueNode(node)),
+                    node,
+                    len
+                );
+            }
+            1 => {
+                ui.label("Data");
 
-        return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-            if let FlowNodes::FrameBufferNode(FrameBufferNode::FrameQueueNode(node)) =
-                &mut snarl[pin_id.node]
-            {
-                config_ui!(node, ui, len);
+                let data = pin
+                    .remotes
+                    .get(0)
+                    .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
+                    .flatten();
 
-                if let Some(data) = data.clone() {
-                    match data {
-                        NodeInfoTypesWithData::Number(f) => match node.queue {
-                            NodeInfoTypesWithData::Array1F64(ref mut queue) => {
-                                if queue.len() >= node.len.get() {
-                                    queue.remove_index(Axis(0), 0);
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, _ui: &mut egui::Ui| {
+                    if let FlowNodes::FrameBufferNode(FrameBufferNode::FrameQueueNode(node)) =
+                        &mut snarl[pin_id.node]
+                    {
+                        if let Some(data) = data.clone() {
+                            match data {
+                                NodeInfoTypesWithData::Number(f) => match node.queue {
+                                    NodeInfoTypesWithData::Array1F64(ref mut queue) => {
+                                        if queue.len() >= node.len.get() {
+                                            queue.remove_index(Axis(0), 0);
+                                        }
+
+                                        queue.push(Axis(0), arr0(f).view()).unwrap();
+                                    }
+                                    _ => {
+                                        node.queue = NodeInfoTypesWithData::Array1F64(arr1(&[f]));
+                                    }
+                                },
+                                NodeInfoTypesWithData::Array1F64(data) => match node.queue {
+                                    NodeInfoTypesWithData::Array2F64(ref mut queue) => {
+                                        if queue.len() >= node.len.get() {
+                                            queue.remove_index(Axis(0), 0);
+                                        }
+
+                                        queue.push(Axis(0), data.view()).unwrap();
+                                    }
+                                    _ => {
+                                        node.queue = NodeInfoTypesWithData::Array2F64(
+                                            ndarray::Array2::from_shape_vec(
+                                                (1, data.len()),
+                                                data.to_vec(),
+                                            )
+                                            .unwrap(),
+                                        );
+                                    }
+                                },
+                                _ => {
+                                    static mut WARNED: bool = false;
+
+                                    if !unsafe { WARNED } {
+                                        log::warn!(
+                                            "FrameQueueNode: Unsupported data type: {:?}",
+                                            data
+                                        );
+                                        unsafe { WARNED = true };
+                                    }
                                 }
-
-                                queue.push(Axis(0), arr0(f).view()).unwrap();
-                            }
-                            _ => {
-                                node.queue = NodeInfoTypesWithData::Array1F64(arr1(&[f]));
-                            }
-                        },
-                        NodeInfoTypesWithData::Array1F64(data) => match node.queue {
-                            NodeInfoTypesWithData::Array2F64(ref mut queue) => {
-                                if queue.len() >= node.len.get() {
-                                    queue.remove_index(Axis(0), 0);
-                                }
-
-                                queue.push(Axis(0), data.view()).unwrap();
-                            }
-                            _ => {
-                                node.queue = NodeInfoTypesWithData::Array2F64(
-                                    ndarray::Array2::from_shape_vec((1, data.len()), data.to_vec())
-                                        .unwrap(),
-                                );
-                            }
-                        },
-                        _ => {
-                            static mut WARNED: bool = false;
-
-                            if !unsafe { WARNED } {
-                                log::warn!("FrameQueueNode: Unsupported data type: {:?}", data);
-                                unsafe { WARNED = true };
                             }
                         }
                     }
-                }
-            }
 
-            CustomPinInfo::none_status()
-        });
+                    CustomPinInfo::none_status()
+                });
+            }
+            _ => {
+                unreachable!("Invalid input pin: {:?}", pin_id);
+            }
+        }
     }
 }
 
@@ -197,7 +220,7 @@ impl NodeInfo for CycleBufferNodeInfo {
     }
 
     fn inputs(&self) -> usize {
-        1
+        2
     }
 
     fn outputs(&self) -> usize {
@@ -205,7 +228,7 @@ impl NodeInfo for CycleBufferNodeInfo {
     }
 
     fn input_types(&self) -> Vec<NodeInfoTypes> {
-        vec![NodeInfoTypes::AnyInput]
+        vec![NodeInfoTypes::Number, NodeInfoTypes::AnyInput]
     }
 
     fn output_types(&self) -> Vec<NodeInfoTypes> {
@@ -240,180 +263,213 @@ impl FlowNodesViewerTrait for CycleBufferNode {
     fn show_input(
         &self,
         pin: &egui_snarl::InPin,
-        _ui: &mut egui::Ui,
+        ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
-        assert!(pin.id.input == 0);
-
         let pin_id = pin.id;
 
-        let data = pin
-            .remotes
-            .get(0)
-            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
-            .flatten();
+        match pin_id.input {
+            0 => {
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::FrameBufferNode(FrameBufferNode::CycleBufferNode(node)),
+                    node,
+                    len
+                );
+            }
+            1 => {
+                ui.label("Data");
 
-        return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
-            if let FlowNodes::FrameBufferNode(FrameBufferNode::CycleBufferNode(node)) =
-                &mut snarl[pin_id.node]
-            {
-                config_ui!(node, ui, len);
+                let data = pin
+                    .remotes
+                    .get(0)
+                    .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
+                    .flatten();
 
-                if let Some(data) = data.clone() {
-                    match data {
-                        NodeInfoTypesWithData::Array1F64(data) => match node.buffer {
-                            NodeInfoTypesWithData::Array1F64(ref mut buffer) => {
-                                let extended =
-                                    concatenate(Axis(0), &[buffer.view(), data.view()]).unwrap();
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, _ui: &mut egui::Ui| {
+                    if let FlowNodes::FrameBufferNode(FrameBufferNode::CycleBufferNode(node)) =
+                        &mut snarl[pin_id.node]
+                    {
+                        if let Some(data) = data.clone() {
+                            match data {
+                                NodeInfoTypesWithData::Array1F64(data) => match node.buffer {
+                                    NodeInfoTypesWithData::Array1F64(ref mut buffer) => {
+                                        let extended =
+                                            concatenate(Axis(0), &[buffer.view(), data.view()])
+                                                .unwrap();
 
-                                let new_len = extended.len();
+                                        let new_len = extended.len();
 
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    *buffer = new_buffer.to_owned();
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff..]);
+                                            *buffer = new_buffer.to_owned();
 
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    *buffer = extended;
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            *buffer = extended;
+                                        }
+                                    }
+                                    _ => {
+                                        let extended = data;
+
+                                        let new_len = extended.len();
+
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff..]);
+                                            node.buffer = NodeInfoTypesWithData::Array1F64(
+                                                new_buffer.to_owned(),
+                                            );
+
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            node.buffer =
+                                                NodeInfoTypesWithData::Array1F64(extended);
+                                        }
+                                    }
+                                },
+                                NodeInfoTypesWithData::Array1ComplexF64(data) => {
+                                    match node.buffer {
+                                        NodeInfoTypesWithData::Array1ComplexF64(ref mut buffer) => {
+                                            let extended =
+                                                concatenate(Axis(0), &[buffer.view(), data.view()])
+                                                    .unwrap();
+
+                                            let new_len = extended.len();
+
+                                            if new_len > node.len.get() {
+                                                let diff = new_len - node.len.get();
+                                                let new_buffer = extended.slice(s![diff..]);
+                                                *buffer = new_buffer.to_owned();
+
+                                                assert!(new_buffer.len() == node.len.get());
+                                            } else {
+                                                *buffer = extended;
+                                            }
+                                        }
+                                        _ => {
+                                            let extended = data;
+
+                                            let new_len = extended.len();
+
+                                            if new_len > node.len.get() {
+                                                let diff = new_len - node.len.get();
+                                                let new_buffer = extended.slice(s![diff..]);
+                                                node.buffer =
+                                                    NodeInfoTypesWithData::Array1ComplexF64(
+                                                        new_buffer.to_owned(),
+                                                    );
+
+                                                assert!(new_buffer.len() == node.len.get());
+                                            } else {
+                                                node.buffer =
+                                                    NodeInfoTypesWithData::Array1ComplexF64(
+                                                        extended,
+                                                    );
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-                            _ => {
-                                let extended = data;
+                                NodeInfoTypesWithData::Array1TupleF64F64(data) => match node.buffer
+                                {
+                                    NodeInfoTypesWithData::Array1TupleF64F64(ref mut buffer) => {
+                                        let extended =
+                                            concatenate(Axis(0), &[buffer.view(), data.view()])
+                                                .unwrap();
 
-                                let new_len = extended.len();
+                                        let new_len = extended.len();
 
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    node.buffer =
-                                        NodeInfoTypesWithData::Array1F64(new_buffer.to_owned());
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff..]);
+                                            *buffer = new_buffer.to_owned();
 
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    node.buffer = NodeInfoTypesWithData::Array1F64(extended);
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            *buffer = extended;
+                                        }
+                                    }
+                                    _ => {
+                                        let extended = data;
+
+                                        let new_len = extended.len();
+
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff..]);
+                                            node.buffer = NodeInfoTypesWithData::Array1TupleF64F64(
+                                                new_buffer.to_owned(),
+                                            );
+
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            node.buffer =
+                                                NodeInfoTypesWithData::Array1TupleF64F64(extended);
+                                        }
+                                    }
+                                },
+                                NodeInfoTypesWithData::Array2F64(data) => match node.buffer {
+                                    NodeInfoTypesWithData::Array2F64(ref mut buffer) => {
+                                        let extended =
+                                            concatenate(Axis(0), &[buffer.view(), data.view()])
+                                                .unwrap();
+
+                                        let new_len = extended.len();
+
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff.., ..]);
+                                            *buffer = new_buffer.to_owned();
+
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            *buffer = extended;
+                                        }
+                                    }
+                                    _ => {
+                                        let extended = data;
+
+                                        let new_len = extended.len();
+
+                                        if new_len > node.len.get() {
+                                            let diff = new_len - node.len.get();
+                                            let new_buffer = extended.slice(s![diff.., ..]);
+                                            node.buffer = NodeInfoTypesWithData::Array2F64(
+                                                new_buffer.to_owned(),
+                                            );
+
+                                            assert!(new_buffer.len() == node.len.get());
+                                        } else {
+                                            node.buffer =
+                                                NodeInfoTypesWithData::Array2F64(extended);
+                                        }
+                                    }
+                                },
+                                _ => {
+                                    static mut WARNED: bool = false;
+
+                                    if !unsafe { WARNED } {
+                                        log::warn!(
+                                            "CycleBufferNode: Unsupported data type: {:?}",
+                                            data
+                                        );
+                                        unsafe { WARNED = true };
+                                    }
                                 }
-                            }
-                        },
-                        NodeInfoTypesWithData::Array1ComplexF64(data) => match node.buffer {
-                            NodeInfoTypesWithData::Array1ComplexF64(ref mut buffer) => {
-                                let extended =
-                                    concatenate(Axis(0), &[buffer.view(), data.view()]).unwrap();
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    *buffer = new_buffer.to_owned();
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    *buffer = extended;
-                                }
-                            }
-                            _ => {
-                                let extended = data;
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    node.buffer = NodeInfoTypesWithData::Array1ComplexF64(
-                                        new_buffer.to_owned(),
-                                    );
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    node.buffer = NodeInfoTypesWithData::Array1ComplexF64(extended);
-                                }
-                            }
-                        },
-                        NodeInfoTypesWithData::Array1TupleF64F64(data) => match node.buffer {
-                            NodeInfoTypesWithData::Array1TupleF64F64(ref mut buffer) => {
-                                let extended =
-                                    concatenate(Axis(0), &[buffer.view(), data.view()]).unwrap();
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    *buffer = new_buffer.to_owned();
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    *buffer = extended;
-                                }
-                            }
-                            _ => {
-                                let extended = data;
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff..]);
-                                    node.buffer = NodeInfoTypesWithData::Array1TupleF64F64(
-                                        new_buffer.to_owned(),
-                                    );
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    node.buffer =
-                                        NodeInfoTypesWithData::Array1TupleF64F64(extended);
-                                }
-                            }
-                        },
-                        NodeInfoTypesWithData::Array2F64(data) => match node.buffer {
-                            NodeInfoTypesWithData::Array2F64(ref mut buffer) => {
-                                let extended =
-                                    concatenate(Axis(0), &[buffer.view(), data.view()]).unwrap();
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff.., ..]);
-                                    *buffer = new_buffer.to_owned();
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    *buffer = extended;
-                                }
-                            }
-                            _ => {
-                                let extended = data;
-
-                                let new_len = extended.len();
-
-                                if new_len > node.len.get() {
-                                    let diff = new_len - node.len.get();
-                                    let new_buffer = extended.slice(s![diff.., ..]);
-                                    node.buffer =
-                                        NodeInfoTypesWithData::Array2F64(new_buffer.to_owned());
-
-                                    assert!(new_buffer.len() == node.len.get());
-                                } else {
-                                    node.buffer = NodeInfoTypesWithData::Array2F64(extended);
-                                }
-                            }
-                        },
-                        _ => {
-                            static mut WARNED: bool = false;
-
-                            if !unsafe { WARNED } {
-                                log::warn!("CycleBufferNode: Unsupported data type: {:?}", data);
-                                unsafe { WARNED = true };
                             }
                         }
                     }
-                }
-            }
 
-            CustomPinInfo::none_status()
-        });
+                    CustomPinInfo::none_status()
+                });
+            }
+            _ => {
+                unreachable!("Invalid input pin: {:?}", pin_id);
+            }
+        }
     }
 }

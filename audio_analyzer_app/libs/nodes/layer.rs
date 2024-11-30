@@ -56,44 +56,48 @@ pub struct STFTLayerNode {
     result: Option<Array1<Complex<f64>>>,
 }
 
-macro_rules! extract_snarl_ui_pin_member {
-    ($snarl:ident, $ui:ident, $pin:ident, $pattern:pat, $pattern_inner:ident, $member:ident) => {
-        let pin_id = $pin.id;
+pub mod mac {
+    macro_rules! extract_snarl_ui_pin_member {
+        ($snarl:ident, $ui:ident, $pin:ident, $pattern:pat, $pattern_inner:ident, $member:ident) => {
+            let pin_id = $pin.id;
 
-        use num_traits::cast::AsPrimitive;
+            use num_traits::cast::AsPrimitive;
 
-        if let Some(out_pin) = $pin.remotes.get(0) {
-            let data = $snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
-            if let Some(NodeInfoTypesWithData::Number(number)) = data {
-                $ui.label(format!("{}: {}", stringify!($member), number));
+            if let Some(out_pin) = $pin.remotes.get(0) {
+                let data = $snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
+                if let Some(NodeInfoTypesWithData::Number(number)) = data {
+                    $ui.label(format!("{}: {}", stringify!($member), number));
 
-                return Box::new(move |$snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
-                    extract_node!(
-                        &mut $snarl[pin_id.node],
-                        $pattern => {
-                            if $pattern_inner.$member.set(number.as_()) {
-                                $pattern_inner.update();
+                    return Box::new(move |$snarl: &mut Snarl<FlowNodes>, _: &mut egui::Ui| {
+                        extract_node!(
+                            &mut $snarl[pin_id.node],
+                            $pattern => {
+                                if $pattern_inner.$member.set(number.as_()) {
+                                    $pattern_inner.update();
+                                }
                             }
-                        }
-                    );
+                        );
 
-                    CustomPinInfo::lock()
-                });
+                        CustomPinInfo::lock()
+                    });
+                }
             }
-        }
 
-        return Box::new(move |$snarl: &mut Snarl<FlowNodes>, $ui: &mut egui::Ui| {
-            let node = extract_node!(
-                &mut $snarl[pin_id.node],
-                $pattern => $pattern_inner
-            );
+            return Box::new(move |$snarl: &mut Snarl<FlowNodes>, $ui: &mut egui::Ui| {
+                let node = extract_node!(
+                    &mut $snarl[pin_id.node],
+                    $pattern => $pattern_inner
+                );
 
-            config_ui!(@fmt, node, $ui, $member);
+                config_ui!(@fmt, node, $ui, $member);
 
-            CustomPinInfo::setting(8)
-        });
-    };
+                CustomPinInfo::setting(8)
+            });
+        };
+    }
+    pub(crate) use extract_snarl_ui_pin_member;
 }
+pub(crate) use mac::extract_snarl_ui_pin_member;
 
 impl FlowNodesViewerTrait for STFTLayerNode {
     fn show_input(
