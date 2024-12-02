@@ -6,9 +6,12 @@
         "Deque",
         "egui",
         "fundsp",
+        "IDCT",
+        "IFFT",
         "LOGLEVEL",
         "mels",
         "ndarray",
+        "Quefrency",
         "ratatui",
         "STFT"
     ],
