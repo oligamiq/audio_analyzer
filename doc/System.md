@@ -1,5 +1,5 @@
 # 目標
-## 現行実装
+## 一次実装
 ### 未実装
 - IDCTNode
 - LifterNode
@@ -22,7 +22,7 @@ flowchart TB
   Lifter-->OutputNode((Output))
 ```
 
-## 最終実装
+## 二次実装
 ### 未実装
 - FftNode
 - FilterNode
@@ -43,4 +43,23 @@ flowchart TB
   CalcPowerSpectrum-->CalcQuefrency["IDCT"]
   CalcQuefrency-->Lifter["Lifter(15)"]
   Lifter-->OutputNode((Output))
+```
+
+## 三次実装
+algorithm by LPC
+
+```mermaid
+flowchart TB
+  AbstractInputNode-->|sample rate| AdjustCalcLPCSize[[x*50/1000]]
+  AdjustCalcLPCSize-->|non adjusted lpc_size| CalcLPCSize[["round(x / 16) * 16"]]
+  AbstractInputNode-->|raw stream| CycleBufferNode
+  CalcLPCSize-->|len|CycleBufferNode
+  CalcLPCSize-->CalcHopSize[["round(x / 10)"]]
+  CalcHopSize-->|hop_size on data|CycleBufferNode
+  CycleBufferNode-->|raw stream|LPCNode
+  Depth-->|depth|LPCNode
+  CycleBufferNode-->Preview2(((Preview)))
+  LPCNode-->Lifter["Lifter(0)"]
+  Lifter-->CalcPowerSpectrum[["20.0 * log10(np.abs(x))"]]
+  CalcPowerSpectrum-->OutputNode((Output))
 ```
