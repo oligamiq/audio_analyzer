@@ -10,7 +10,8 @@ pub enum FrequencyNodes {
     FFTNode(FFTNode),
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct IFFTNode {
 
     #[serde(skip)]
@@ -45,15 +46,6 @@ impl core::fmt::Debug for IFFTNode {
         f.debug_struct("IFFTNode")
             .field("calculated", &self.calculated)
             .finish()
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for IFFTNode {
-    fn deserialize<D>(_: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(IFFTNode::default())
     }
 }
 
@@ -173,7 +165,8 @@ impl GraphNode for IFFTNode {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct FFTNode {
     #[serde(skip)]
     fft_size: usize,
@@ -207,15 +200,6 @@ impl core::fmt::Debug for FFTNode {
         f.debug_struct("FFTNode")
             .field("calculated", &self.calculated)
             .finish()
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for FFTNode {
-    fn deserialize<D>(_: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(FFTNode::default())
     }
 }
 

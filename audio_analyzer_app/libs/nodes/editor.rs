@@ -296,6 +296,18 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 ui.close_menu();
             }
         });
+
+        ui.menu_button("frequency", |ui| {
+            if ui.button("IFFT").clicked() {
+                snarl.insert_node(pos, IFFTNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("FFT").clicked() {
+                snarl.insert_node(pos, FFTNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
     }
 
     fn has_node_menu(&mut self, _node: &FlowNodes) -> bool {
