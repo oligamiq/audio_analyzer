@@ -102,6 +102,7 @@ impl GraphNode for FrameQueueNode {
 impl FlowNodesViewerTrait for FrameQueueNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _scale: f32,
@@ -124,6 +125,10 @@ impl FlowNodesViewerTrait for FrameQueueNode {
             }
             1 => {
                 ui.label("Data");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 let data = pin
                     .remotes
@@ -262,6 +267,7 @@ impl GraphNode for CycleBufferNode {
 impl FlowNodesViewerTrait for CycleBufferNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _scale: f32,
@@ -282,6 +288,10 @@ impl FlowNodesViewerTrait for CycleBufferNode {
             }
             1 => {
                 ui.label("Data");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 let data = pin
                     .remotes
@@ -459,12 +469,14 @@ impl FlowNodesViewerTrait for CycleBufferNode {
                                         );
                                         unsafe { WARNED = true };
                                     }
+
+                                    return CustomPinInfo::ng_status();
                                 }
                             }
                         }
                     }
 
-                    CustomPinInfo::none_status()
+                    CustomPinInfo::ok_status()
                 });
             }
             _ => {

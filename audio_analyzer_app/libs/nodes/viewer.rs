@@ -378,6 +378,7 @@ impl DataPlotterNode {
 impl FlowNodesViewerTrait for DataPlotterNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         _: &mut egui::Ui,
         scale: f32,
@@ -386,6 +387,19 @@ impl FlowNodesViewerTrait for DataPlotterNode {
         let pin_id = pin.id;
 
         if let Some(out_pin) = pin.remotes.get(0) {
+            if !ctx.running {
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::DataInspectorNode(DataInspectorNode::DataPlotterNode(node)) => {
+                            node.show(ui, false, scale);
+                        }
+                    );
+
+                    CustomPinInfo::none_status()
+                });
+            }
+
             let remote = &snarl[out_pin.node];
 
             let data = remote.to_node_info_types_with_data(out_pin.output);
@@ -545,6 +559,7 @@ impl Default for SchemaViewerNode {
 impl FlowNodesViewerTrait for SchemaViewerNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         _: &mut egui::Ui,
         scale: f32,
@@ -553,6 +568,19 @@ impl FlowNodesViewerTrait for SchemaViewerNode {
         let pin_id = pin.id;
 
         if let Some(out_pin) = pin.remotes.get(0) {
+            if !ctx.running {
+                return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
+                    extract_node!(
+                        &mut snarl[pin_id.node],
+                        FlowNodes::DataInspectorNode(DataInspectorNode::SchemaViewerNode(node)) => {
+                            node.show(ui, false, scale);
+                        }
+                    );
+
+                    CustomPinInfo::none_status()
+                });
+            }
+
             let remote = &snarl[out_pin.node];
 
             let data = remote.to_node_info_types_with_data(out_pin.output);

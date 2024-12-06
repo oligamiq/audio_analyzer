@@ -248,7 +248,7 @@ impl ExprNodes {
         None
     }
 
-    fn show_and_calc(&mut self, ui: &mut egui::Ui, data: Option<NodeInfoTypesWithData>) -> PinInfo {
+    fn show_and_calc(&mut self, ctx: &FlowNodesViewerCtx, ui: &mut egui::Ui, data: Option<NodeInfoTypesWithData>) -> PinInfo {
         ui.label("outputs_num");
 
         if egui::TextEdit::singleline(&mut self.outputs_num)
@@ -260,6 +260,10 @@ impl ExprNodes {
             .lost_focus()
         {
             self.outputs_num.fmt();
+        }
+
+        if !ctx.running {
+            return CustomPinInfo::none_status();
         }
 
         if let Some(data) = &data {
@@ -430,6 +434,7 @@ impl ExprNodes {
 impl FlowNodesViewerTrait for ExprNodes {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         _: &mut egui::Ui,
         _: f32,
@@ -445,11 +450,13 @@ impl FlowNodesViewerTrait for ExprNodes {
             .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
             .flatten();
 
+        let ctx = ctx.clone();
+
         return Box::new(move |snarl: &mut Snarl<FlowNodes>, ui: &mut egui::Ui| {
             if let FlowNodes::ExprNode(node) = &mut snarl[pin_id.node] {
                 config_ui!(node, ui, expr);
 
-                return node.show_and_calc(ui, data.clone());
+                return node.show_and_calc(&ctx, ui, data.clone());
             }
 
             CustomPinInfo::none_status()

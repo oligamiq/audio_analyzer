@@ -165,6 +165,8 @@ impl eframe::App for App {
             //     trace!("Incremented value to {}", self.value);
             // }
 
+            ui.add(egui::Checkbox::new(&mut self.config.stop, "stop"));
+
             ui.separator();
 
             ui.add(egui::github_link_file!(
@@ -173,7 +175,7 @@ impl eframe::App for App {
             ));
 
             self.config.snarl
-                .show(&mut FlowNodesViewer, &self.config.style, "snarl", ui);
+                .show(&mut FlowNodesViewer::new(!self.config.stop), &self.config.style, "snarl", ui);
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);

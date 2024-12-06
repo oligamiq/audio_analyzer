@@ -52,6 +52,7 @@ impl core::fmt::Debug for IFFTNode {
 impl FlowNodesViewerTrait for IFFTNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _scale: f32,
@@ -62,6 +63,10 @@ impl FlowNodesViewerTrait for IFFTNode {
         match pin_id.input {
             0 => {
                 ui.label("input");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 if let Some(out_pin) = pin.remotes.get(0) {
                     let data = snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
@@ -206,6 +211,7 @@ impl core::fmt::Debug for FFTNode {
 impl FlowNodesViewerTrait for FFTNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _scale: f32,
@@ -216,6 +222,10 @@ impl FlowNodesViewerTrait for FFTNode {
         match pin_id.input {
             0 => {
                 ui.label("input");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 if let Some(out_pin) = pin.remotes.get(0) {
                     let data = snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
