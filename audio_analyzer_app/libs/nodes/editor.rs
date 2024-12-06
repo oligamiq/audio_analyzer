@@ -8,6 +8,7 @@ pub enum FlowNodes {
     RawInputNodes(RawInputNodes),
     ExprNode(ExprNodes),
     FrameBufferNode(FrameBufferNode),
+    FrequencyNodes(FrequencyNodes),
 }
 
 impl FlowNodes {
@@ -33,6 +34,10 @@ impl FlowNodes {
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(node) => Box::new(node.to_info()),
                 FrameBufferNode::CycleBufferNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(node) => Box::new(node.to_info()),
+                FrequencyNodes::FFTNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -79,6 +84,10 @@ impl FlowNodesViewer {
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(node) => node.show_input(pin, ui, scale, snarl),
                 FrameBufferNode::CycleBufferNode(node) => node.show_input(pin, ui, scale, snarl),
+            },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(node) => node.show_input(pin, ui, scale, snarl),
+                FrequencyNodes::FFTNode(node) => node.show_input(pin, ui, scale, snarl),
             },
         }
     }
@@ -192,6 +201,16 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 }
                 FrameBufferNode::CycleBufferNode(_) => {
                     ui.label("CycleBuffer");
+                    CustomPinInfo::none_status()
+                }
+            },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(_) => {
+                    ui.label("IFFTNode");
+                    CustomPinInfo::none_status()
+                },
+                FrequencyNodes::FFTNode(_) => {
+                    ui.label("FFTNode");
                     CustomPinInfo::none_status()
                 }
             },

@@ -9,6 +9,7 @@ pub mod nodes {
             CycleBufferNode, CycleBufferNodeInfo, FrameBufferNode, FrameQueueNode,
             FrameQueueNodeInfo,
         },
+        idct::{FFTNode, FFTNodeInfo, IFFTNode, IFFTNodeInfo, FrequencyNodes},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,

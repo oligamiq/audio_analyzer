@@ -9,6 +9,7 @@ pub mod pin_info;
 pub mod raw_input;
 pub mod utils;
 pub mod viewer;
+pub mod idct;
 
 pub trait NodeInfo {
     fn name(&self) -> &str;
@@ -115,6 +116,8 @@ impl NodeInfos {
             Box::new(ExprNodeInfo),
             Box::new(FrameQueueNodeInfo),
             Box::new(CycleBufferNodeInfo),
+            Box::new(IFFTNodeInfo),
+            Box::new(FFTNodeInfo),
         ]
     }
 }
