@@ -3,7 +3,6 @@
 ### 未実装
 - IDCTNode
 - LifterNode
-- Patch about CycleBufferNode
 
 ```mermaid
 flowchart TB
@@ -11,7 +10,6 @@ flowchart TB
   MicrophoneInputNode-->|raw stream| CycleBufferNode
   CalcFFTSize-->|len|CycleBufferNode
   CalcFFTSize-->CalcHopSize[["round(x / 10)"]]
-  CalcHopSize-->|hop_size on data|CycleBufferNode
   CycleBufferNode-->|raw stream|STFTLayer
   CalcFFTSize-->|fft_size|STFTLayer
   CalcHopSize-->|hop_size|STFTLayer
@@ -35,7 +33,6 @@ flowchart TB
   CalcFFTSize-->|len|CycleBufferNode
   CalcFFTSize-->CalcHopSize[["round(x / 10)"]]
   CalcFFTSize-->|size|FilterNode
-  CalcHopSize-->|hop_size on data|CycleBufferNode
   CycleBufferNode-->|raw stream|FilterNode["FilterNode(0 -> n) 0.5 * (1.0 - cos((2.0π * k) / n))"]
   CycleBufferNode-->Preview1(((Preview)))
   FilterNode-->CalcFFT["fft"]
@@ -55,7 +52,7 @@ flowchart TB
   AbstractInputNode-->|raw stream| CycleBufferNode
   CalcLPCSize-->|len|CycleBufferNode
   CalcLPCSize-->CalcHopSize[["round(x / 10)"]]
-  CalcHopSize-->|hop_size on data|CycleBufferNode
+  CalcHopSize-->|hop_size on data|AbstractInputNode
   CycleBufferNode-->|raw stream|LPCNode
   Depth-->|depth|LPCNode
   CycleBufferNode-->Preview2(((Preview)))
