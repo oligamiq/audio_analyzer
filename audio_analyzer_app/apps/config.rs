@@ -6,6 +6,7 @@ use crate::prelude::{snarl::*, utils::*};
 pub struct Config {
     pub snarl: Snarl<FlowNodes>,
     pub style: SnarlStyle,
+    pub stop: bool,
 }
 
 impl Default for Config {
@@ -13,6 +14,7 @@ impl Default for Config {
         Self {
             snarl: Snarl::new(),
             style: SnarlStyle::default(),
+            stop: false,
         }
     }
 }
@@ -22,6 +24,7 @@ impl Config {
         Self {
             snarl: snarl.serde_clone(),
             style: style.serde_clone(),
+            stop: false,
         }
     }
 }
