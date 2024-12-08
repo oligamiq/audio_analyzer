@@ -13,7 +13,6 @@ pub enum FrequencyNodes {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct IFFTNode {
-
     #[serde(skip)]
     fft_size: usize,
     #[serde(skip)]

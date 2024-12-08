@@ -248,7 +248,12 @@ impl ExprNodes {
         None
     }
 
-    fn show_and_calc(&mut self, ctx: &FlowNodesViewerCtx, ui: &mut egui::Ui, data: Option<NodeInfoTypesWithData>) -> PinInfo {
+    fn show_and_calc(
+        &mut self,
+        ctx: &FlowNodesViewerCtx,
+        ui: &mut egui::Ui,
+        data: Option<NodeInfoTypesWithData>,
+    ) -> PinInfo {
         ui.label("outputs_num");
 
         if egui::TextEdit::singleline(&mut self.outputs_num)

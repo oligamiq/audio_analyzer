@@ -3,13 +3,13 @@
 pub mod nodes {
     pub(crate) use crate::libs::nodes::{
         config::{ConfigNodes, NumberNode, NumberNodeInfo},
-        editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerTrait, FlowNodesViewerCtx},
+        editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerCtx, FlowNodesViewerTrait},
         expr::{ExprNodeInfo, ExprNodes},
         frame_queue::{
             CycleBufferNode, CycleBufferNodeInfo, FrameBufferNode, FrameQueueNode,
             FrameQueueNodeInfo,
         },
-        idct::{FFTNode, FFTNodeInfo, IFFTNode, IFFTNodeInfo, FrequencyNodes},
+        idct::{FFTNode, FFTNodeInfo, FrequencyNodes, IFFTNode, IFFTNodeInfo},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
@@ -36,7 +36,7 @@ pub mod snarl {
     pub(crate) use crate::libs::nodes::{editor::FlowNodes, pin_info::CustomPinInfo};
     pub use egui_snarl::{
         ui::{AnyPins, PinInfo, SnarlStyle, SnarlViewer},
-        InPin, NodeId, OutPin, Snarl
+        InPin, NodeId, OutPin, Snarl,
     };
 }
 

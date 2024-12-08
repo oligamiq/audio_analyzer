@@ -64,12 +64,12 @@ impl FlowNodes {
                 }
             },
             FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
-                FrequencyNodes::IFFTNode(idct_node) => {
-                    Some(NodeInfoTypesWithData::Array1ComplexF64(idct_node.get_result()?))
-                }
-                FrequencyNodes::FFTNode(fft_node) => {
-                    Some(NodeInfoTypesWithData::Array1ComplexF64(fft_node.get_result()?))
-                }
+                FrequencyNodes::IFFTNode(idct_node) => Some(
+                    NodeInfoTypesWithData::Array1ComplexF64(idct_node.get_result()?),
+                ),
+                FrequencyNodes::FFTNode(fft_node) => Some(NodeInfoTypesWithData::Array1ComplexF64(
+                    fft_node.get_result()?,
+                )),
             },
         }
     }

@@ -67,11 +67,7 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(
-            storage,
-            eframe::APP_KEY,
-            &self.config,
-        );
+        eframe::set_value(storage, eframe::APP_KEY, &self.config);
 
         trace!("Saved app state");
     }
@@ -174,8 +170,12 @@ impl eframe::App for App {
                 "Source code."
             ));
 
-            self.config.snarl
-                .show(&mut FlowNodesViewer::new(!self.config.stop), &self.config.style, "snarl", ui);
+            self.config.snarl.show(
+                &mut FlowNodesViewer::new(!self.config.stop),
+                &self.config.style,
+                "snarl",
+                ui,
+            );
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);

@@ -4,12 +4,13 @@ pub mod config;
 pub mod editor;
 pub mod expr;
 pub mod frame_queue;
+pub mod idct;
 pub mod layer;
+pub mod lifter;
 pub mod pin_info;
 pub mod raw_input;
 pub mod utils;
 pub mod viewer;
-pub mod idct;
 
 pub trait NodeInfo {
     fn name(&self) -> &str;

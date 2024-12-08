@@ -48,9 +48,7 @@ pub struct FlowNodesViewer {
 }
 
 impl FlowNodesViewer {
-    pub fn new(
-        running: bool,
-    ) -> Self {
+    pub fn new(running: bool) -> Self {
         Self { running }
     }
 
@@ -90,9 +88,11 @@ impl FlowNodesViewer {
         };
         match &snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                LayerNodes::STFTLayer(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
-                LayerNodes::MelLayer(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
-                LayerNodes::SpectrogramDensityLayer(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
+                LayerNodes::STFTLayer(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LayerNodes::MelLayer(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LayerNodes::SpectrogramDensityLayer(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
@@ -100,17 +100,25 @@ impl FlowNodesViewer {
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
             FlowNodes::DataInspectorNode(node) => match node {
-                DataInspectorNode::DataPlotterNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
-                DataInspectorNode::SchemaViewerNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
+                DataInspectorNode::DataPlotterNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
+                DataInspectorNode::SchemaViewerNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
             },
-            FlowNodes::ExprNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
+            FlowNodes::ExprNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
-                FrameBufferNode::FrameQueueNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
-                FrameBufferNode::CycleBufferNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
+                FrameBufferNode::FrameQueueNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
+                FrameBufferNode::CycleBufferNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
             },
             FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
-                FrequencyNodes::IFFTNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
-                FrequencyNodes::FFTNode(node) => node.show_input(&ctx ,pin, ui, scale, snarl),
+                FrequencyNodes::IFFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                FrequencyNodes::FFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
         }
     }
@@ -209,7 +217,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
             }
-            FlowNodes::ExprNode(_) => {},
+            FlowNodes::ExprNode(_) => {}
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");
@@ -221,7 +229,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
                 FrequencyNodes::IFFTNode(_) => {
                     ui.label("IFFTNode");
-                },
+                }
                 FrequencyNodes::FFTNode(_) => {
                     ui.label("FFTNode");
                 }
