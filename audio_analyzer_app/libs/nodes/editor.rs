@@ -9,6 +9,7 @@ pub enum FlowNodes {
     ExprNode(ExprNodes),
     FrameBufferNode(FrameBufferNode),
     FrequencyNodes(FrequencyNodes),
+    FilterNodes(FilterNodes),
 }
 
 impl FlowNodes {
@@ -38,6 +39,9 @@ impl FlowNodes {
             FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
                 FrequencyNodes::IFFTNode(node) => Box::new(node.to_info()),
                 FrequencyNodes::FFTNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -119,6 +123,9 @@ impl FlowNodesViewer {
             FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
                 FrequencyNodes::IFFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
                 FrequencyNodes::FFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
         }
     }
@@ -232,6 +239,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 }
                 FrequencyNodes::FFTNode(_) => {
                     ui.label("FFTNode");
+                }
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(_) => {
+                    ui.label("LifterNode");
                 }
             },
         }

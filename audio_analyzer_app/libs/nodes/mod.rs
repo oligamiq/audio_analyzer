@@ -119,6 +119,7 @@ impl NodeInfos {
             Box::new(CycleBufferNodeInfo),
             Box::new(IFFTNodeInfo),
             Box::new(FFTNodeInfo),
+            Box::new(LifterNodeInfo),
         ]
     }
 }

@@ -14,6 +14,7 @@ pub mod nodes {
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
         },
+        lifter::{FilterNodes, LifterNode, LifterNodeInfo},
         raw_input::{
             FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
             RawInputNodes,

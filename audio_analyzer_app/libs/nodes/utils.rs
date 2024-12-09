@@ -71,6 +71,11 @@ impl FlowNodes {
                     fft_node.get_result()?,
                 )),
             },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(lifter_node) => {
+                    Some(NodeInfoTypesWithData::Array1F64(lifter_node.get_result()?))
+                }
+            },
         }
     }
 }
