@@ -5,6 +5,8 @@
         "crossterm",
         "Deque",
         "egui",
+        "Evaler",
+        "fasteval",
         "fundsp",
         "IDCT",
         "IFFT",
