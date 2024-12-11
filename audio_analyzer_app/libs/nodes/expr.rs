@@ -371,7 +371,7 @@ impl ExprNodes {
 
                     let array = match data {
                         NodeInfoTypesWithData::Array1F64(array) => {
-                            self.inputs_num.set(2);
+                            self.inputs_num.set(1);
                             self.input_var_names = vec!["x".to_string(), "y".to_string()];
 
                             array
