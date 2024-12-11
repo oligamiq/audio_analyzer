@@ -217,7 +217,9 @@ impl ExprNodes {
             ..
         } = self;
 
-        assert!(inputs.len() == inputs_num.get());
+        if inputs.is_empty() || inputs.len() != inputs_num.get() {
+            return None;
+        }
 
         let mut access_vars = accessor.borrow_mut();
         access_vars.clear();
@@ -309,7 +311,7 @@ impl ExprNodes {
         }
 
         if let Some(data) = &data {
-            match data {
+            match &data {
                 NodeInfoTypesWithData::Number(num) => {
                     self.inputs_num.set(1);
                     self.input_var_names = vec!["x".to_string()];
@@ -319,7 +321,7 @@ impl ExprNodes {
                             if let Some(y) = self.eval(vec![*num]) {
                                 let y = match y {
                                     Ret::Tuple(y) => y[0],
-                                    _ => unreachable!(),
+                                    Ret::Complex(re, _) => re,
                                 };
                                 self.calculated = Some(NodeInfoTypesWithData::Number(y));
 
@@ -362,40 +364,65 @@ impl ExprNodes {
 
                     return CustomPinInfo::ok_status();
                 }
-                NodeInfoTypesWithData::Array1ComplexF64(array) => {
-                    self.inputs_num.set(2);
-                    self.input_var_names = vec!["x".to_string(), "y".to_string()];
+                NodeInfoTypesWithData::Array1F64(_)
+                | NodeInfoTypesWithData::Array1TupleF64F64(_)
+                | NodeInfoTypesWithData::Array1ComplexF64(_) => {
+                    log::info!("Array1F64");
+
+                    let array = match data {
+                        NodeInfoTypesWithData::Array1F64(array) => {
+                            self.inputs_num.set(2);
+                            self.input_var_names = vec!["x".to_string(), "y".to_string()];
+
+                            array
+                                .iter()
+                                .map(|x| self.eval(vec![*x as f64]))
+                                .collect::<Option<Array1<_>>>()
+                        }
+                        NodeInfoTypesWithData::Array1TupleF64F64(array) => {
+                            self.inputs_num.set(2);
+                            self.input_var_names = vec!["x".to_string(), "y".to_string()];
+
+                            array
+                                .iter()
+                                .map(|x| self.eval(vec![x.0 as f64, x.1 as f64]))
+                                .collect::<Option<Array1<_>>>()
+                        }
+                        NodeInfoTypesWithData::Array1ComplexF64(array) => {
+                            self.inputs_num.set(2);
+                            self.input_var_names = vec!["x".to_string(), "y".to_string()];
+
+                            array
+                                .iter()
+                                .map(|x| self.eval(vec![x.re, x.im]))
+                                .collect::<Option<Array1<_>>>()
+                        }
+                        _ => unreachable!(),
+                    };
 
                     match self.outputs_num.get() {
                         1 => {
-                            let y = array
-                                .iter()
-                                .map(|x| {
-                                    self.eval(vec![x.re, x.im]).map(|y| match y {
-                                        Ret::Tuple(y) => y[0],
-                                        _ => unreachable!(),
-                                    })
-                                })
-                                .collect::<Option<Array1<_>>>();
-
-                            if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
+                            if let Some(y) = array {
+                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(
+                                    y.into_iter()
+                                        .map(|y| match y {
+                                            Ret::Tuple(y) => y[0],
+                                            Ret::Complex(re, _) => re,
+                                        })
+                                        .collect::<Array1<_>>(),
+                                ));
 
                                 return CustomPinInfo::ok_status();
                             }
                         }
                         2 => {
-                            let y = array
-                                .iter()
-                                .map(|x| self.eval(vec![x.re, x.im]))
-                                .collect::<Option<ndarray::Array1<_>>>();
-
-                            if let Some(ref ty) = y.as_ref().map(|y| y.get(0)).flatten() {
+                            if let Some(ref ty) = array.as_ref().map(|y| y.get(0)).flatten() {
                                 match ty {
                                     Ret::Tuple(..) => {
                                         self.calculated =
                                             Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                                                y.unwrap()
+                                                array
+                                                    .unwrap()
                                                     .into_iter()
                                                     .map(|y| match y {
                                                         Ret::Tuple(y) => (y[0] as f64, y[1] as f64),
@@ -407,7 +434,8 @@ impl ExprNodes {
                                     Ret::Complex(..) => {
                                         self.calculated =
                                             Some(NodeInfoTypesWithData::Array1ComplexF64(
-                                                y.unwrap()
+                                                array
+                                                    .unwrap()
                                                     .into_iter()
                                                     .map(|y| match y {
                                                         Ret::Complex(re, im) => {
@@ -426,116 +454,8 @@ impl ExprNodes {
                         _ => unreachable!(),
                     }
                 }
-                NodeInfoTypesWithData::Array1F64(array) => {
-                    self.inputs_num.set(1);
-                    self.input_var_names = vec!["x".to_string()];
-
-                    match self.outputs_num.get() {
-                        1 => {
-                            let y = array
-                                .iter()
-                                .map(|x| {
-                                    self.eval(vec![*x as f64]).map(|y| match y {
-                                        Ret::Tuple(y) => y[0],
-                                        _ => unreachable!(),
-                                    })
-                                })
-                                .collect::<Option<Array1<_>>>();
-
-                            if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
-
-                                return CustomPinInfo::ok_status();
-                            }
-                        }
-                        2 => {
-                            let y = array
-                                .iter()
-                                .map(|x| {
-                                    self.eval(vec![*x as f64]).map(|y| match y {
-                                        Ret::Tuple(y) => (y[0] as f64, y[1] as f64),
-                                        _ => unreachable!(),
-                                    })
-                                })
-                                .collect::<Option<ndarray::Array1<_>>>();
-
-                            if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::Array1TupleF64F64(y));
-
-                                return CustomPinInfo::ok_status();
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                NodeInfoTypesWithData::Array1TupleF64F64(array) => {
-                    self.inputs_num.set(2);
-                    self.input_var_names = vec!["x".to_string(), "y".to_string()];
-
-                    match self.outputs_num.get() {
-                        1 => {
-                            let y = array
-                                .iter()
-                                .map(|x| {
-                                    self.eval(vec![x.0 as f64, x.1 as f64]).map(|y| match y {
-                                        Ret::Tuple(y) => y[0],
-                                        _ => unreachable!(),
-                                    })
-                                })
-                                .collect::<Option<Array1<_>>>();
-
-                            if let Some(y) = y {
-                                self.calculated = Some(NodeInfoTypesWithData::Array1F64(y));
-
-                                return CustomPinInfo::ok_status();
-                            }
-                        }
-                        2 => {
-                            let y = array
-                                .iter()
-                                .map(|x| self.eval(vec![x.0 as f64, x.1 as f64]))
-                                .collect::<Option<ndarray::Array1<_>>>();
-
-                            if let Some(ty) = y.as_ref().map(|y| y.get(0)).flatten() {
-                                match ty {
-                                    Ret::Tuple(..) => {
-                                        self.calculated =
-                                            Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                                                y.unwrap()
-                                                    .into_iter()
-                                                    .map(|y| match y {
-                                                        Ret::Tuple(y) => (y[0] as f64, y[1] as f64),
-                                                        _ => unreachable!(),
-                                                    })
-                                                    .collect::<Array1<_>>(),
-                                            ));
-                                    }
-                                    Ret::Complex(..) => {
-                                        self.calculated =
-                                            Some(NodeInfoTypesWithData::Array1ComplexF64(
-                                                y.unwrap()
-                                                    .into_iter()
-                                                    .map(|y| match y {
-                                                        Ret::Complex(re, im) => {
-                                                            num_complex::Complex::new(re, im)
-                                                        }
-                                                        _ => unreachable!(),
-                                                    })
-                                                    .collect::<Array1<_>>(),
-                                            ));
-                                    }
-                                }
-                            }
-
-                            return CustomPinInfo::ok_status();
-                        }
-                        _ => {}
-                    }
-                }
-                NodeInfoTypesWithData::Array2F64(_array) => {
-                    unimplemented!()
-                }
-            }
+                NodeInfoTypesWithData::Array2F64(_) => unimplemented!(),
+            };
         }
 
         self.calculated = None;
