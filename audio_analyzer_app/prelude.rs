@@ -3,16 +3,18 @@
 pub mod nodes {
     pub(crate) use crate::libs::nodes::{
         config::{ConfigNodes, NumberNode, NumberNodeInfo},
-        editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerTrait},
+        editor::{FlowNodes, FlowNodesViewer, FlowNodesViewerCtx, FlowNodesViewerTrait},
         expr::{ExprNodeInfo, ExprNodes},
         frame_queue::{
             CycleBufferNode, CycleBufferNodeInfo, FrameBufferNode, FrameQueueNode,
             FrameQueueNodeInfo,
         },
+        idct::{FFTNode, FFTNodeInfo, FrequencyNodes, IFFTNode, IFFTNodeInfo},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
         },
+        lifter::{FilterNodes, LifterNode, LifterNodeInfo},
         raw_input::{
             FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
             RawInputNodes,

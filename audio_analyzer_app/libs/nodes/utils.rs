@@ -63,6 +63,19 @@ impl FlowNodes {
                     Some(cycle_buffer.get_queue().clone())
                 }
             },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(idct_node) => Some(
+                    NodeInfoTypesWithData::Array1ComplexF64(idct_node.get_result()?),
+                ),
+                FrequencyNodes::FFTNode(fft_node) => Some(NodeInfoTypesWithData::Array1ComplexF64(
+                    fft_node.get_result()?,
+                )),
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(lifter_node) => {
+                    Some(NodeInfoTypesWithData::Array1F64(lifter_node.get_result()?))
+                }
+            },
         }
     }
 }

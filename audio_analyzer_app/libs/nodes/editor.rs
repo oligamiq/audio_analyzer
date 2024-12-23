@@ -8,6 +8,8 @@ pub enum FlowNodes {
     RawInputNodes(RawInputNodes),
     ExprNode(ExprNodes),
     FrameBufferNode(FrameBufferNode),
+    FrequencyNodes(FrequencyNodes),
+    FilterNodes(FilterNodes),
 }
 
 impl FlowNodes {
@@ -34,15 +36,40 @@ impl FlowNodes {
                 FrameBufferNode::FrameQueueNode(node) => Box::new(node.to_info()),
                 FrameBufferNode::CycleBufferNode(node) => Box::new(node.to_info()),
             },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(node) => Box::new(node.to_info()),
+                FrequencyNodes::FFTNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(node) => Box::new(node.to_info()),
+            },
         }
     }
 }
 
-pub struct FlowNodesViewer;
+pub struct FlowNodesViewer {
+    running: bool,
+}
+
+impl FlowNodesViewer {
+    pub fn new(running: bool) -> Self {
+        Self { running }
+    }
+
+    pub fn running(&self) -> bool {
+        self.running
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FlowNodesViewerCtx {
+    pub running: bool,
+}
 
 pub trait FlowNodesViewerTrait {
     fn show_input(
         &self,
+        _ctx: &FlowNodesViewerCtx,
         _pin: &egui_snarl::InPin,
         _ui: &mut egui::Ui,
         _scale: f32,
@@ -60,11 +87,16 @@ impl FlowNodesViewer {
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+        let ctx = FlowNodesViewerCtx {
+            running: self.running,
+        };
         match &snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
-                LayerNodes::STFTLayer(node) => node.show_input(pin, ui, scale, snarl),
-                LayerNodes::MelLayer(node) => node.show_input(pin, ui, scale, snarl),
-                LayerNodes::SpectrogramDensityLayer(node) => node.show_input(pin, ui, scale, snarl),
+                LayerNodes::STFTLayer(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LayerNodes::MelLayer(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LayerNodes::SpectrogramDensityLayer(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
@@ -72,13 +104,28 @@ impl FlowNodesViewer {
                 RawInputNodes::FileInputNode(_) => todo!(),
             },
             FlowNodes::DataInspectorNode(node) => match node {
-                DataInspectorNode::DataPlotterNode(node) => node.show_input(pin, ui, scale, snarl),
-                DataInspectorNode::SchemaViewerNode(node) => node.show_input(pin, ui, scale, snarl),
+                DataInspectorNode::DataPlotterNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
+                DataInspectorNode::SchemaViewerNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
             },
-            FlowNodes::ExprNode(node) => node.show_input(pin, ui, scale, snarl),
+            FlowNodes::ExprNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
-                FrameBufferNode::FrameQueueNode(node) => node.show_input(pin, ui, scale, snarl),
-                FrameBufferNode::CycleBufferNode(node) => node.show_input(pin, ui, scale, snarl),
+                FrameBufferNode::FrameQueueNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
+                FrameBufferNode::CycleBufferNode(node) => {
+                    node.show_input(&ctx, pin, ui, scale, snarl)
+                }
+            },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                FrequencyNodes::FFTNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
         }
     }
@@ -100,8 +147,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             return;
         }
 
-        for &remote in &to.remotes {
-            snarl.disconnect(remote, to.id);
+        // expr is only allowed to connect to multiple inputs
+        if !matches!(snarl[to.id.node], FlowNodes::ExprNode(_)) {
+            for &remote in &to.remotes {
+                snarl.disconnect(remote, to.id);
+            }
         }
 
         snarl.connect(from.id, to.id);
@@ -141,15 +191,12 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
                     ui.label("output STFTLayer");
-                    CustomPinInfo::none_status()
                 }
                 LayerNodes::MelLayer(_) => {
                     ui.label("output MelLayer");
-                    CustomPinInfo::none_status()
                 }
                 LayerNodes::SpectrogramDensityLayer(_) => {
                     ui.label("output SpectrogramDensityLayer");
-                    CustomPinInfo::none_status()
                 }
             },
             FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
@@ -160,7 +207,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
                     config_ui!(node, ui, name);
 
-                    CustomPinInfo::setting(8)
+                    return CustomPinInfo::setting(8);
                 }
             },
             FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
@@ -169,12 +216,9 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                         ui.label("raw stream");
 
                         node.update();
-
-                        CustomPinInfo::ng_status()
                     }
                     1 => {
                         ui.label("sample rate");
-                        CustomPinInfo::ok_status()
                     }
                     _ => unreachable!(),
                 },
@@ -182,20 +226,35 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             },
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
-                CustomPinInfo::none_status()
             }
-            FlowNodes::ExprNode(_) => CustomPinInfo::none_status(),
+            FlowNodes::ExprNode(expr) => {}
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");
-                    CustomPinInfo::none_status()
                 }
                 FrameBufferNode::CycleBufferNode(_) => {
                     ui.label("CycleBuffer");
-                    CustomPinInfo::none_status()
+                }
+            },
+            FlowNodes::FrequencyNodes(frequency_nodes) => match frequency_nodes {
+                FrequencyNodes::IFFTNode(_) => {
+                    ui.label("IFFTNode");
+                }
+                FrequencyNodes::FFTNode(_) => {
+                    ui.label("FFTNode");
+                }
+            },
+            FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
+                FilterNodes::LifterNode(_) => {
+                    ui.label("LifterNode");
                 }
             },
         }
+        if !self.running {
+            return CustomPinInfo::none_status();
+        }
+
+        CustomPinInfo::ok_status()
     }
 
     fn has_graph_menu(&mut self, _pos: egui::Pos2, _snarl: &mut Snarl<FlowNodes>) -> bool {
@@ -274,6 +333,18 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
             if ui.button("CycleBuffer").clicked() {
                 snarl.insert_node(pos, CycleBufferNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("frequency", |ui| {
+            if ui.button("IFFT").clicked() {
+                snarl.insert_node(pos, IFFTNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("FFT").clicked() {
+                snarl.insert_node(pos, FFTNodeInfo.flow_node());
                 ui.close_menu();
             }
         });

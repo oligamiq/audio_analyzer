@@ -102,6 +102,7 @@ pub(crate) use mac::extract_snarl_ui_pin_member;
 impl FlowNodesViewerTrait for STFTLayerNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &InPin,
         ui: &mut egui::Ui,
         _scale: f32,
@@ -132,6 +133,10 @@ impl FlowNodesViewerTrait for STFTLayerNode {
             }
             2 => {
                 ui.label("raw stream");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 if let Some(out_pin) = pin.remotes.get(0) {
                     let data = snarl[out_pin.node].to_node_info_types_with_data(out_pin.output);
@@ -283,6 +288,7 @@ pub struct MelLayerNode {
 impl FlowNodesViewerTrait for MelLayerNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _: f32,
@@ -333,6 +339,10 @@ impl FlowNodesViewerTrait for MelLayerNode {
             }
             4 => {
                 ui.label("raw stream");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 let remote_node = pin.remotes.get(0);
 
@@ -519,6 +529,7 @@ pub struct SpectrogramDensityLayerNode {
 impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
     fn show_input(
         &self,
+        ctx: &FlowNodesViewerCtx,
         pin: &egui_snarl::InPin,
         ui: &mut egui::Ui,
         _: f32,
@@ -559,6 +570,10 @@ impl FlowNodesViewerTrait for SpectrogramDensityLayerNode {
             }
             3 => {
                 ui.label("raw stream");
+
+                if !ctx.running {
+                    return Box::new(|_, _| CustomPinInfo::none_status());
+                }
 
                 let remote_node = pin.remotes.get(0);
 

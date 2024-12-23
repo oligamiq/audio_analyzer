@@ -4,7 +4,9 @@ pub mod config;
 pub mod editor;
 pub mod expr;
 pub mod frame_queue;
+pub mod idct;
 pub mod layer;
+pub mod lifter;
 pub mod pin_info;
 pub mod raw_input;
 pub mod utils;
@@ -115,6 +117,9 @@ impl NodeInfos {
             Box::new(ExprNodeInfo),
             Box::new(FrameQueueNodeInfo),
             Box::new(CycleBufferNodeInfo),
+            Box::new(IFFTNodeInfo),
+            Box::new(FFTNodeInfo),
+            Box::new(LifterNodeInfo),
         ]
     }
 }

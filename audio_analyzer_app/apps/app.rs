@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+#[allow(unused_imports)]
 use crate::prelude::{nodes::*, snarl::*, utils::*};
 use egui::mutex::Mutex;
 use egui_editable_num::picker;
@@ -11,8 +12,7 @@ use super::config::Config;
 pub struct App {
     collector: egui_tracing::EventCollector,
     // streamer: Streamer,
-    snarl: Snarl<FlowNodes>,
-    style: SnarlStyle,
+    config: Config,
     reloader: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
@@ -37,10 +37,10 @@ impl App {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let sl = match eframe::get_value::<Config>(storage, eframe::APP_KEY) {
-                Some(sl) => {
-                    info!("Loaded app state: {:?}", sl);
-                    sl
+            let config = match eframe::get_value::<Config>(storage, eframe::APP_KEY) {
+                Some(config) => {
+                    info!("Loaded app state: {:?}", config);
+                    config
                 }
                 None => {
                     info!("failed to load app state");
@@ -50,9 +50,7 @@ impl App {
 
             return Self {
                 collector,
-                // streamer,
-                snarl: sl.snarl,
-                style: sl.style,
+                config: config,
                 reloader: Arc::new(Mutex::new(None)),
             };
         }
@@ -60,8 +58,7 @@ impl App {
         Self {
             collector,
             // streamer,
-            snarl: Snarl::new(),
-            style: SnarlStyle::default(),
+            config: Config::default(),
             reloader: Arc::new(Mutex::new(None)),
         }
     }
@@ -70,11 +67,7 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(
-            storage,
-            eframe::APP_KEY,
-            &Config::from_ref(&self.snarl, &self.style),
-        );
+        eframe::set_value(storage, eframe::APP_KEY, &self.config);
 
         trace!("Saved app state");
     }
@@ -94,9 +87,7 @@ impl eframe::App for App {
                 if let Ok(config) = serde_json::from_slice(&config) {
                     log::info!("parsed config: {:?}", config);
 
-                    let Config { snarl, style } = config;
-                    self.snarl = snarl;
-                    self.style = style;
+                    self.config = config;
                 }
             }
         }
@@ -142,7 +133,7 @@ impl eframe::App for App {
                         log::info!("Save text file");
 
                         picker::save_file(
-                            serde_json::to_string(&Config::from_ref(&self.snarl, &self.style))
+                            serde_json::to_string(&self.config)
                                 .unwrap()
                                 .as_bytes()
                                 .to_vec(),
@@ -170,6 +161,8 @@ impl eframe::App for App {
             //     trace!("Incremented value to {}", self.value);
             // }
 
+            ui.add(egui::Checkbox::new(&mut self.config.stop, "stop"));
+
             ui.separator();
 
             ui.add(egui::github_link_file!(
@@ -177,8 +170,12 @@ impl eframe::App for App {
                 "Source code."
             ));
 
-            self.snarl
-                .show(&mut FlowNodesViewer, &self.style, "snarl", ui);
+            self.config.snarl.show(
+                &mut FlowNodesViewer::new(!self.config.stop),
+                &self.config.style,
+                "snarl",
+                ui,
+            );
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 powered_by_egui_and_eframe(ui);
