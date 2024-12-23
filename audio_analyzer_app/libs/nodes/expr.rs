@@ -367,7 +367,7 @@ impl ExprNodes {
                 NodeInfoTypesWithData::Array1F64(_)
                 | NodeInfoTypesWithData::Array1TupleF64F64(_)
                 | NodeInfoTypesWithData::Array1ComplexF64(_) => {
-                    log::info!("Array1F64");
+                    // log::info!("Array1F64");
 
                     let array = match data {
                         NodeInfoTypesWithData::Array1F64(array) => {
@@ -475,13 +475,33 @@ impl FlowNodesViewerTrait for ExprNodes {
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
         assert!(pin.id.input == 0);
 
-        let pin_id = pin.id;
-
         let data = pin
             .remotes
             .get(0)
             .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
             .flatten();
+
+        let data2 = pin
+            .remotes
+            .get(1)
+            .map(|out_pin| snarl[out_pin.node].to_node_info_types_with_data(out_pin.output))
+            .flatten();
+
+        let pin_id = pin.id;
+
+        let data = match (data, data2) {
+            (
+                Some(NodeInfoTypesWithData::Array1F64(array)),
+                Some(NodeInfoTypesWithData::Array1F64(array2)),
+            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
+                array.into_iter().zip(array2).collect(),
+            )),
+            (None, Some(node))
+            | (Some(node), None) => {
+                Some(node)
+            }
+            _ => None,
+        };
 
         let ctx = ctx.clone();
 
@@ -492,7 +512,11 @@ impl FlowNodesViewerTrait for ExprNodes {
                 return node.show_and_calc(&ctx, ui, data.clone());
             }
 
-            CustomPinInfo::none_status()
+            if data.is_some() {
+                CustomPinInfo::ok_status()
+            } else {
+                CustomPinInfo::none_status()
+            }
         });
     }
 }

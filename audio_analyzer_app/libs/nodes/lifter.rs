@@ -45,7 +45,7 @@ impl FlowNodesViewerTrait for LifterNode {
                 );
             }
             1 => {
-                ui.label("Liftered");
+                ui.label("stream");
 
                 if !ctx.running {
                     return Box::new(|_, _| CustomPinInfo::none_status());
@@ -128,8 +128,14 @@ impl LifterNode {
         let mut quefrency = quefrency.to_owned();
         let index = self.size.get();
 
+        // 中間報告ではこっちだった
+        // for i in 0..quefrency.len() {
+        //     if i > index && i < quefrency.len() - index {
+        //         quefrency[i] = 0.0;
+        //     }
+        // }
         for i in 0..quefrency.len() {
-            if i > index && i < quefrency.len() - index {
+            if i < index || i > quefrency.len() - index {
                 quefrency[i] = 0.0;
             }
         }

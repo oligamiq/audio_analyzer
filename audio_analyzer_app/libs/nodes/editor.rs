@@ -147,8 +147,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             return;
         }
 
-        for &remote in &to.remotes {
-            snarl.disconnect(remote, to.id);
+        // expr is only allowed to connect to multiple inputs
+        if !matches!(snarl[to.id.node], FlowNodes::ExprNode(_)) {
+            for &remote in &to.remotes {
+                snarl.disconnect(remote, to.id);
+            }
         }
 
         snarl.connect(from.id, to.id);
@@ -224,7 +227,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
             }
-            FlowNodes::ExprNode(_) => {}
+            FlowNodes::ExprNode(expr) => {}
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");

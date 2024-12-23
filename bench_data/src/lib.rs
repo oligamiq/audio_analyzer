@@ -53,11 +53,23 @@ pub fn quefrency(log_amplitude_spectrum: Array1<f64>) -> Array1<f64> {
     quefrency
 }
 
+// pub fn lifter(quefrency: Array1<f64>, index: usize) -> Array1<f64> {
+//     let mut quefrency = quefrency.clone();
+
+//     for i in 0..quefrency.len() {
+//         if i > index && i < quefrency.len() - index {
+//             quefrency[i] = 0.0;
+//         }
+//     }
+
+//     quefrency
+// }
+
 pub fn lifter(quefrency: Array1<f64>, index: usize) -> Array1<f64> {
     let mut quefrency = quefrency.clone();
 
     for i in 0..quefrency.len() {
-        if i > index && i < quefrency.len() - index {
+        if i < index || i > quefrency.len() - index {
             quefrency[i] = 0.0;
         }
     }
