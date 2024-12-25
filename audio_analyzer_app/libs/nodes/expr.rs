@@ -496,6 +496,18 @@ impl FlowNodesViewerTrait for ExprNodes {
             ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
                 array.into_iter().zip(array2).collect(),
             )),
+            (
+                Some(NodeInfoTypesWithData::Array1F64(array)),
+                Some(NodeInfoTypesWithData::Number(num)),
+            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
+                array.into_iter().map(|x| (x, num)).collect(),
+            )),
+            (
+                Some(NodeInfoTypesWithData::Number(num)),
+                Some(NodeInfoTypesWithData::Array1F64(array)),
+            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
+                array.into_iter().map(|x| (num, x)).collect(),
+            )),
             (None, Some(node)) | (Some(node), None) => Some(node),
             _ => None,
         };
