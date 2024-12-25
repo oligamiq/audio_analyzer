@@ -496,10 +496,7 @@ impl FlowNodesViewerTrait for ExprNodes {
             ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
                 array.into_iter().zip(array2).collect(),
             )),
-            (None, Some(node))
-            | (Some(node), None) => {
-                Some(node)
-            }
+            (None, Some(node)) | (Some(node), None) => Some(node),
             _ => None,
         };
 

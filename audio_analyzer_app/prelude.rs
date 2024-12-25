@@ -10,6 +10,7 @@ pub mod nodes {
             FrameQueueNodeInfo,
         },
         idct::{FFTNode, FFTNodeInfo, FrequencyNodes, IFFTNode, IFFTNodeInfo},
+        iter::{EnumerateIterNode, EnumerateIterNodeInfo, IterNodes},
         layer::{
             LayerNodes, MelLayerNode, MelLayerNodeInfo, STFTLayerNode, STFTLayerNodeInfo,
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
