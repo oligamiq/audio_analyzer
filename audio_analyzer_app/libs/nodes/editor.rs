@@ -10,6 +10,7 @@ pub enum FlowNodes {
     FrameBufferNode(FrameBufferNode),
     FrequencyNodes(FrequencyNodes),
     FilterNodes(FilterNodes),
+    IterNodes(IterNodes),
 }
 
 impl FlowNodes {
@@ -42,6 +43,9 @@ impl FlowNodes {
             },
             FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
                 FilterNodes::LifterNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
+                IterNodes::EnumerateIterNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -126,6 +130,9 @@ impl FlowNodesViewer {
             },
             FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
                 FilterNodes::LifterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
+            FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
+                IterNodes::EnumerateIterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
         }
     }
@@ -227,7 +234,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
             }
-            FlowNodes::ExprNode(expr) => {}
+            FlowNodes::ExprNode(_) => {}
             FlowNodes::FrameBufferNode(frame_buffer) => match frame_buffer {
                 FrameBufferNode::FrameQueueNode(_) => {
                     ui.label("FrameQueue");
@@ -247,6 +254,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::FilterNodes(filter_nodes) => match filter_nodes {
                 FilterNodes::LifterNode(_) => {
                     ui.label("LifterNode");
+                }
+            },
+            FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
+                IterNodes::EnumerateIterNode(_) => {
+                    ui.label("EnumerateIterNode");
                 }
             },
         }
@@ -345,6 +357,20 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
 
             if ui.button("FFT").clicked() {
                 snarl.insert_node(pos, FFTNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("filter", |ui| {
+            if ui.button("Lifter").clicked() {
+                snarl.insert_node(pos, LifterNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("iter", |ui| {
+            if ui.button("EnumerateIterNode").clicked() {
+                snarl.insert_node(pos, EnumerateIterNodeInfo.flow_node());
                 ui.close_menu();
             }
         });

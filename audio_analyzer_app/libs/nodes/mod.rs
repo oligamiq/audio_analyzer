@@ -5,6 +5,7 @@ pub mod editor;
 pub mod expr;
 pub mod frame_queue;
 pub mod idct;
+pub mod iter;
 pub mod layer;
 pub mod lifter;
 pub mod pin_info;
@@ -120,6 +121,7 @@ impl NodeInfos {
             Box::new(IFFTNodeInfo),
             Box::new(FFTNodeInfo),
             Box::new(LifterNodeInfo),
+            Box::new(EnumerateIterNodeInfo),
         ]
     }
 }

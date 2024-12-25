@@ -76,6 +76,11 @@ impl FlowNodes {
                     Some(NodeInfoTypesWithData::Array1F64(lifter_node.get_result()?))
                 }
             },
+            FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
+                IterNodes::EnumerateIterNode(enumerate_iter_node) => Some(
+                    NodeInfoTypesWithData::Array1F64(enumerate_iter_node.get_result()?),
+                ),
+            },
         }
     }
 }
