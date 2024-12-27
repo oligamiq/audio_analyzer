@@ -11,6 +11,7 @@ pub enum FlowNodes {
     FrequencyNodes(FrequencyNodes),
     FilterNodes(FilterNodes),
     IterNodes(IterNodes),
+    LpcNodes(LpcNodes),
 }
 
 impl FlowNodes {
@@ -46,6 +47,9 @@ impl FlowNodes {
             },
             FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
                 IterNodes::EnumerateIterNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -133,6 +137,9 @@ impl FlowNodesViewer {
             },
             FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
                 IterNodes::EnumerateIterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
         }
     }
@@ -259,6 +266,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
                 IterNodes::EnumerateIterNode(_) => {
                     ui.label("EnumerateIterNode");
+                }
+            },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(_) => {
+                    ui.label("LpcNode");
                 }
             },
         }

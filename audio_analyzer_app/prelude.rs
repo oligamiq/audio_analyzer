@@ -20,6 +20,7 @@ pub mod nodes {
             FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
             RawInputNodes,
         },
+        lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         utils::{config_ui, extract_node},
         viewer::{
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,

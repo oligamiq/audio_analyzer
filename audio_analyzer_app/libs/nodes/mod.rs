@@ -12,6 +12,7 @@ pub mod pin_info;
 pub mod raw_input;
 pub mod utils;
 pub mod viewer;
+pub mod lpc;
 
 pub trait NodeInfo {
     fn name(&self) -> &str;
@@ -122,6 +123,7 @@ impl NodeInfos {
             Box::new(FFTNodeInfo),
             Box::new(LifterNodeInfo),
             Box::new(EnumerateIterNodeInfo),
+            Box::new(LpcNodeInfo),
         ]
     }
 }

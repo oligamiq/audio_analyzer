@@ -81,6 +81,11 @@ impl FlowNodes {
                     NodeInfoTypesWithData::Array1F64(enumerate_iter_node.get_result()?),
                 ),
             },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(lpc_node) => {
+                    Some(NodeInfoTypesWithData::Array1F64(lpc_node.get_result()?))
+                }
+            },
         }
     }
 }
