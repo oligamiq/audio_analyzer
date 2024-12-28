@@ -16,11 +16,11 @@ pub mod nodes {
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
         },
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
+        lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         raw_input::{
             FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
             RawInputNodes,
         },
-        lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         utils::{config_ui, extract_node},
         viewer::{
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,

@@ -97,7 +97,9 @@ impl LpcNode {
     pub fn through_inner(&mut self, input: ArrayView1<f64>) {
         let order = self.order.get();
 
-        self.lpc = Some(linear_predictive_coding::calc_lpc_by_levinson_durbin(input, order));
+        self.lpc = Some(linear_predictive_coding::calc_lpc_by_levinson_durbin(
+            input, order,
+        ));
     }
 }
 
