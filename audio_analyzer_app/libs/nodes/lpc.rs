@@ -39,9 +39,9 @@ impl FlowNodesViewerTrait for LpcNode {
 
         match pin_id.input {
             0 => {
-                ui.label("order");
-
                 if !ctx.running {
+                    ui.label("order");
+
                     return Box::new(move |_, _| CustomPinInfo::none_status());
                 }
 
@@ -72,6 +72,8 @@ impl FlowNodesViewerTrait for LpcNode {
                                     node.through_inner(data.view());
                                 }
                             );
+
+                            // log::info!("LpcNode: input ok: {:?}", data);
 
                             CustomPinInfo::ok_status()
                         });
