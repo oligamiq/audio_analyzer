@@ -5,7 +5,6 @@ use crate::prelude::{snarl::*, utils::*};
 #[serde(default)]
 pub struct Config {
     pub snarl: Snarl<FlowNodes>,
-    pub style: SnarlStyle,
     pub stop: bool,
 }
 
@@ -13,18 +12,29 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             snarl: Snarl::new(),
-            style: SnarlStyle::default(),
             stop: false,
         }
     }
 }
 
 impl Config {
-    pub fn from_ref(snarl: &Snarl<FlowNodes>, style: &SnarlStyle) -> Self {
+    pub fn from_ref(snarl: &Snarl<FlowNodes>) -> Self {
         Self {
             snarl: snarl.serde_clone(),
-            style: style.serde_clone(),
             stop: false,
         }
     }
+
+    pub const SNARL_STYLE: SnarlStyle = {
+        let mut style = SnarlStyle::new();
+
+        style.bg_pattern = Some(egui_snarl::ui::BackgroundPattern::Grid(
+            egui_snarl::ui::Grid {
+                spacing: egui::Vec2::new(50.0, 50.0),
+                angle: 1.0,
+            },
+        ));
+
+        style
+    };
 }

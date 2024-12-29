@@ -172,7 +172,7 @@ impl eframe::App for App {
 
             self.config.snarl.show(
                 &mut FlowNodesViewer::new(!self.config.stop),
-                &self.config.style,
+                &Config::SNARL_STYLE,
                 "snarl",
                 ui,
             );

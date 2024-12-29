@@ -4,6 +4,7 @@
         "Calibri",
         "crossterm",
         "Deque",
+        "eframe",
         "egui",
         "Evaler",
         "fasteval",
