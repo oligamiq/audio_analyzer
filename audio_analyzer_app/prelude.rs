@@ -17,6 +17,7 @@ pub mod nodes {
         },
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
         lpc::{LpcNode, LpcNodeInfo, LpcNodes},
+        pin_info::MyPinInfo,
         raw_input::{
             FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
             RawInputNodes,
@@ -36,7 +37,9 @@ pub mod nodes {
 }
 
 pub mod snarl {
-    pub(crate) use crate::libs::nodes::{editor::FlowNodes, pin_info::CustomPinInfo};
+    pub(crate) use crate::libs::nodes::{
+        editor::FlowNodes, pin_info::CustomPinInfo, pin_info::MyDrawer, pin_info::MyPinInfo,
+    };
     pub use egui_snarl::{
         ui::{AnyPins, PinInfo, SnarlStyle, SnarlViewer},
         InPin, NodeId, OutPin, Snarl,

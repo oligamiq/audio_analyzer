@@ -294,7 +294,7 @@ impl ExprNodes {
         ctx: &FlowNodesViewerCtx,
         ui: &mut egui::Ui,
         data: Option<NodeInfoTypesWithData>,
-    ) -> PinInfo {
+    ) -> MyPinInfo {
         ui.label("outputs_num");
 
         if egui::TextEdit::singleline(&mut self.outputs_num)
@@ -474,7 +474,7 @@ impl FlowNodesViewerTrait for ExprNodes {
         _: &mut egui::Ui,
         _: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         assert!(pin.id.input == 0);
 
         let data = pin

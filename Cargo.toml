@@ -26,7 +26,8 @@ anyhow = "1.0"
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering" }
 egui_tracing = { git = "https://github.com/oligamiq/egui_tracing" }
-egui-snarl = { git = "https://github.com/oligamiq/egui-snarl" }
+# egui-snarl = { git = "https://github.com/oligamiq/egui-snarl" }
+egui-snarl = { path = "../egui-snarl" }
 
 [profile.dev]
 # codegen-backend = "cranelift"

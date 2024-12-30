@@ -107,7 +107,7 @@ impl FlowNodesViewerTrait for FrameQueueNode {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         assert!(pin.id.input == 0);
 
         let pin_id = pin.id;
@@ -292,7 +292,7 @@ impl FlowNodesViewerTrait for CycleBufferNode {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
         match pin_id.input {

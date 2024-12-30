@@ -1244,7 +1244,6 @@ dependencies = [
 [[package]]
 name = "egui-snarl"
 version = "0.6.0"
-source = "git+https://github.com/oligamiq/egui-snarl#c5aa1ed63dbc76d44a46c563f9bc15da59ad2259"
 dependencies = [
  "egui",
  "egui-probe",

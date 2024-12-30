@@ -82,7 +82,7 @@ pub trait FlowNodesViewerTrait {
         _ui: &mut egui::Ui,
         _scale: f32,
         _snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         todo!()
     }
 }
@@ -94,7 +94,7 @@ impl FlowNodesViewer {
         ui: &mut egui::Ui,
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let ctx = FlowNodesViewerCtx {
             running: self.running,
         };
@@ -146,6 +146,8 @@ impl FlowNodesViewer {
 }
 
 impl SnarlViewer<FlowNodes> for FlowNodesViewer {
+    type Drawer = MyDrawer;
+
     #[inline]
     fn connect(
         &mut self,
@@ -190,7 +192,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui: &mut egui::Ui,
         scale: f32,
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
-    ) -> egui_snarl::ui::PinInfo {
+    ) -> MyPinInfo {
         self.show_input(pin, ui, scale, snarl)(snarl, ui)
     }
 
@@ -200,7 +202,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
-    ) -> egui_snarl::ui::PinInfo {
+    ) -> MyPinInfo {
         match &mut snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
