@@ -12,6 +12,8 @@ pub struct ExprNodes {
     pub input_var_names: Vec<String>,
     pub expr: String,
     pub outputs_num: EditableOnText<usize>,
+
+    #[serde(skip)]
     pub calculated: Option<NodeInfoTypesWithData>,
 
     #[serde(skip)]

@@ -204,8 +204,9 @@ impl FlowNodesViewerTrait for FrameQueueNode {
 /// and the new frame is added to the end of the buffer
 ///
 /// to extend the buffer, buffer size must be self.len
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, Clone)]
 pub struct CycleBufferNode {
+    #[serde(skip)]
     buffer: NodeInfoTypesWithData,
 
     pub len: EditableOnText<usize>,
@@ -214,6 +215,25 @@ pub struct CycleBufferNode {
 impl CycleBufferNode {
     pub fn get_queue(&self) -> &NodeInfoTypesWithData {
         &self.buffer
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for CycleBufferNode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(serde::Deserialize)]
+        struct CycleBufferNodeHelper {
+            len: EditableOnText<usize>,
+        }
+
+        let helper = CycleBufferNodeHelper::deserialize(deserializer)?;
+
+        Ok(Self {
+            buffer: NodeInfoTypesWithData::Number(0.0),
+            len: helper.len,
+        })
     }
 }
 
