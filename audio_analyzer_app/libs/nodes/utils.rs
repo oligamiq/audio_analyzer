@@ -41,7 +41,7 @@ impl FlowNodes {
                     }
                 }
             },
-            FlowNodes::RawInputNodes(raw_input_nodes) => {
+            FlowNodes::AbstractInputNode(raw_input_nodes) => {
                 match pin {
                     // raw stream
                     0 => Some(NodeInfoTypesWithData::Array1F64(raw_input_nodes.get()?)),

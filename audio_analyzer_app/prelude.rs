@@ -19,8 +19,8 @@ pub mod nodes {
         lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         pin_info::MyPinInfo,
         raw_input::{
-            FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
-            RawInputNodes,
+            FileInputNode, MicrophoneInputNode, AbstractInputNodeInfo,
+            AbstractInputNode,
         },
         utils::{config_ui, extract_node},
         viewer::{

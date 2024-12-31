@@ -5,7 +5,7 @@ pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(ConfigNodes),
     DataInspectorNode(DataInspectorNode),
-    RawInputNodes(RawInputNodes),
+    AbstractInputNode(AbstractInputNode),
     ExprNode(ExprNodes),
     FrameBufferNode(FrameBufferNode),
     FrequencyNodes(FrequencyNodes),
@@ -25,10 +25,7 @@ impl FlowNodes {
             FlowNodes::ConfigNodes(node) => match node {
                 ConfigNodes::NumberNode(node) => Box::new(node.to_info()),
             },
-            FlowNodes::RawInputNodes(node) => match node {
-                RawInputNodes::MicrophoneInputNode(node) => Box::new(node.to_info()),
-                RawInputNodes::FileInputNode(node) => Box::new(node.to_info()),
-            },
+            FlowNodes::AbstractInputNode(node) => Box::new(node.to_info()),
             FlowNodes::DataInspectorNode(node) => match node {
                 DataInspectorNode::DataPlotterNode(node) => Box::new(node.to_info()),
                 DataInspectorNode::SchemaViewerNode(node) => Box::new(node.to_info()),
@@ -107,10 +104,7 @@ impl FlowNodesViewer {
                 }
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
-            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
-                RawInputNodes::FileInputNode(_) => todo!(),
-            },
+            FlowNodes::AbstractInputNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             FlowNodes::DataInspectorNode(node) => match node {
                 DataInspectorNode::DataPlotterNode(node) => {
                     node.show_input(&ctx, pin, ui, scale, snarl)
@@ -226,19 +220,16 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     return CustomPinInfo::setting(8);
                 }
             },
-            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                RawInputNodes::MicrophoneInputNode(node) => match pin.id.output {
-                    0 => {
-                        ui.label("raw stream");
+            FlowNodes::AbstractInputNode(node) => match pin.id.output {
+                0 => {
+                    ui.label("raw stream");
 
-                        node.update();
-                    }
-                    1 => {
-                        ui.label("sample rate");
-                    }
-                    _ => unreachable!(),
-                },
-                RawInputNodes::FileInputNode(_) => todo!(),
+                    node.update();
+                }
+                1 => {
+                    ui.label("sample rate");
+                }
+                _ => unreachable!(),
             },
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
@@ -320,17 +311,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             }
         });
 
-        ui.menu_button("raw_input", |ui| {
-            if ui.button("MicrophoneInputNode").clicked() {
-                snarl.insert_node(pos, MicrophoneInputNodeInfo.flow_node());
-                ui.close_menu();
-            }
-
-            if ui.button("FileInputNode").clicked() {
-                snarl.insert_node(pos, FileInputNodeInfo.flow_node());
-                ui.close_menu();
-            }
-        });
+        if ui.button("AbstractInputNode").clicked() {
+            snarl.insert_node(pos, AbstractInputNodeInfo.flow_node());
+            ui.close_menu();
+        }
 
         ui.menu_button("inspector", |ui| {
             if ui.button("DataPlotterNode").clicked() {
