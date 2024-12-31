@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num"]
+members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web"]
 default-members = ["audio_analyzer_app"]
 
 [workspace.package]
@@ -11,6 +11,7 @@ license = "MIT/Apache-2.0"
 
 [workspace.dependencies]
 audio_analyzer_core = { path = "audio_analyzer_core" }
+filedl_on_web = { path = "filedl_on_web" }
 ndarray = { version = "0.16.1", features = ["serde"] }
 num-complex = { version = "0.4.6", features = ["serde"]}
 log = { version = "0.4.22", features = ["std"] }
@@ -26,8 +27,7 @@ anyhow = "1.0"
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering" }
 egui_tracing = { git = "https://github.com/oligamiq/egui_tracing" }
-# egui-snarl = { git = "https://github.com/oligamiq/egui-snarl" }
-egui-snarl = { path = "../egui-snarl" }
+egui-snarl = { git = "https://github.com/oligamiq/egui-snarl" }
 
 [profile.dev]
 # codegen-backend = "cranelift"

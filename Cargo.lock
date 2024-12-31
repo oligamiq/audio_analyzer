@@ -498,6 +498,7 @@ dependencies = [
  "egui_editable_num",
  "egui_tracing",
  "fasteval3",
+ "filedl_on_web",
  "getrandom",
  "hound",
  "linear-predictive-coding",
@@ -1244,6 +1245,7 @@ dependencies = [
 [[package]]
 name = "egui-snarl"
 version = "0.6.0"
+source = "git+https://github.com/oligamiq/egui-snarl#af4511a98e81fcf38fc109744e1934405f3bfb53"
 dependencies = [
  "egui",
  "egui-probe",
@@ -1473,6 +1475,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
 dependencies = [
  "simd-adler32",
+]
+
+[[package]]
+name = "filedl_on_web"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
