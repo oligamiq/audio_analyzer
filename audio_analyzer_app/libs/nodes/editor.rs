@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use crate::prelude::{egui::*, nodes::*, snarl::*, utils::*};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

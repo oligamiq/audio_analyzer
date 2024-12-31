@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 #[allow(unused_imports)]
 use crate::prelude::{nodes::*, snarl::*, utils::*};
+use anyhow::Context;
 use egui::mutex::Mutex;
 use egui_editable_num::picker;
 use egui_tracing::tracing::collector;
@@ -84,10 +85,23 @@ impl eframe::App for App {
             if let Some(config) = reloader.take() {
                 log::info!("taken config: {:?}", config);
 
-                if let Ok(config) = serde_json::from_slice(&config) {
-                    log::info!("parsed config: {:?}", config);
+                let str = match String::from_utf8(config) {
+                    Ok(str) => str,
+                    Err(e) => {
+                        log::info!("failed to parse config: {:?}", e);
+                        return;
+                    }
+                };
 
-                    self.config = config;
+                match Config::deserialize(&str) {
+                    Ok(config) => {
+                        log::info!("parsed config: {:?}", config);
+
+                        self.config = config;
+                    }
+                    Err(e) => {
+                        log::info!("failed to parse config: {:?}", e);
+                    }
                 }
             }
         }

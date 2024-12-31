@@ -2,9 +2,7 @@ use egui_snarl::Snarl;
 
 use crate::prelude::nodes::*;
 
-pub fn analysis(
-    snarl: Snarl<FlowNodes>,
-) {
+pub fn analysis(snarl: Snarl<FlowNodes>) {
     let nodes = snarl.nodes();
 
     let wires = snarl.wires();

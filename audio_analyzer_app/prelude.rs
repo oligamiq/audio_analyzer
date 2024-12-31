@@ -18,10 +18,7 @@ pub mod nodes {
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
         lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         pin_info::MyPinInfo,
-        raw_input::{
-            FileInputNode, MicrophoneInputNode, AbstractInputNodeInfo,
-            AbstractInputNode,
-        },
+        raw_input::{AbstractInputNode, AbstractInputNodeInfo, FileInputNode, MicrophoneInputNode},
         utils::{config_ui, extract_node},
         viewer::{
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,
