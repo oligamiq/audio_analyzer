@@ -9,7 +9,7 @@ pub enum RawInputNodes {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct AbstractInputNode {
-    num: Option<usize>,
+    hop_size: EditableOnText<usize>,
 
     input: RawInputNodes,
 }
@@ -17,7 +17,7 @@ pub struct AbstractInputNode {
 impl Default for AbstractInputNode {
     fn default() -> Self {
         AbstractInputNode {
-            num: None,
+            hop_size: EditableOnText::new(160),
             input: RawInputNodes::MicrophoneInputNode(MicrophoneInputNode::default()),
         }
     }
@@ -46,9 +46,9 @@ impl FlowNodesViewerTrait for AbstractInputNode {
                     snarl,
                     ui,
                     pin,
-                    FlowNodes::LpcNodes(LpcNodes::LpcNode(node)),
+                    FlowNodes::AbstractInputNode(node),
                     node,
-                    order
+                    hop_size
                 );
             }
             _ => unreachable!(),

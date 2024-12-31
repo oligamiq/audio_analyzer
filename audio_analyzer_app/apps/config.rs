@@ -116,8 +116,8 @@ impl Config {
                         node.pos,
                         FlowNodes::UnknownNode(UnknownNode {
                             name: name,
-                            input_num: *wires_map.0.get(&id).unwrap_or(&0),
-                            output_num: *wires_map.1.get(&id).unwrap_or(&0),
+                            input_num: wires_map.0.get(&id).map(|x| *x + 1).unwrap_or(0),
+                            output_num: wires_map.1.get(&id).map(|x| *x + 1).unwrap_or(0),
                         }),
                     )
                 }
