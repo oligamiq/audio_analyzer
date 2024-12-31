@@ -132,17 +132,22 @@ impl eframe::App for App {
                     if ui.button("💾 Save text file").clicked() {
                         log::info!("Save text file");
 
-                        // picker::save_file(
-                        //     serde_json::to_string(&self.config)
-                        //         .unwrap()
-                        //         .as_bytes()
-                        //         .to_vec(),
-                        // );
-
-                        filedl_on_web::file_dl(
-                            serde_json::to_string(&self.config).unwrap().as_bytes(),
-                            "audio_analyzer_config.json",
-                        );
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            picker::save_file(
+                                serde_json::to_string(&self.config)
+                                    .unwrap()
+                                    .as_bytes()
+                                    .to_vec(),
+                            );
+                        }
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            filedl_on_web::file_dl(
+                                serde_json::to_string(&self.config).unwrap().as_bytes(),
+                                "audio_analyzer_config.json",
+                            );
+                        }
                     }
                 });
 
