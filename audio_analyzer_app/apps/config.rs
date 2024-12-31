@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::prelude::{snarl::*, utils::*};
+use crate::prelude::{nodes::*, snarl::*, utils::*};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Serialize, Debug, serde::Deserialize)]
@@ -76,28 +76,60 @@ impl Config {
 
         let coarse_snarl: Snarl<serde_json::Value> = serde_json::from_value(snarl_part)?;
 
+        let wires_map = coarse_snarl.wires().fold(
+            (
+                HashMap::<NodeId, usize>::new(),
+                HashMap::<NodeId, usize>::new(),
+            ),
+            |(mut acc_in, mut acc_out), (out_pin, in_pin)| {
+                acc_out
+                    .entry(out_pin.node)
+                    .and_modify(|e| *e = std::cmp::max(*e, out_pin.output))
+                    .or_insert(out_pin.output);
+                acc_in
+                    .entry(in_pin.node)
+                    .and_modify(|e| *e = std::cmp::max(*e, in_pin.input))
+                    .or_insert(in_pin.input);
+
+                (acc_in, acc_out)
+            },
+        );
+
         let mut snarl: Snarl<FlowNodes> = Snarl::new();
 
         let mut id_map = HashMap::new();
 
         for (id, node) in coarse_snarl.nodes_ids_data() {
-            match serde_json::from_value::<FlowNodes>(node.value.clone()) {
-                Ok(flow_nodes) => {
-                    let new_id = snarl.insert_node(node.pos, flow_nodes);
-
-                    id_map.insert(id, new_id);
-                }
+            let new_id = match serde_json::from_value::<FlowNodes>(node.value.clone()) {
+                Ok(flow_nodes) => snarl.insert_node(node.pos, flow_nodes),
                 Err(e) => {
                     log::warn!("Unknown node type: {:?}", e);
+
+                    let value = node.value.clone();
+                    let name = value
+                        .as_object()
+                        .map(|o| o.keys().next().cloned())
+                        .flatten()
+                        .unwrap_or(String::from("Unknown"));
+
+                    snarl.insert_node(
+                        node.pos,
+                        FlowNodes::UnknownNode(UnknownNode {
+                            name: name,
+                            input_num: *wires_map.0.get(&id).unwrap_or(&0),
+                            output_num: *wires_map.1.get(&id).unwrap_or(&0),
+                        }),
+                    )
                 }
-            }
+            };
+
+            id_map.insert(id, new_id);
         }
 
         for (out_pin, in_pin) in coarse_snarl.wires() {
-            if let (Some(mapped_out_pin), Some(mapped_in_pin)) = (
-                id_map.get(&out_pin.node),
-                id_map.get(&in_pin.node),
-            ) {
+            if let (Some(mapped_out_pin), Some(mapped_in_pin)) =
+                (id_map.get(&out_pin.node), id_map.get(&in_pin.node))
+            {
                 snarl.connect(
                     egui_snarl::OutPinId {
                         node: *mapped_out_pin,
@@ -111,10 +143,7 @@ impl Config {
             }
         }
 
-        Ok(Self {
-            snarl,
-            stop,
-        })
+        Ok(Self { snarl, stop })
     }
 
     pub fn from_ref(snarl: &Snarl<FlowNodes>) -> Self {

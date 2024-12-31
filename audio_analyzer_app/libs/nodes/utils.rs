@@ -86,6 +86,7 @@ impl FlowNodes {
                     Some(NodeInfoTypesWithData::Array1F64(lpc_node.get_result()?))
                 }
             },
+            FlowNodes::UnknownNode(unknown_node) => unknown_node.get_result(),
         }
     }
 }

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 #[allow(unused_imports)]
 use crate::prelude::{nodes::*, snarl::*, utils::*};
-use anyhow::Context;
 use egui::mutex::Mutex;
 use egui_editable_num::picker;
 use egui_tracing::tracing::collector;

@@ -34,7 +34,6 @@ impl FlowNodesViewerTrait for AbstractInputNode {
     ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
-
         match pin_id.input {
             0 => {
                 if !ctx.running {

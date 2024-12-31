@@ -19,6 +19,7 @@ pub mod nodes {
         lpc::{LpcNode, LpcNodeInfo, LpcNodes},
         pin_info::MyPinInfo,
         raw_input::{AbstractInputNode, AbstractInputNodeInfo, FileInputNode, MicrophoneInputNode},
+        unknown::{UnknownNode, UnknownNodeInfo},
         utils::{config_ui, extract_node},
         viewer::{
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,

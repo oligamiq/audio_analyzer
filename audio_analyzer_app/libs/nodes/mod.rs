@@ -11,6 +11,7 @@ pub mod lifter;
 pub mod lpc;
 pub mod pin_info;
 pub mod raw_input;
+pub mod unknown;
 pub mod utils;
 pub mod viewer;
 
