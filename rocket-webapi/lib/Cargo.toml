@@ -1,11 +1,13 @@
 [package]
-name = "filedl_on_web"
+name = "lib"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
 [dependencies]
-js-sys = "0.3.76"
-wasm-bindgen = "0.2.99"
-web-sys = "0.3.76"
+serde.workspace = true
+rocket = { version = "0.5.1", features = ["json"] }
+
+[lib]
+crate-type = ["rlib", "dylib"]

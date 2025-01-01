@@ -54,7 +54,7 @@ log.workspace = true
 mel_spec.workspace = true
 
 egui_editable_num.workspace = true
-serde.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 fasteval3.workspace = true

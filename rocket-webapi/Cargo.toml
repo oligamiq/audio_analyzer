@@ -1,0 +1,14 @@
+[package]
+name = "rocket-webapi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+rocket = { version = "0.5.1", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde.workspace = true
+
+hot-lib-reloader = "^0.6"
+lib = { path = "./lib" }
