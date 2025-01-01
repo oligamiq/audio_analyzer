@@ -10,5 +10,5 @@ pub struct Code {
 #[no_mangle]
 pub fn run(code: Code) -> String {
     // code.code.unwrap_or_default()
-    "Hello, World!".to_string()
+    "Hello, Worlmkd!".to_string()
 }
