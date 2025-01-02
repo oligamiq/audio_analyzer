@@ -64,6 +64,8 @@ linear-predictive-coding = "0.2.2"
 
 filedl_on_web.workspace = true
 
+reqwest-client.workspace = true
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.95"
 serde-wasm-bindgen = "0.6"

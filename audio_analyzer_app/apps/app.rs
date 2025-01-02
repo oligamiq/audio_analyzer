@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 #[allow(unused_imports)]
 use crate::prelude::{nodes::*, snarl::*, utils::*};
@@ -14,6 +14,7 @@ pub struct App {
     // streamer: Streamer,
     config: Config,
     reloader: Arc<Mutex<Option<Vec<u8>>>>,
+    queue: Arc<std::sync::Mutex<VecDeque<reqwest_client::lib::Msg>>>,
 }
 
 impl App {
@@ -52,6 +53,7 @@ impl App {
                 collector,
                 config: config,
                 reloader: Arc::new(Mutex::new(None)),
+                queue: Arc::new(std::sync::Mutex::new(VecDeque::new())),
             };
         }
 
@@ -60,6 +62,7 @@ impl App {
             // streamer,
             config: Config::default(),
             reloader: Arc::new(Mutex::new(None)),
+            queue: Arc::new(std::sync::Mutex::new(VecDeque::new())),
         }
     }
 }
@@ -102,6 +105,14 @@ impl eframe::App for App {
                         log::info!("failed to parse config: {:?}", e);
                     }
                 }
+            }
+        }
+
+        if let Ok(mut q) = self.queue.clone().try_lock() {
+            if let Some(msg) = q.pop_front() {
+                assert_eq!(msg, reqwest_client::lib::Msg::CompileStart);
+
+                log::info!("Compile start");
             }
         }
 
@@ -185,6 +196,16 @@ impl eframe::App for App {
             // }
 
             ui.add(egui::Checkbox::new(&mut self.config.stop, "stop"));
+
+            if ui.button("check").clicked() {
+                log::info!("check");
+
+                let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
+
+                log::info!("Running code: {}", code);
+
+                assert!(reqwest_client::run_code(code, self.queue.clone()).is_ok());
+            }
 
             ui.separator();
 

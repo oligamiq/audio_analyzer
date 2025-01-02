@@ -24,6 +24,8 @@ fasteval3 = "3.0"
 plotters = "0.3.7"
 anyhow = "1.0"
 
+reqwest-client = { path = "reqwest-client" }
+
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering" }
 egui_tracing = { git = "https://github.com/oligamiq/egui_tracing" }
