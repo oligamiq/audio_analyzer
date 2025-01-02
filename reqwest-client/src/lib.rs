@@ -2,24 +2,20 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
 use lib::Msg;
-use reqwest::Client;
-use reqwest::header::CONTENT_TYPE;
 
 pub use lib;
 
 #[cfg(target_arch = "wasm32")]
-pub async fn get(
-    code: String,
-) -> anyhow::Result<lib::Msg> {
+pub async fn get(code: String) -> anyhow::Result<lib::Msg> {
+    use reqwest::header::CONTENT_TYPE;
+    use reqwest::Client;
+
     // Create a reqwest Client with rustls
-    let client = Client::builder()
-        .build()?;
+    let client = Client::builder().build()?;
 
     // Define the URL and payload
     let url = "http://localhost:1080/";
-    let payload = lib::Code {
-        code: code,
-    };
+    let payload = lib::Code { code: code };
 
     println!("Sending code: {}", payload.code);
 
@@ -38,33 +34,23 @@ pub async fn get(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_blocking(
-    code: String,
-) -> anyhow::Result<lib::Msg> {
-    // Create a reqwest Client with rustls
-    let client = reqwest::blocking::Client::builder()
-        .build()?;
-
+pub fn get_blocking(code: String) -> anyhow::Result<lib::Msg> {
     // Define the URL and payload
     let url = "http://localhost:1080/";
-    let payload = lib::Code {
-        code: code,
-    };
+    let payload = lib::Code { code: code };
 
     println!("Sending code: {}", payload.code);
 
     // Send the POST request
-    let response = client
-        .post(url)
-        .header(CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&payload)?)
-        .send()?;
+    let response = ureq::post(url)
+        .set("Content-Type", "application/json")
+        .send_json(serde_json::to_value(&payload)?)?
+        .into_string()?;
 
-    let msg_str = response.text()?;
-    let msg = match serde_json::from_str(&msg_str) {
+    let msg = match serde_json::from_str(&response) {
         Ok(msg) => msg,
         Err(e) => {
-            eprintln!("Error: {} (response: {})", e, msg_str);
+            eprintln!("Error: {} (response: {})", e, response);
             return Err(e.into());
         }
     };
@@ -72,15 +58,9 @@ pub fn get_blocking(
     Ok(msg)
 }
 
-pub fn run_code(
-    code: String,
-    queue: Arc<Mutex<VecDeque<Msg>>>,
-) -> anyhow::Result<()> {
+pub fn run_code(code: String, queue: Arc<Mutex<VecDeque<Msg>>>) -> anyhow::Result<()> {
     #[cfg(target_arch = "wasm32")]
-    async fn run_code_inner(
-        code: String,
-        queue: Arc<Mutex<VecDeque<Msg>>>,
-    ) -> anyhow::Result<()> {
+    async fn run_code_inner(code: String, queue: Arc<Mutex<VecDeque<Msg>>>) -> anyhow::Result<()> {
         let result = get(code).await;
         let mut queue = queue.lock().unwrap();
         queue.push_back(result?);
@@ -89,10 +69,7 @@ pub fn run_code(
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn block_run_code(
-        code: String,
-        queue: Arc<Mutex<VecDeque<Msg>>>,
-    ) -> anyhow::Result<()> {
+    fn block_run_code(code: String, queue: Arc<Mutex<VecDeque<Msg>>>) -> anyhow::Result<()> {
         let result = get_blocking(code);
         let mut queue = queue.lock().unwrap();
         queue.push_back(result?);
