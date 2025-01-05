@@ -196,7 +196,16 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 LayerNodes::MelLayer(mel_layer_node) => todo!(),
                 LayerNodes::SpectrogramDensityLayer(spectrogram_density_layer_node) => todo!(),
             },
-            FlowNodes::ConfigNodes(config_nodes) => todo!(),
+            FlowNodes::ConfigNodes(config_nodes) => match config_nodes {
+                ConfigNodes::NumberNode(number_node) => {
+                    let number = number_node.number.get();
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        let #out_data = #number;
+                    });
+                }
+            },
             FlowNodes::DataInspectorNode(data_inspector_node) => todo!(),
             FlowNodes::ExprNode(expr_nodes) => todo!(),
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
