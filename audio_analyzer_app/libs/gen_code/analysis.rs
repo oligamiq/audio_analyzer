@@ -206,8 +206,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     });
                 }
             },
-            FlowNodes::DataInspectorNode(data_inspector_node) => todo!(),
-            FlowNodes::ExprNode(expr_nodes) => todo!(),
+            FlowNodes::DataInspectorNode(_) => {
+                log::info!("DataInspectorNode is ignored");
+            },
+            FlowNodes::ExprNode(expr_nodes) => {
+
+            },
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
             FlowNodes::FilterNodes(filter_nodes) => todo!(),
