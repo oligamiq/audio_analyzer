@@ -1,0 +1,11 @@
+[package]
+name = "audio_analyzer_inner_checker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+rayon = "1.10.0"
+audio_analyzer_core.workspace = true
+walkdir = "2.5.0"
+

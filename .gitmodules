@@ -1,3 +1,3 @@
-[submodule "bench_data/AudioMNIST"]
-	path = bench_data/AudioMNIST
+[submodule "audio_analyzer_inner_checker/datasets/AudioMNIST"]
+	path = audio_analyzer_inner_checker/datasets/AudioMNIST
 	url = https://github.com/soerenab/AudioMNIST

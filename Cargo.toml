@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web", "reqwest-client", "rocket-webapi", "rocket-webapi/lib"]
+members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web", "reqwest-client", "rocket-webapi", "rocket-webapi/lib", "audio_analyzer_inner_checker"]
 default-members = ["audio_analyzer_app"]
 
 [workspace.package]
