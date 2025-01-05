@@ -554,6 +554,7 @@ dependencies = [
  "num-complex",
  "num-traits",
  "plotters",
+ "proc-macro2",
  "quote",
  "reqwest-client",
  "rustfft",
