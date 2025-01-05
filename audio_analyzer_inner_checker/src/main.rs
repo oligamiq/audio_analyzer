@@ -1,17 +1,17 @@
 use audio_analyzer_core::prelude::TestData;
 pub mod libs;
 
+const MNIST_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");
+const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/BAVED/remake");
+
 fn main() {
-    let mnist_base_path = r"datasets/AudioMNIST/data";
     let analyzer = |data: &TestData, sample_rate| sample_rate;
 
-    let data = libs::load_dataset::load_AudioMNIST(mnist_base_path, analyzer).unwrap();
+    let data = libs::load_dataset::load_AudioMNIST(MNIST_BASE_PATH, analyzer).unwrap();
 
     println!("{:?}", data);
 
-    let baved_base_path = r"datasets/BAVED/remake";
-
-    let data = libs::load_dataset::load_BAVED(baved_base_path, analyzer).unwrap();
+    let data = libs::load_dataset::load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
 
     println!("{:?}", data);
 }
