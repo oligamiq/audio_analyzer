@@ -64,7 +64,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         )
     }
 
-    let gen_in_pins = |node: &NodeId| {
+    fn gen_in_pins_inner(snarl: &Snarl<FlowNodes>, node: &NodeId) -> Vec<(OutPinId, InPinId)> {
         let mut unsorted_in_pins = snarl
             .wires()
             .filter(|(out_pin, _)| &out_pin.node == node)
@@ -73,7 +73,19 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         unsorted_in_pins.sort_by(|(_, a_in), (_, b_in)| a_in.input.cmp(&b_in.input));
 
         unsorted_in_pins
-    };
+    }
+
+    let gen_in_pins = |node: &NodeId| gen_in_pins_inner(snarl, node);
+
+    fn gen_in_pins_with_node_id(snarl: &Snarl<FlowNodes>, node: &NodeId) -> HashMap<usize, Vec<OutPinId>> {
+        gen_in_pins_inner(snarl, node)
+            .iter()
+            .map(|(out_pin, in_pin)| (in_pin.input, out_pin))
+            .fold(HashMap::default(), |mut acc, (input, node)| {
+                acc.entry(input).or_default().push(node.clone());
+                acc
+            })
+    }
 
     let gen_in_pins_with_ident = |node: &NodeId| -> HashMap<usize, Vec<syn::Ident>> {
         gen_in_pins(node)
@@ -113,11 +125,72 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         )
     };
 
+    // Retroactively search Input types
+    let type_search = |out_pin_id: &OutPinId| {
+        let now_node_id = out_pin_id.node;
+
+        fn search_input_type(
+            snarl: &Snarl<FlowNodes>,
+            now_node_id: OutPinId,
+        ) -> anyhow::Result<NodeInfoTypes> {
+            let now_node = snarl.get_node(now_node_id.node).unwrap();
+
+            // Only when ExprNode and FrameQueueNode, the type may change.
+            // FrameQueueNode is not implemented yet.
+            // For other nodes, just follow the same path.
+            if let FlowNodes::ExprNode(expr_node) = now_node {
+                let in_pins = gen_in_pins_with_node_id(&snarl, &now_node_id.node).get(&0).unwrap().to_owned();
+                let first_type = search_input_type(&snarl, in_pins[0].clone())?;
+
+                // Check to see if two nodes are on the input
+                if in_pins.len() == 2 {
+                    let second_type = search_input_type(&snarl, in_pins[1].clone())?;
+                    match (first_type, second_type) {
+                        (NodeInfoTypes::Number, NodeInfoTypes::Array1F64)
+                        | (NodeInfoTypes::Array1F64, NodeInfoTypes::Number) => {
+                            Ok(NodeInfoTypes::Array1TupleF64F64)
+                        }
+                        (NodeInfoTypes::Array1F64, NodeInfoTypes::Array1F64) => {
+                            Ok(NodeInfoTypes::Array1TupleF64F64)
+                        }
+                        _ => {
+                            Ok(first_type)
+                        }
+                    }
+                } else {
+                    Ok(first_type)
+                }
+            } else {
+                let ty = now_node.to_as_info().output_types()[now_node_id.output].clone();
+                if ty == NodeInfoTypes::AnyInput {
+                    panic!("AnyInput is not supported");
+                } else if ty == NodeInfoTypes::AnyOutput {
+                    let in_pins = gen_in_pins_with_node_id(&snarl, &now_node_id.node).get(&0).unwrap().to_owned();
+
+                    match now_node {
+                        FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
+                            FrameBufferNode::FrameQueueNode(_) => unimplemented!(),
+                            FrameBufferNode::CycleBufferNode(_) => {
+                                let second_type = search_input_type(&snarl, in_pins[1].clone())?;
+                                Ok(second_type)
+                            },
+                        }
+                        _ => unreachable!(),
+                    }
+                } else {
+                    Ok(ty)
+                }
+            }
+        }
+
+        search_input_type(&snarl, out_pin_id.clone()).unwrap()
+    };
+
     log::info!("Output input node id: {:?}", &next_nodes);
 
     loop {
         let node = {
-            let (out_pin, in_pin) = match next_nodes.pop() {
+            let (out_pin, _) = match next_nodes.pop() {
                 Some(node) => node,
                 None => break,
             };
@@ -139,8 +212,14 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(stftlayer_node) => {
                     let node_name = unique_node_name(node);
-                    let node_name_fft_size = Ident::new(&format!("{}_fft_size", node_name), proc_macro2::Span::call_site());
-                    let node_name_hop_size = Ident::new(&format!("{}_hop_size", node_name), proc_macro2::Span::call_site());
+                    let node_name_fft_size = Ident::new(
+                        &format!("{}_fft_size", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+                    let node_name_hop_size = Ident::new(
+                        &format!("{}_hop_size", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
 
                     outer_code.extend(quote::quote! {
                         // calculator
@@ -208,10 +287,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             },
             FlowNodes::DataInspectorNode(_) => {
                 log::info!("DataInspectorNode is ignored");
-            },
+            }
             FlowNodes::ExprNode(expr_nodes) => {
+                let in_pins = gen_in_pins_with_node_id(&snarl, &node);
+                let ty = type_search(&in_pins.get(&0).unwrap().first().unwrap());
 
-            },
+                
+            }
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
             FlowNodes::FilterNodes(filter_nodes) => todo!(),
