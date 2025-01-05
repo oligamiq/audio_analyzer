@@ -2,6 +2,7 @@ use anyhow::Context;
 use audio_analyzer_core::data::RawDataStreamLayer as _;
 use egui::ahash::HashMap;
 use egui_snarl::{InPinId, OutPinId, Snarl};
+use fasteval3::{Compiler, Evaler, Instruction};
 use proc_macro2::TokenStream;
 use syn::Ident;
 
@@ -124,6 +125,29 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             proc_macro2::Span::call_site(),
         )
     };
+
+    fn get_expr_out_type (
+        snarl: &Snarl<FlowNodes>,
+        node_id: &NodeId,
+        input_ty: Vec<NodeInfoTypes>,
+    ) -> NodeInfoTypes {
+        let node = snarl.get_node(*node_id).unwrap();
+        let (eval_str, outputs_num) = match node {
+            FlowNodes::ExprNode(expr_node) => (expr_node.expr, expr_node.outputs_num.get()),
+            _ => unreachable!(),
+        };
+        let get_ret = || {
+            let parser = fasteval3::Parser::new();
+            let slab = fasteval3::Slab::new();
+            let parsed = parser.parse(&eval_str, &mut slab.ps).unwrap();
+            let compiled = parsed.from(&slab.ps).compile(&slab.ps, &mut slab.cs, &mut fasteval3::EmptyNamespace);
+            let ret: crate::libs::nodes::expr::Ret = match compiled {
+                Instruction::IFunc {name, args} => {
+                }
+            };
+        };
+        let ty = 
+    }
 
     // Retroactively search Input types
     let type_search = |out_pin_id: &OutPinId| {
@@ -290,9 +314,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             }
             FlowNodes::ExprNode(expr_nodes) => {
                 let in_pins = gen_in_pins_with_node_id(&snarl, &node);
-                let ty = type_search(&in_pins.get(&0).unwrap().first().unwrap());
+                let first_ty = type_search(&in_pins.get(&0).unwrap().first().unwrap());
+                let second_ty = in_pins.get(&0).unwrap().get(1).map(|v| type_search(v));
 
-                
+                let out_data = gen_node_name_scratch(&node, 0);
+
+                let eval_alt =
             }
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),

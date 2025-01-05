@@ -108,7 +108,7 @@ impl Default for ExprNodes {
 }
 
 #[derive(Debug, Clone)]
-enum Ret {
+pub(crate) enum Ret {
     Tuple(Vec<f64>),
     Complex(f64, f64),
 }
