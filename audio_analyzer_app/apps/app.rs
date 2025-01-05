@@ -200,6 +200,15 @@ impl eframe::App for App {
             if ui.button("check").clicked() {
                 log::info!("check");
 
+                match crate::libs::gen_code::analysis::analysis(&self.config.snarl) {
+                    Ok(_) => {
+                        log::info!("Analysis successful");
+                    }
+                    Err(e) => {
+                        log::info!("Analysis failed: {:?}", e);
+                    }
+                }
+
                 let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
 
                 log::info!("Running code: {}", code);

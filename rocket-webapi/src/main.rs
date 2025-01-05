@@ -21,9 +21,18 @@ struct ToCors<T>(pub T);
 impl<'r, T: Responder<'r, 'static>> Responder<'r, 'static> for ToCors<T> {
     fn respond_to(self, req: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
         let mut response = self.0.respond_to(req)?;
-        response.set_header(rocket::http::Header::new("Access-Control-Allow-Origin", "*"));
-        response.set_header(rocket::http::Header::new("Access-Control-Allow-Methods", "GET, POST, OPTIONS"));
-        response.set_header(rocket::http::Header::new("Access-Control-Allow-Headers", "Content-Type, Authorization"));
+        response.set_header(rocket::http::Header::new(
+            "Access-Control-Allow-Origin",
+            "*",
+        ));
+        response.set_header(rocket::http::Header::new(
+            "Access-Control-Allow-Methods",
+            "GET, POST, OPTIONS",
+        ));
+        response.set_header(rocket::http::Header::new(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Authorization",
+        ));
 
         println!("Response: {:?}", response);
 
@@ -33,9 +42,7 @@ impl<'r, T: Responder<'r, 'static>> Responder<'r, 'static> for ToCors<T> {
 
 // curl -X POST -H "Content-Type: application/json" -d {\"code\":\"print\"} http://localhost:1080/
 #[post("/", format = "json", data = "<code>")]
-fn index(
-    code: String,
-) -> ToCors<RawJson<String>> {
+fn index(code: String) -> ToCors<RawJson<String>> {
     ToCors(RawJson(hot_lib::run(code)))
 }
 

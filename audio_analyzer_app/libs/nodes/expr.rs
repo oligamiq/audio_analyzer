@@ -495,20 +495,33 @@ impl FlowNodesViewerTrait for ExprNodes {
             (
                 Some(NodeInfoTypesWithData::Array1F64(array)),
                 Some(NodeInfoTypesWithData::Array1F64(array2)),
-            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                array.into_iter().zip(array2).collect(),
-            )),
+            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64({
+                // first is longer length
+                let is_first_longer = array.len() > array2.len();
+
+                if is_first_longer {
+                    array
+                        .slice_move(ndarray::s![..array2.len()])
+                        .into_iter()
+                        .zip(array2.into_iter())
+                        .collect()
+                } else {
+                    array2
+                        .slice_move(ndarray::s![..array.len()])
+                        .into_iter()
+                        .zip(array.into_iter())
+                        .collect()
+                }
+            })),
             (
                 Some(NodeInfoTypesWithData::Array1F64(array)),
                 Some(NodeInfoTypesWithData::Number(num)),
+            )
+            | (
+                Some(NodeInfoTypesWithData::Number(num)),
+                Some(NodeInfoTypesWithData::Array1F64(array)),
             ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
                 array.into_iter().map(|x| (x, num)).collect(),
-            )),
-            (
-                Some(NodeInfoTypesWithData::Number(num)),
-                Some(NodeInfoTypesWithData::Array1F64(array)),
-            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                array.into_iter().map(|x| (num, x)).collect(),
             )),
             (None, Some(node)) | (Some(node), None) => Some(node),
             _ => None,
