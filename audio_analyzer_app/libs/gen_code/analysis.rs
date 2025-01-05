@@ -1,4 +1,5 @@
 use anyhow::Context;
+use audio_analyzer_core::data::RawDataStreamLayer as _;
 use egui_snarl::{InPinId, OutPinId, Snarl};
 
 use crate::prelude::nodes::*;
@@ -21,9 +22,16 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         Some(FlowNodes::AbstractInputNode(node)) => {
             log::info!("Abstract input node: {:?}", node);
 
-            quote! {
-                
-            }
+            // quote! {
+            let analyzer = |wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32| {
+                let sample_rate = sample_rate;
+
+                loop {
+                    let data = wav_file.try_recv().unwrap();
+
+                }
+            };
+            // }
         }
         _ => unreachable!(),
     };

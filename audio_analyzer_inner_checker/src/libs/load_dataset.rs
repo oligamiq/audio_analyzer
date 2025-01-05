@@ -11,7 +11,7 @@ pub struct AudioMNISTData<T> {
 #[allow(non_snake_case)]
 pub fn load_AudioMNIST<T: Send + Sync>(
     base_path: &str,
-    analyzer: impl Fn(&TestData, u32) -> T + Send + Sync,
+    analyzer: impl Fn(&mut TestData, u32) -> T + Send + Sync,
 ) -> anyhow::Result<AudioMNISTData<T>> {
     let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
         assert!(say_n <= 9);
@@ -28,7 +28,9 @@ pub fn load_AudioMNIST<T: Send + Sync>(
 
         data.start();
 
-        let data_s = analyzer(&data, data.sample_rate());
+        let sample_rate = data.sample_rate();
+
+        let data_s = analyzer(&mut data, sample_rate);
 
         data_s
     };
@@ -74,7 +76,7 @@ pub struct AudioBAVEDEmotion<T> {
 #[allow(non_snake_case)]
 pub fn load_BAVED<T: Send + Sync>(
     base_path: &str,
-    analyzer: impl Fn(&TestData, u32) -> T + Send + Sync,
+    analyzer: impl Fn(&mut TestData, u32) -> T + Send + Sync,
 ) -> anyhow::Result<AudioBAVED<T>> {
     struct Pattern {
         place: usize,
@@ -153,7 +155,9 @@ pub fn load_BAVED<T: Send + Sync>(
             let gender = pattern.speaker_gender;
             let speaker_age = pattern.speaker_age;
 
-            acc.entry((speaker_id, gender, speaker_age)).or_insert_with(Vec::new).push(pattern);
+            acc.entry((speaker_id, gender, speaker_age))
+                .or_insert_with(Vec::new)
+                .push(pattern);
 
             acc
         })
@@ -191,7 +195,9 @@ pub fn load_BAVED<T: Send + Sync>(
 
                         data.start();
 
-                        let data_s = analyzer(&data, data.sample_rate());
+                        let sample_rate = data.sample_rate();
+
+                        let data_s = analyzer(&mut data, sample_rate);
 
                         data_s
                     })
