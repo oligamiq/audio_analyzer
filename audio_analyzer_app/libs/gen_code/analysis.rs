@@ -611,7 +611,80 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     let #out_data = #eval_alt;
                 });
             }
-            FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
+            FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
+                FrameBufferNode::FrameQueueNode(frame_queue_node) => todo!(),
+                FrameBufferNode::CycleBufferNode(cycle_buffer_node) => {
+                    let in_pins = gen_in_pins_with_node_id(&snarl, &node);
+                    let in_ty = type_search(&in_pins.get(&1).unwrap().first().unwrap());
+
+                    let node_name = unique_node_name(node);
+                    let node_name_buffer = Ident::new(
+                        &format!("{}_buffer", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+                    let node_name_buffer_size = Ident::new(
+                        &format!("{}_buffer_size", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    match in_ty {
+                        NodeInfoTypes::Array1F64 => {
+                            // let size = cycle_buffer_node.len.get();
+                            let size: TokenStream = in_pins
+                                .get(&1)
+                                .map(|v| v.first().map(|v| {
+                                    let ident = gen_node_name_out(v);
+                                    quote::quote! { #ident }
+                                }))
+                                .flatten()
+                                .unwrap_or_else(|| {
+                                    let num = cycle_buffer_node.len.get();
+                                    quote::quote! { #num }
+                                })
+                                .to_owned();
+
+                            outer_code.extend(quote::quote! {
+                                // calculator
+                                let mut #node_name = Array1::<f64>::zeros(#size);
+                            });
+                        },
+                        NodeInfoTypes::Array1TupleF64F64 => todo!(),
+                        NodeInfoTypes::Array2F64 => todo!(),
+                        NodeInfoTypes::Array1ComplexF64 => todo!(),
+                        NodeInfoTypes::AnyInput => todo!(),
+                        NodeInfoTypes::AnyOutput => todo!(),
+                    }
+
+                    let in_node_names = gen_in_pins_with_ident(&node);
+
+                    let buffer_size: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = cycle_buffer_node.buffer_size.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        let #out_data = #node_name.through_inner(#in_data);
+
+                        if #node_name_buffer_size != #buffer_size {
+                            #node_name_buffer_size = #buffer_size;
+
+                            #node_name = audio_analyzer_core::prelude::CycleBufferLayer::new(
+                                audio_analyzer_core::prelude::CycleBufferConfig {
+                                    buffer_size: #buffer_size,
+                                }
+                            );
+                        }
+                    });
+                },
+            },
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
             FlowNodes::FilterNodes(filter_nodes) => todo!(),
             FlowNodes::IterNodes(iter_nodes) => todo!(),
