@@ -126,6 +126,26 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         )
     };
 
+    fn get_expr_ret(
+        eval_str: String,
+    ) -> crate::libs::nodes::expr::Ret {
+        let parser = fasteval3::Parser::new();
+        let mut slab = fasteval3::Slab::new();
+        let parsed = parser.parse(&eval_str, &mut slab.ps).unwrap();
+        let compiled = parsed.from(&slab.ps).compile(&slab.ps, &mut slab.cs, &mut fasteval3::EmptyNamespace);
+        let ret: crate::libs::nodes::expr::Ret = match compiled {
+            Instruction::IFunc {name, args} => {
+                match name.as_str() {
+                    "tuple" => crate::libs::nodes::expr::Ret::Tuple(vec![0.; args.len()]),
+                    "complex" => crate::libs::nodes::expr::Ret::Complex(0., 0.),
+                    _ => unreachable!("Unknown function")
+                }
+            }
+            _ => unreachable!("Unknown instruction")
+        };
+        ret
+    }
+
     fn get_expr_out_type (
         snarl: &Snarl<FlowNodes>,
         node_id: &NodeId,
@@ -136,27 +156,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             FlowNodes::ExprNode(expr_node) => (expr_node.expr.clone(), expr_node.outputs_num.get()),
             _ => unreachable!(),
         };
-        let get_ret = || {
-            let parser = fasteval3::Parser::new();
-            let mut slab = fasteval3::Slab::new();
-            let parsed = parser.parse(&eval_str, &mut slab.ps).unwrap();
-            let compiled = parsed.from(&slab.ps).compile(&slab.ps, &mut slab.cs, &mut fasteval3::EmptyNamespace);
-            let ret: crate::libs::nodes::expr::Ret = match compiled {
-                Instruction::IFunc {name, args} => {
-                    match name.as_str() {
-                        "tuple" => crate::libs::nodes::expr::Ret::Tuple(vec![0.; args.len()]),
-                        "complex" => crate::libs::nodes::expr::Ret::Complex(0., 0.),
-                        _ => unreachable!("Unknown function")
-                    }
-                }
-                _ => unreachable!("Unknown instruction")
-            };
-            ret
-        };
         match input_ty {
             NodeInfoTypes::Number if outputs_num == 1 => NodeInfoTypes::Number,
             NodeInfoTypes::Number if outputs_num == 2 => {
-                let ret = get_ret();
+                let ret = get_expr_ret(eval_str);
                 match ret {
                     crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
                     crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
@@ -164,7 +167,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             },
             NodeInfoTypes::Array1F64 | NodeInfoTypes::Array1TupleF64F64 | NodeInfoTypes::Array1ComplexF64 if outputs_num == 1 => NodeInfoTypes::Array1F64,
             NodeInfoTypes::Array1F64 | NodeInfoTypes::Array1TupleF64F64 | NodeInfoTypes::Array1ComplexF64 => {
-                let ret = get_ret();
+                let ret = get_expr_ret(eval_str);
                 match ret {
                     crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
                     crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
@@ -344,9 +347,269 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 let first_ty = type_search(&in_pins.get(&0).unwrap().first().unwrap());
                 let second_ty = in_pins.get(&0).unwrap().get(1).map(|v| type_search(v));
 
+                let outputs_num = expr_nodes.outputs_num.get();
+
                 let out_data = gen_node_name_scratch(&node, 0);
 
-                let eval_alt = 
+                let ret = get_expr_ret(expr_nodes.expr.clone());
+
+                let first_in_pin_ident = gen_node_name_out(in_pins.get(&0).unwrap().first().unwrap());
+                let second_in_pin_ident = in_pins.get(&0).unwrap().get(1).map(|v| gen_node_name_out(v));
+
+                let (in_ty, translator) = if in_pins.len() == 2 {
+                    match (first_ty, second_ty.unwrap()) {
+                        (NodeInfoTypes::Number, NodeInfoTypes::Array1F64) => {
+                            (NodeInfoTypes::Array1TupleF64F64, quote::quote! {
+                                {
+                                    #second_in_pin_ident
+                                        .into_iter()
+                                        .map(|v| (#first_in_pin_ident, v))
+                                        .collect::<Array1<(f64, f64)>>()
+                                }
+                            })
+                        }
+                        (NodeInfoTypes::Array1F64, NodeInfoTypes::Number) => {
+                            (NodeInfoTypes::Array1TupleF64F64, quote::quote! {
+                                {
+                                    #first_in_pin_ident
+                                        .into_iter()
+                                        .map(|v| (v, #second_in_pin_ident))
+                                        .collect::<Array1<(f64, f64)>>()
+                                }
+                            })
+                        }
+                        (NodeInfoTypes::Array1F64, NodeInfoTypes::Array1F64) => {
+                            (NodeInfoTypes::Array1TupleF64F64, quote::quote! {
+                                {
+                                    let is_first_longer = #first_in_pin_ident.len() > #second_in_pin_ident.len();
+
+                                    if is_first_longer {
+                                        #first_in_pin_ident
+                                            .slice_move(ndarray::s![..#second_in_pin_ident.len()])
+                                            .into_iter()
+                                            .zip(#second_in_pin_ident.into_iter())
+                                            .collect::<Array1<(f64, f64)>>()
+                                    } else {
+                                        #first_in_pin_ident
+                                            .slice_move(ndarray::s![..#first_in_pin_ident.len()])
+                                            .into_iter()
+                                            .zip(#first_in_pin_ident.into_iter())
+                                            .collect::<Array1<(f64, f64)>>()
+                                    }
+                                }
+                            })
+                        }
+                        _ => unimplemented!("Unknown type"),
+                    }
+                } else {
+                    (first_ty, quote::quote! { #first_in_pin_ident })
+                };
+
+                let translator = {
+                    let unique_tmp_name = proc_macro2::Ident::new(
+                        &format!("tmp_{}", unique_node_name(node)),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    code.extend(quote::quote! {
+                        let #unique_tmp_name = #translator;
+                    });
+
+                    unique_tmp_name
+                };
+
+                let normal_eval = expr_nodes.expr.clone();
+                let striped_eval = normal_eval.replace(" ", "");
+                let rm_tuple = |s: &str| {
+                    assert!(s.starts_with("tuple("));
+                    assert!(s.ends_with(")"));
+                    s.strip_prefix("tuple").unwrap().to_owned()
+                };
+                let rm_complex = |s: &str| {
+                    assert!(s.starts_with("complex("));
+                    assert!(s.ends_with(")"));
+                    s.strip_prefix("complex").unwrap().to_owned()
+                };
+                let eval_alt = match in_ty {
+                    NodeInfoTypes::Number if outputs_num == 1 => {
+                        quote::quote! {
+                            #normal_eval
+                        }
+                    },
+                    NodeInfoTypes::Number if outputs_num == 2 => {
+                        match ret {
+                            crate::libs::nodes::expr::Ret::Tuple(vec) => {
+                                let removed_tuple = rm_tuple(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        let x = #translator;
+                                        ndarray::Array1::from(vec![{
+                                            let mut (a, b) = #removed_tuple;
+                                            (a as f64, b as f64)
+                                        }])
+                                    }
+                                }
+                            },
+                            crate::libs::nodes::expr::Ret::Complex(_, _) => {
+                                let removed_complex = rm_complex(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        let x = #translator;
+                                        ndarray::Array1::from(vec![{
+                                            let mut (a, b) = #removed_complex;
+                                            num_complex::Complex::new(a as f64, b as f64)
+                                        }])
+                                    }
+                                }
+                            },
+                        }
+                    },
+                    NodeInfoTypes::Array1F64 if outputs_num == 1 => {
+                        quote::quote! {
+                            {
+                                #translator
+                                    .iter()
+                                    .map(|x| {
+                                        #normal_eval as f64
+                                    })
+                                    .collect::<Array1<f64>>()
+                            }
+                        }
+                    },
+                    NodeInfoTypes::Array1F64 if outputs_num == 2 => {
+                        match ret {
+                            crate::libs::nodes::expr::Ret::Tuple(..) => {
+                                let removed_tuple = rm_tuple(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|x| {
+                                                let mut (a, b) = #removed_tuple;
+                                                (a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<(f64, f64)>>()
+                                    }
+                                }
+                            },
+                            crate::libs::nodes::expr::Ret::Complex(..) => {
+                                let removed_complex = rm_complex(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|x| {
+                                                let mut (a, b) = #removed_complex;
+                                                num_complex::Complex::new(a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<num_complex::Complex<f64>>>()
+                                    }
+                                }
+                            },
+                        }
+                    },
+                    NodeInfoTypes::Array1TupleF64F64 if outputs_num == 1 => {
+                        quote::quote! {
+                            {
+                                #translator
+                                    .into_iter()
+                                    .map(|(x, y)| {
+                                        #normal_eval as f64
+                                    })
+                                    .collect::<Array1<f64>>()
+                            }
+                        }
+                    },
+                    NodeInfoTypes::Array1TupleF64F64 if outputs_num == 2 => {
+                        match ret {
+                            crate::libs::nodes::expr::Ret::Tuple(..) => {
+                                let removed_tuple = rm_tuple(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|(x, y)| {
+                                                let mut (a, b) = #removed_tuple;
+                                                (a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<(f64, f64)>>()
+                                    }
+                                }
+                            },
+                            crate::libs::nodes::expr::Ret::Complex(..) => {
+                                let removed_complex = rm_complex(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|(x, y)| {
+                                                let mut (a, b) = #removed_complex;
+                                                num_complex::Complex::new(a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<num_complex::Complex<f64>>>()
+                                    }
+                                }
+                            },
+                        }
+                    },
+                    NodeInfoTypes::Array1ComplexF64 if outputs_num == 1 => {
+                        quote::quote! {
+                            {
+                                #translator
+                                    .into_iter()
+                                    .map(|num_complex::Complex { re: x, im: y }| {
+                                        #normal_eval as f64
+                                    })
+                                    .collect::<Array1<f64>>()
+                            }
+                        }
+                    },
+                    NodeInfoTypes::Array1ComplexF64 if outputs_num == 2 => {
+                        match ret {
+                            crate::libs::nodes::expr::Ret::Tuple(..) => {
+                                let removed_tuple = rm_tuple(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|num_complex::Complex { re: x, im: y }| {
+                                                let mut (a, b) = #removed_tuple;
+                                                (a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<(f64, f64)>>()
+                                    }
+                                }
+                            },
+                            crate::libs::nodes::expr::Ret::Complex(..) => {
+                                let removed_complex = rm_complex(&striped_eval);
+
+                                quote::quote! {
+                                    {
+                                        #translator
+                                            .into_iter()
+                                            .map(|num_complex::Complex { re: x, im: y }| {
+                                                let mut (a, b) = #removed_complex;
+                                                num_complex::Complex::new(a as f64, b as f64)
+                                            })
+                                            .collect::<Array1<num_complex::Complex<f64>>>()
+                                    }
+                                }
+                            },
+                        }
+                    },
+                    _ => unimplemented!("Unknown type")
+                };
+
+                code.extend(quote::quote! {
+                    let #out_data = #eval_alt;
+                });
             }
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
