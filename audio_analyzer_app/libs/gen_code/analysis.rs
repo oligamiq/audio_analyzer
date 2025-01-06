@@ -29,7 +29,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             let name =
                 proc_macro2::Ident::new(&format!("out_{}_0", id), proc_macro2::Span::call_site());
 
-            move |outer_code: proc_macro2::TokenStream, next_code: proc_macro2::TokenStream| {
+            move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream| {
                 quote::quote! {
                     let analyzer = |wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32| {
                         let sample_rate = sample_rate;
@@ -169,8 +169,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             NodeInfoTypes::Number if outputs_num == 2 => {
                 let ret = get_expr_ret(eval_str);
                 match ret {
-                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => NodeInfoTypes::Array1TupleF64F64,
-                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => NodeInfoTypes::Array1ComplexF64,
+                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
+                        NodeInfoTypes::Array1TupleF64F64
+                    }
+                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
+                        NodeInfoTypes::Array1ComplexF64
+                    }
                     _ => unreachable!("Unknown type"),
                 }
             }
@@ -186,8 +190,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             | NodeInfoTypes::Array1ComplexF64 => {
                 let ret = get_expr_ret(eval_str);
                 match ret {
-                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => NodeInfoTypes::Array1TupleF64F64,
-                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => NodeInfoTypes::Array1ComplexF64,
+                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
+                        NodeInfoTypes::Array1TupleF64F64
+                    }
+                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
+                        NodeInfoTypes::Array1ComplexF64
+                    }
                     _ => unreachable!("Unknown type"),
                 }
             }
@@ -235,7 +243,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                 Ok(get_expr_out_type(snarl, &now_node_id.node, in_ty))
             } else {
-                let ty = now_node.to_as_info().output_types().get(now_node_id.output).unwrap().clone();
+                let ty = now_node
+                    .to_as_info()
+                    .output_types()
+                    .get(now_node_id.output)
+                    .unwrap()
+                    .clone();
                 if ty == NodeInfoTypes::AnyInput {
                     panic!("AnyInput is not supported");
                 } else if ty == NodeInfoTypes::AnyOutput {
@@ -245,7 +258,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
                             FrameBufferNode::FrameQueueNode(_) => unimplemented!(),
                             FrameBufferNode::CycleBufferNode(_) => {
-                                let second_type = search_input_type(&snarl, in_pins.get(&1).unwrap().first().unwrap().clone())?;
+                                let second_type = search_input_type(
+                                    &snarl,
+                                    in_pins.get(&1).unwrap().first().unwrap().clone(),
+                                )?;
                                 Ok(second_type)
                             }
                         },
@@ -270,8 +286,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 Some(node) => node,
                 None => {
                     log::info!("No more nodes");
-                    break
-                },
+                    break;
+                }
             };
 
             let node = in_pin.node;
@@ -311,11 +327,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         );
 
                         // keep the state
-                        let mut #node_name_fft_size = #node_name.fft_size;
-                        let mut #node_name_hop_size = #node_name.hop_size;
+                        let mut #node_name_fft_size = 400;
+                        let mut #node_name_hop_size = 160;
                     });
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let fft_size: TokenStream = in_node_names
                         .get(&0)
@@ -399,7 +419,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #second_in_pin_ident
                                         .into_iter()
                                         .map(|v| (#first_in_pin_ident, v))
-                                        .collect::<Array1<(f64, f64)>>()
+                                        .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             },
                         ),
@@ -410,7 +430,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #first_in_pin_ident
                                         .into_iter()
                                         .map(|v| (v, #second_in_pin_ident))
-                                        .collect::<Array1<(f64, f64)>>()
+                                        .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             },
                         ),
@@ -425,13 +445,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                             .slice_move(ndarray::s![..#second_in_pin_ident.len()])
                                             .into_iter()
                                             .zip(#second_in_pin_ident.into_iter())
-                                            .collect::<Array1<(f64, f64)>>()
+                                            .collect::<ndarray::Array1<(f64, f64)>>()
                                     } else {
                                         #first_in_pin_ident
                                             .slice_move(ndarray::s![..#first_in_pin_ident.len()])
                                             .into_iter()
                                             .zip(#first_in_pin_ident.into_iter())
-                                            .collect::<Array1<(f64, f64)>>()
+                                            .collect::<ndarray::Array1<(f64, f64)>>()
                                     }
                                 }
                             },
@@ -460,13 +480,22 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 let rm_tuple = |s: &str| {
                     assert!(s.starts_with("tuple("));
                     assert!(s.ends_with(")"));
-                    s.strip_prefix("tuple").unwrap().to_owned()
+                    s.strip_prefix("tuple")
+                        .unwrap()
+                        .to_owned()
+                        .parse::<TokenStream>()
+                        .unwrap()
                 };
                 let rm_complex = |s: &str| {
                     assert!(s.starts_with("complex("));
                     assert!(s.ends_with(")"));
-                    s.strip_prefix("complex").unwrap().to_owned()
+                    s.strip_prefix("complex")
+                        .unwrap()
+                        .to_owned()
+                        .parse::<TokenStream>()
+                        .unwrap()
                 };
+                let normal_eval = normal_eval.parse::<TokenStream>().unwrap();
                 let eval_alt = match in_ty {
                     NodeInfoTypes::Number if outputs_num == 1 => {
                         quote::quote! {
@@ -481,7 +510,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 {
                                     let x = #translator;
                                     ndarray::Array1::from(vec![{
-                                        let mut (a, b) = #removed_tuple;
+                                        let (mut a, mut b) = #removed_tuple;
                                         (a as f64, b as f64)
                                     }])
                                 }
@@ -494,7 +523,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 {
                                     let x = #translator;
                                     ndarray::Array1::from(vec![{
-                                        let mut (a, b) = #removed_complex;
+                                        let (mut a, mut b) = #removed_complex;
                                         num_complex::Complex::new(a as f64, b as f64)
                                     }])
                                 }
@@ -510,7 +539,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     .map(|x| {
                                         #normal_eval as f64
                                     })
-                                    .collect::<Array1<f64>>()
+                                    .collect::<ndarray::Array1<f64>>()
                             }
                         }
                     }
@@ -523,10 +552,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|x| {
-                                            let mut (a, b) = #removed_tuple;
+                                            let (mut a, mut b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
-                                        .collect::<Array1<(f64, f64)>>()
+                                        .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             }
                         }
@@ -538,10 +567,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|x| {
-                                            let mut (a, b) = #removed_complex;
+                                            let (mut a, mut b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
-                                        .collect::<Array1<num_complex::Complex<f64>>>()
+                                        .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                                 }
                             }
                         }
@@ -555,7 +584,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     .map(|(x, y)| {
                                         #normal_eval as f64
                                     })
-                                    .collect::<Array1<f64>>()
+                                    .collect::<ndarray::Array1<f64>>()
                             }
                         }
                     }
@@ -568,10 +597,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|(x, y)| {
-                                            let mut (a, b) = #removed_tuple;
+                                            let (mut a, mut b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
-                                        .collect::<Array1<(f64, f64)>>()
+                                        .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             }
                         }
@@ -583,10 +612,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|(x, y)| {
-                                            let mut (a, b) = #removed_complex;
+                                            let (mut a, mut b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
-                                        .collect::<Array1<num_complex::Complex<f64>>>()
+                                        .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                                 }
                             }
                         }
@@ -600,7 +629,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     .map(|num_complex::Complex { re: x, im: y }| {
                                         #normal_eval as f64
                                     })
-                                    .collect::<Array1<f64>>()
+                                    .collect::<ndarray::Array1<f64>>()
                             }
                         }
                     }
@@ -613,10 +642,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|num_complex::Complex { re: x, im: y }| {
-                                            let mut (a, b) = #removed_tuple;
+                                            let (mut a, mut b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
-                                        .collect::<Array1<(f64, f64)>>()
+                                        .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             }
                         }
@@ -628,10 +657,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     #translator
                                         .into_iter()
                                         .map(|num_complex::Complex { re: x, im: y }| {
-                                            let mut (a, b) = #removed_complex;
+                                            let (mut a, mut b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
-                                        .collect::<Array1<num_complex::Complex<f64>>>()
+                                        .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                                 }
                             }
                         }
@@ -700,25 +729,25 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     match in_ty {
                         NodeInfoTypes::Array1F64 => {
                             outer_code.extend(quote::quote! {
-                                let mut #node_name = Array1::<f64>::zeros(#size);
+                                let mut #node_name = ndarray::Array1::<f64>::zeros(0);
                             });
 
                             code.extend(array_code.clone());
                         }
                         NodeInfoTypes::Array1TupleF64F64 => {
                             outer_code.extend(quote::quote! {
-                                let mut #node_name = Array1::<(f64, f64)>::zeros(#size);
+                                let mut #node_name = ndarray::Array1::<(f64, f64)>::zeros(0);
                             });
 
                             code.extend(array_code.clone());
-                        },
+                        }
                         NodeInfoTypes::Array1ComplexF64 => {
                             outer_code.extend(quote::quote! {
-                                let mut #node_name = Array1::<num_complex::Complex<f64>>::zeros(#size);
+                                let mut #node_name = ndarray::Array1::<num_complex::Complex<f64>>::zeros(0);
                             });
 
                             code.extend(array_code.clone());
-                        },
+                        }
                         NodeInfoTypes::Array2F64 => todo!(),
                         _ => unimplemented!("Unknown type"),
                     }
@@ -741,15 +770,19 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         let mut #node_name_fft_size = 400;
                         // calculator
                         let mut #node_name = {
-                            let planner = rustfft::plan::FftPlanner::new();
-                            let fft = planner.plan_fft_forward(fft_size);
+                            let planner = rustfft::FftPlanner::new();
+                            let fft = planner.plan_fft_forward(#node_name_fft_size);
                             fft
                         };
                         // scratch buffer
-                        let mut #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); fft_size];
+                        let mut #node_name_scratch_buf = vec![num_complex::Complex::new(0.0, 0.0); #node_name_fft_size];
                     });
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let in_data = in_node_names.get(&0).unwrap().first().unwrap().to_owned();
                     let fft_size: TokenStream = quote::quote! { #in_data.len() };
@@ -761,11 +794,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             #node_name_fft_size = #fft_size;
 
                             #node_name = {
-                                let planner = rustfft::plan::FftPlanner::new();
-                                let fft = planner.plan_fft_forward(#fft_size);
+                                let planner = rustfft::FftPlanner::new();
+                                let fft = planner.plan_fft_forward(#node_name_fft_size);
                                 fft
                             };
-                            #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
+                            #node_name_scratch_buf = vec![num_complex::Complex::new(0.0, 0.0); #node_name_fft_size];
                         }
 
                         let #out_data = {
@@ -791,15 +824,19 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         let mut #node_name_fft_size = 400;
                         // calculator
                         let mut #node_name = {
-                            let planner = rustfft::plan::FftPlanner::new();
-                            let fft = planner.plan_fft_inverse(fft_size);
+                            let planner = rustfft::FftPlanner::new();
+                            let fft = planner.plan_fft_inverse(#node_name_fft_size);
                             fft
                         };
                         // scratch buffer
-                        let mut #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); fft_size];
+                        let mut #node_name_scratch_buf = vec![num_complex::Complex::new(0.0, 0.0); #node_name_fft_size];
                     });
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let in_data = in_node_names.get(&0).unwrap().first().unwrap().to_owned();
                     let fft_size: TokenStream = quote::quote! { #in_data.len() };
@@ -811,20 +848,20 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             #node_name_fft_size = #fft_size;
 
                             #node_name = {
-                                let planner = rustfft::plan::FftPlanner::new();
-                                let fft = planner.plan_fft_inverse(#fft_size);
+                                let planner = rustfft::FftPlanner::new();
+                                let fft = planner.plan_fft_inverse(#node_name_fft_size);
                                 fft
                             };
-                            #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
+                            #node_name_scratch_buf = vec![num_complex::Complex::new(0.0, 0.0); #node_name_fft_size];
                         }
 
                         let #out_data = {
                             let mut #out_data = #in_data.clone();
                             #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
                             #out_data
-                        }
+                        };
                     });
-                },
+                }
             },
             FlowNodes::FilterNodes(filter_node) => match filter_node {
                 FilterNodes::LifterNode(lifter_node) => {
@@ -834,7 +871,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         proc_macro2::Span::call_site(),
                     );
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let lifter_order: TokenStream = in_node_names
                         .get(&0)
@@ -863,7 +904,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             quefrency
                         };
                     });
-                },
+                }
             },
             FlowNodes::IterNodes(iter_node) => match iter_node {
                 IterNodes::EnumerateIterNode(enumerate_iter_node) => {
@@ -880,7 +921,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         let mut #state = (0, 1, 10);
                     });
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let start = in_node_names
                         .get(&0)
@@ -924,7 +969,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             #iterated_name.clone()
                         };
                     });
-                },
+                }
             },
             FlowNodes::LpcNodes(lpc_node) => match lpc_node {
                 LpcNodes::LpcNode(lpc_node) => {
@@ -939,7 +984,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         let mut #node_name_lpc_order = 10;
                     });
 
-                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(&node);
 
                     let lpc_order: TokenStream = in_node_names
                         .get(&0)
@@ -973,6 +1022,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
         log::info!("Next nodes: {:?}", next_nodes);
     }
+
+    let code = first_code(&outer_code, &code);
+
+    println!("{}", code);
 
     Ok(())
 }

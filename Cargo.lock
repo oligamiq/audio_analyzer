@@ -643,7 +643,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "audio_analyzer_core",
+ "ndarray",
+ "num-complex",
  "rayon",
+ "rustfft",
  "walkdir",
 ]
 

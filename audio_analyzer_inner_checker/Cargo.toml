@@ -9,3 +9,6 @@ rayon = "1.10.0"
 audio_analyzer_core.workspace = true
 walkdir = "2.5.0"
 
+rustfft = "*"
+num-complex = "*"
+ndarray = "*"

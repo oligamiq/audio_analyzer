@@ -218,7 +218,6 @@ impl eframe::App for App {
                     }
                 }
 
-
                 let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
 
                 log::info!("Running code: {}", code);
