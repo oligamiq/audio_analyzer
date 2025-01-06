@@ -15,11 +15,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         .with_context(|| "No abstract input node found")?
         .0;
 
-    log::info!("Abstract input node id: {:?}", abstract_input_node_id);
+    // log::info!("Abstract input node id: {:?}", abstract_input_node_id);
+
+    println!("Abstract input node id: {:?}", abstract_input_node_id);
 
     let first_code = match snarl.get_node(abstract_input_node_id) {
         Some(FlowNodes::AbstractInputNode(node)) => {
-            log::info!("Abstract input node: {:?}", node);
+            // log::info!("Abstract input node: {:?}", node);
+
+            println!("call first_code: AbstractInputNode");
 
             let id = abstract_input_node_id.0;
             let name =
@@ -51,6 +55,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
     let mut checked = vec![abstract_input_node_id];
 
+    println!("Next nodes: {:?}", next_nodes);
+
     fn gen_node_name_out(node_id: &OutPinId) -> proc_macro2::Ident {
         proc_macro2::Ident::new(
             &format!("out_{}_{}", node_id.node.0, node_id.output),
@@ -68,7 +74,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
     fn gen_in_pins_inner(snarl: &Snarl<FlowNodes>, node: &NodeId) -> Vec<(OutPinId, InPinId)> {
         let mut unsorted_in_pins = snarl
             .wires()
-            .filter(|(out_pin, _)| &out_pin.node == node)
+            .filter(|(_, in_pin)| &in_pin.node == node)
             .collect::<Vec<_>>();
 
         unsorted_in_pins.sort_by(|(_, a_in), (_, b_in)| a_in.input.cmp(&b_in.input));
@@ -129,7 +135,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
         )
     };
 
-    fn get_expr_ret(eval_str: String) -> crate::libs::nodes::expr::Ret {
+    fn get_expr_ret(eval_str: String) -> Option<crate::libs::nodes::expr::Ret> {
         let parser = fasteval3::Parser::new();
         let mut slab = fasteval3::Slab::new();
         let parsed = parser.parse(&eval_str, &mut slab.ps).unwrap();
@@ -137,13 +143,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             parsed
                 .from(&slab.ps)
                 .compile(&slab.ps, &mut slab.cs, &mut fasteval3::EmptyNamespace);
-        let ret: crate::libs::nodes::expr::Ret = match compiled {
+        let ret: Option<crate::libs::nodes::expr::Ret> = match compiled {
             Instruction::IFunc { name, args } => match name.as_str() {
-                "tuple" => crate::libs::nodes::expr::Ret::Tuple(vec![0.; args.len()]),
-                "complex" => crate::libs::nodes::expr::Ret::Complex(0., 0.),
+                "tuple" => Some(crate::libs::nodes::expr::Ret::Tuple(vec![0.; args.len()])),
+                "complex" => Some(crate::libs::nodes::expr::Ret::Complex(0., 0.)),
                 _ => unreachable!("Unknown function"),
             },
-            _ => unreachable!("Unknown instruction"),
+            _ => None,
         };
         ret
     }
@@ -163,8 +169,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             NodeInfoTypes::Number if outputs_num == 2 => {
                 let ret = get_expr_ret(eval_str);
                 match ret {
-                    crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
-                    crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
+                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => NodeInfoTypes::Array1TupleF64F64,
+                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => NodeInfoTypes::Array1ComplexF64,
+                    _ => unreachable!("Unknown type"),
                 }
             }
             NodeInfoTypes::Array1F64
@@ -179,8 +186,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             | NodeInfoTypes::Array1ComplexF64 => {
                 let ret = get_expr_ret(eval_str);
                 match ret {
-                    crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
-                    crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
+                    Some(crate::libs::nodes::expr::Ret::Tuple(..)) => NodeInfoTypes::Array1TupleF64F64,
+                    Some(crate::libs::nodes::expr::Ret::Complex(..)) => NodeInfoTypes::Array1ComplexF64,
+                    _ => unreachable!("Unknown type"),
                 }
             }
             _ => unimplemented!("Unknown type"),
@@ -203,6 +211,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     .get(&0)
                     .unwrap()
                     .to_owned();
+
+                println!("in_pins: {:?}", in_pins);
+
                 let first_type = search_input_type(&snarl, in_pins.get(0).unwrap().clone())?;
 
                 // Check to see if two nodes are on the input
@@ -228,16 +239,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 if ty == NodeInfoTypes::AnyInput {
                     panic!("AnyInput is not supported");
                 } else if ty == NodeInfoTypes::AnyOutput {
-                    let in_pins = gen_in_pins_with_node_id(&snarl, &now_node_id.node)
-                        .get(&0)
-                        .unwrap()
-                        .to_owned();
+                    let in_pins = gen_in_pins_with_node_id(&snarl, &now_node_id.node);
 
                     match now_node {
                         FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
                             FrameBufferNode::FrameQueueNode(_) => unimplemented!(),
                             FrameBufferNode::CycleBufferNode(_) => {
-                                let second_type = search_input_type(&snarl, in_pins.get(1).unwrap().clone())?;
+                                let second_type = search_input_type(&snarl, in_pins.get(&1).unwrap().first().unwrap().clone())?;
                                 Ok(second_type)
                             }
                         },
@@ -466,7 +474,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         }
                     }
                     NodeInfoTypes::Number if outputs_num == 2 => match ret {
-                        crate::libs::nodes::expr::Ret::Tuple(vec) => {
+                        Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
                             let removed_tuple = rm_tuple(&striped_eval);
 
                             quote::quote! {
@@ -479,7 +487,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
-                        crate::libs::nodes::expr::Ret::Complex(_, _) => {
+                        Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
                             let removed_complex = rm_complex(&striped_eval);
 
                             quote::quote! {
@@ -492,6 +500,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
+                        _ => unimplemented!("Unknown type"),
                     },
                     NodeInfoTypes::Array1F64 if outputs_num == 1 => {
                         quote::quote! {
@@ -506,7 +515,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         }
                     }
                     NodeInfoTypes::Array1F64 if outputs_num == 2 => match ret {
-                        crate::libs::nodes::expr::Ret::Tuple(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
                             let removed_tuple = rm_tuple(&striped_eval);
 
                             quote::quote! {
@@ -521,7 +530,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
-                        crate::libs::nodes::expr::Ret::Complex(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
                             let removed_complex = rm_complex(&striped_eval);
 
                             quote::quote! {
@@ -536,6 +545,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
+                        _ => unimplemented!("Unknown type"),
                     },
                     NodeInfoTypes::Array1TupleF64F64 if outputs_num == 1 => {
                         quote::quote! {
@@ -550,7 +560,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         }
                     }
                     NodeInfoTypes::Array1TupleF64F64 if outputs_num == 2 => match ret {
-                        crate::libs::nodes::expr::Ret::Tuple(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
                             let removed_tuple = rm_tuple(&striped_eval);
 
                             quote::quote! {
@@ -565,7 +575,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
-                        crate::libs::nodes::expr::Ret::Complex(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
                             let removed_complex = rm_complex(&striped_eval);
 
                             quote::quote! {
@@ -580,6 +590,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
+                        _ => unimplemented!("Unknown type"),
                     },
                     NodeInfoTypes::Array1ComplexF64 if outputs_num == 1 => {
                         quote::quote! {
@@ -594,7 +605,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         }
                     }
                     NodeInfoTypes::Array1ComplexF64 if outputs_num == 2 => match ret {
-                        crate::libs::nodes::expr::Ret::Tuple(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Tuple(..)) => {
                             let removed_tuple = rm_tuple(&striped_eval);
 
                             quote::quote! {
@@ -609,7 +620,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
-                        crate::libs::nodes::expr::Ret::Complex(..) => {
+                        Some(crate::libs::nodes::expr::Ret::Complex(..)) => {
                             let removed_complex = rm_complex(&striped_eval);
 
                             quote::quote! {
@@ -624,6 +635,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                 }
                             }
                         }
+                        _ => unimplemented!("Unknown type"),
                     },
                     _ => unimplemented!("Unknown type"),
                 };
@@ -720,7 +732,110 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     }
                 }
             },
-            FlowNodes::FrequencyNodes(_) => todo!(),
+            FlowNodes::FrequencyNodes(frequency_node) => match frequency_node {
+                FrequencyNodes::FFTNode(fft_node) => {
+                    let node_name = unique_node_name(node);
+                    let node_name_fft_size = Ident::new(
+                        &format!("{}_fft_size", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+                    let node_name_scratch_buf = Ident::new(
+                        &format!("{}_scratch_buf", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    outer_code.extend(quote::quote! {
+                        // keep the state
+                        let mut #node_name_fft_size = 400;
+                        // calculator
+                        let mut #node_name = {
+                            let planner = rustfft::plan::FftPlanner::new();
+                            let fft = planner.plan_fft_forward(fft_size);
+                            fft
+                        };
+                        // scratch buffer
+                        let mut #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); fft_size];
+                    });
+
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+
+                    let fft_size: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .expect("fft_size is required");
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        if #node_name_fft_size != #fft_size {
+                            #node_name_fft_size = #fft_size;
+
+                            #node_name = {
+                                let planner = rustfft::plan::FftPlanner::new();
+                                let fft = planner.plan_fft_forward(#fft_size);
+                                fft
+                            };
+                            #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
+                        }
+
+                        let mut #out_data = #in_data.clone();
+                        #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                    });
+                }
+                FrequencyNodes::IFFTNode(ifft_node) => {
+                    let node_name = unique_node_name(node);
+                    let node_name_fft_size = Ident::new(
+                        &format!("{}_fft_size", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+                    let node_name_scratch_buf = Ident::new(
+                        &format!("{}_scratch_buf", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    outer_code.extend(quote::quote! {
+                        // keep the state
+                        let mut #node_name_fft_size = 400;
+                        // calculator
+                        let mut #node_name = {
+                            let planner = rustfft::plan::FftPlanner::new();
+                            let fft = planner.plan_fft_inverse(fft_size);
+                            fft
+                        };
+                        // scratch buffer
+                        let mut #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); fft_size];
+                    });
+
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+
+                    let fft_size: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .expect("fft_size is required");
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        if #node_name_fft_size != #fft_size {
+                            #node_name_fft_size = #fft_size;
+
+                            #node_name = {
+                                let planner = rustfft::plan::FftPlanner::new();
+                                let fft = planner.plan_fft_inverse(#fft_size);
+                                fft
+                            };
+                            #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
+                        }
+
+                        let mut #out_data = #in_data.clone();
+                        #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                    });
+                },
+            },
             FlowNodes::FilterNodes(_) => todo!(),
             FlowNodes::IterNodes(_) => todo!(),
             FlowNodes::LpcNodes(_) => todo!(),
@@ -735,8 +850,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
     Ok(())
 }
 
+// cargo test -p audio_analyzer_app --bin audio_analyzer_app -- libs::gen_code::analysis::test_analysis --exact --show-output --nocapture
 #[test]
 fn test_analysis() {
+    // print log to stdout
+    env_logger::init();
+
     let snarl_str = include_str!("./audio_analyzer_config.json");
     let config: crate::apps::config::Config = serde_json::from_str(&snarl_str).unwrap();
     let snarl = config.snarl;

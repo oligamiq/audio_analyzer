@@ -14,7 +14,7 @@ pub enum FrequencyNodes {
 #[serde(default)]
 pub struct IFFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
@@ -173,7 +173,7 @@ impl GraphNode for IFFTNode {
 #[serde(default)]
 pub struct FFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
