@@ -1,7 +1,7 @@
 use anyhow::Context;
 use audio_analyzer_core::data::RawDataStreamLayer as _;
 use egui::ahash::HashMap;
-use egui_snarl::{InPinId, OutPinId, Snarl};
+use egui_snarl::{InPinId, Node, OutPinId, Snarl};
 use fasteval3::{Compiler, Evaler, Instruction};
 use proc_macro2::TokenStream;
 use syn::Ident;
@@ -129,24 +129,49 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
     fn get_expr_out_type (
         snarl: &Snarl<FlowNodes>,
         node_id: &NodeId,
-        input_ty: Vec<NodeInfoTypes>,
+        input_ty: NodeInfoTypes,
     ) -> NodeInfoTypes {
         let node = snarl.get_node(*node_id).unwrap();
         let (eval_str, outputs_num) = match node {
-            FlowNodes::ExprNode(expr_node) => (expr_node.expr, expr_node.outputs_num.get()),
+            FlowNodes::ExprNode(expr_node) => (expr_node.expr.clone(), expr_node.outputs_num.get()),
             _ => unreachable!(),
         };
         let get_ret = || {
             let parser = fasteval3::Parser::new();
-            let slab = fasteval3::Slab::new();
+            let mut slab = fasteval3::Slab::new();
             let parsed = parser.parse(&eval_str, &mut slab.ps).unwrap();
             let compiled = parsed.from(&slab.ps).compile(&slab.ps, &mut slab.cs, &mut fasteval3::EmptyNamespace);
             let ret: crate::libs::nodes::expr::Ret = match compiled {
                 Instruction::IFunc {name, args} => {
+                    match name.as_str() {
+                        "tuple" => crate::libs::nodes::expr::Ret::Tuple(vec![0.; args.len()]),
+                        "complex" => crate::libs::nodes::expr::Ret::Complex(0., 0.),
+                        _ => unreachable!("Unknown function")
+                    }
                 }
+                _ => unreachable!("Unknown instruction")
             };
+            ret
         };
-        let ty = 
+        match input_ty {
+            NodeInfoTypes::Number if outputs_num == 1 => NodeInfoTypes::Number,
+            NodeInfoTypes::Number if outputs_num == 2 => {
+                let ret = get_ret();
+                match ret {
+                    crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
+                    crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
+                }
+            },
+            NodeInfoTypes::Array1F64 | NodeInfoTypes::Array1TupleF64F64 | NodeInfoTypes::Array1ComplexF64 if outputs_num == 1 => NodeInfoTypes::Array1F64,
+            NodeInfoTypes::Array1F64 | NodeInfoTypes::Array1TupleF64F64 | NodeInfoTypes::Array1ComplexF64 => {
+                let ret = get_ret();
+                match ret {
+                    crate::libs::nodes::expr::Ret::Tuple(..) => NodeInfoTypes::Array1TupleF64F64,
+                    crate::libs::nodes::expr::Ret::Complex(..) => NodeInfoTypes::Array1ComplexF64,
+                }
+            },
+            _ => unimplemented!("Unknown type")
+        }
     }
 
     // Retroactively search Input types
@@ -162,28 +187,30 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             // Only when ExprNode and FrameQueueNode, the type may change.
             // FrameQueueNode is not implemented yet.
             // For other nodes, just follow the same path.
-            if let FlowNodes::ExprNode(expr_node) = now_node {
+            if let FlowNodes::ExprNode(..) = now_node {
                 let in_pins = gen_in_pins_with_node_id(&snarl, &now_node_id.node).get(&0).unwrap().to_owned();
                 let first_type = search_input_type(&snarl, in_pins[0].clone())?;
 
                 // Check to see if two nodes are on the input
-                if in_pins.len() == 2 {
+                let in_ty = if in_pins.len() == 2 {
                     let second_type = search_input_type(&snarl, in_pins[1].clone())?;
                     match (first_type, second_type) {
                         (NodeInfoTypes::Number, NodeInfoTypes::Array1F64)
                         | (NodeInfoTypes::Array1F64, NodeInfoTypes::Number) => {
-                            Ok(NodeInfoTypes::Array1TupleF64F64)
+                            NodeInfoTypes::Array1TupleF64F64
                         }
                         (NodeInfoTypes::Array1F64, NodeInfoTypes::Array1F64) => {
-                            Ok(NodeInfoTypes::Array1TupleF64F64)
+                            NodeInfoTypes::Array1TupleF64F64
                         }
                         _ => {
-                            Ok(first_type)
+                            first_type
                         }
                     }
                 } else {
-                    Ok(first_type)
-                }
+                    first_type
+                };
+
+                Ok(get_expr_out_type(snarl, &now_node_id.node, in_ty))
             } else {
                 let ty = now_node.to_as_info().output_types()[now_node_id.output].clone();
                 if ty == NodeInfoTypes::AnyInput {
@@ -319,7 +346,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                 let out_data = gen_node_name_scratch(&node, 0);
 
-                let eval_alt =
+                let eval_alt = 
             }
             FlowNodes::FrameBufferNode(frame_buffer_node) => todo!(),
             FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
