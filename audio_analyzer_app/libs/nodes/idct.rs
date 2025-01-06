@@ -267,7 +267,7 @@ impl FFTNode {
             self.update();
         }
 
-        let fft = &self.fft;
+        let fft: &Arc<dyn Fft<f64>> = &self.fft;
         let scratch_buf = &mut self.scratch_buf;
         let calculated = &mut self.calculated;
 

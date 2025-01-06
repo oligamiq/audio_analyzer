@@ -645,20 +645,12 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 });
             }
             FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
-                FrameBufferNode::FrameQueueNode(frame_queue_node) => todo!(),
+                FrameBufferNode::FrameQueueNode(..) => todo!(),
                 FrameBufferNode::CycleBufferNode(cycle_buffer_node) => {
                     let in_pins = gen_in_pins_with_node_id(&snarl, &node);
                     let in_ty = type_search(&in_pins.get(&1).unwrap().first().unwrap());
 
                     let node_name = unique_node_name(node);
-                    let node_name_buffer = Ident::new(
-                        &format!("{}_buffer", node_name),
-                        proc_macro2::Span::call_site(),
-                    );
-                    let node_name_buffer_size = Ident::new(
-                        &format!("{}_buffer_size", node_name),
-                        proc_macro2::Span::call_site(),
-                    );
 
                     let size: TokenStream = in_pins
                         .get(&1)
@@ -733,7 +725,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 }
             },
             FlowNodes::FrequencyNodes(frequency_node) => match frequency_node {
-                FrequencyNodes::FFTNode(fft_node) => {
+                FrequencyNodes::FFTNode(_) => {
                     let node_name = unique_node_name(node);
                     let node_name_fft_size = Ident::new(
                         &format!("{}_fft_size", node_name),
@@ -759,12 +751,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                     let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
 
-                    let fft_size: TokenStream = in_node_names
-                        .get(&0)
-                        .map(|v| v.first().map(|v| quote::quote! { #v }))
-                        .flatten()
-                        .expect("fft_size is required");
-                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+                    let in_data = in_node_names.get(&0).unwrap().first().unwrap().to_owned();
+                    let fft_size: TokenStream = quote::quote! { #in_data.len() };
 
                     let out_data = gen_node_name_scratch(&node, 0);
 
@@ -780,11 +768,14 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
                         }
 
-                        let mut #out_data = #in_data.clone();
-                        #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                        let #out_data = {
+                            let mut #out_data = #in_data.clone();
+                            #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                            #out_data
+                        };
                     });
                 }
-                FrequencyNodes::IFFTNode(ifft_node) => {
+                FrequencyNodes::IFFTNode(_) => {
                     let node_name = unique_node_name(node);
                     let node_name_fft_size = Ident::new(
                         &format!("{}_fft_size", node_name),
@@ -810,12 +801,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                     let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
 
-                    let fft_size: TokenStream = in_node_names
-                        .get(&0)
-                        .map(|v| v.first().map(|v| quote::quote! { #v }))
-                        .flatten()
-                        .expect("fft_size is required");
-                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+                    let in_data = in_node_names.get(&0).unwrap().first().unwrap().to_owned();
+                    let fft_size: TokenStream = quote::quote! { #in_data.len() };
 
                     let out_data = gen_node_name_scratch(&node, 0);
 
@@ -831,14 +818,94 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             #node_name_scratch_buf = vec![Complex::new(0.0, 0.0); #fft_size];
                         }
 
-                        let mut #out_data = #in_data.clone();
-                        #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                        let #out_data = {
+                            let mut #out_data = #in_data.clone();
+                            #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
+                            #out_data
+                        }
                     });
                 },
             },
-            FlowNodes::FilterNodes(_) => todo!(),
+            FlowNodes::FilterNodes(filter_node) => match filter_node {
+                FilterNodes::LifterNode(lifter_node) => {
+                    let node_name = unique_node_name(node);
+                    let node_name_lifter_order = Ident::new(
+                        &format!("{}_lifter_order", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+
+                    let lifter_order: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = lifter_node.size.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        let #out_data = {
+                            let mut quefrency = #in_data.clone();
+                            let index = #lifter_order;
+
+                            for i in 0..quefrency.len() {
+                                if i < index || i >= quefrency.len() - index {
+                                    quefrency[i] = 0.0;
+                                }
+                            }
+
+                            quefrency
+                        };
+                    });
+                },
+            },
             FlowNodes::IterNodes(_) => todo!(),
-            FlowNodes::LpcNodes(_) => todo!(),
+            FlowNodes::LpcNodes(lpc_node) => match lpc_node {
+                LpcNodes::LpcNode(lpc_node) => {
+                    let node_name = unique_node_name(node);
+                    let node_name_lpc_order = Ident::new(
+                        &format!("{}_lpc_order", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    outer_code.extend(quote::quote! {
+                        // keep the state
+                        let mut #node_name_lpc_order = 10;
+                    });
+
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+
+                    let lpc_order: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = lpc_node.order.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        if #node_name_lpc_order != #lpc_order {
+                            #node_name_lpc_order = #lpc_order;
+                        }
+
+                        let #out_data = linear_predictive_coding::calc_lpc_by_levinson_durbin(
+                            #in_data,
+                            #lpc_order,
+                        );
+                    });
+                }
+            },
             FlowNodes::UnknownNode(_) => todo!(),
         }
 
