@@ -662,8 +662,6 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                     match in_ty {
                         NodeInfoTypes::Array1F64 => {
-                            // let size = cycle_buffer_node.len.get();
-
                             outer_code.extend(quote::quote! {
                                 // calculator
                                 let mut #node_name = Array1::<f64>::zeros(#size);
@@ -672,7 +670,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                             let in_data = gen_node_name_scratch(&node, 0);
 
                             code.extend(quote::quote! {
-                                {
+                                let #out_data = {
                                     let extended = ndarray::stacking::concatenate(
                                         ndarray::Axis(0),
                                         &[
@@ -686,13 +684,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                                     if new_len > #size {
                                         let diff = new_len - #size;
                                         let new_buffer = extended.slice(ndarray::s![diff..]);
-                                        *#node_name = new_buffer.to_owned();
+                                        #node_name = new_buffer.to_owned();
 
                                         assert!(new_buffer.len() == #size);
                                     } else {
-                                        *#node_name = extended.to_owned();
+                                        #node_name = extended.to_owned();
                                     }
-                                }
+
+                                    #node_name.clone()
+                                };
                             });
                         }
                         NodeInfoTypes::Array1TupleF64F64 => todo!(),
