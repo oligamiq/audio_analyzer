@@ -258,20 +258,27 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
     loop {
         let node = {
-            let (out_pin, _) = match next_nodes.pop() {
+            let (_, in_pin) = match next_nodes.pop() {
                 Some(node) => node,
-                None => break,
+                None => {
+                    log::info!("No more nodes");
+                    break
+                },
             };
 
-            let node = out_pin.node;
+            let node = in_pin.node;
 
             if checked.contains(&node) {
+                log::info!("Already checked node: {:?}", node);
+
                 continue;
             }
             checked.push(node);
 
             node
         };
+
+        log::info!("Node id: {:?}", node);
 
         match snarl.get_node(node).unwrap() {
             FlowNodes::AbstractInputNode(_) => {
@@ -300,7 +307,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         let mut #node_name_hop_size = #node_name.hop_size;
                     });
 
-                    let in_node_names = gen_in_pins_with_ident(&node);
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
 
                     let fft_size: TokenStream = in_node_names
                         .get(&0)
@@ -719,6 +726,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             FlowNodes::LpcNodes(_) => todo!(),
             FlowNodes::UnknownNode(_) => todo!(),
         }
+
+        next_nodes.extend(get_next_nodes(snarl, node));
+
+        log::info!("Next nodes: {:?}", next_nodes);
     }
 
     Ok(())
