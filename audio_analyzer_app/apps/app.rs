@@ -200,14 +200,24 @@ impl eframe::App for App {
             if ui.button("check").clicked() {
                 log::info!("check");
 
-                match crate::libs::gen_code::analysis::analysis(&self.config.snarl) {
-                    Ok(_) => {
+                use std::panic;
+
+                let snarl_copy_str = serde_json::to_string(&self.config.snarl).unwrap();
+                match panic::catch_unwind(move || {
+                    let snarl_copy = serde_json::from_str(&snarl_copy_str).unwrap();
+                    crate::libs::gen_code::analysis::analysis(&snarl_copy)
+                }) {
+                    Ok(Ok(_)) => {
                         log::info!("Analysis successful");
                     }
-                    Err(e) => {
+                    Ok(Err(e)) => {
                         log::info!("Analysis failed: {:?}", e);
                     }
+                    Err(panic_info) => {
+                        log::error!("Analysis panicked: {:?}", panic_info);
+                    }
                 }
+
 
                 let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
 

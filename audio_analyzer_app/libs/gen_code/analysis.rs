@@ -189,8 +189,6 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
     // Retroactively search Input types
     let type_search = |out_pin_id: &OutPinId| {
-        let now_node_id = out_pin_id.node;
-
         fn search_input_type(
             snarl: &Snarl<FlowNodes>,
             now_node_id: OutPinId,
@@ -205,11 +203,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     .get(&0)
                     .unwrap()
                     .to_owned();
-                let first_type = search_input_type(&snarl, in_pins[0].clone())?;
+                let first_type = search_input_type(&snarl, in_pins.get(0).unwrap().clone())?;
 
                 // Check to see if two nodes are on the input
                 let in_ty = if in_pins.len() == 2 {
-                    let second_type = search_input_type(&snarl, in_pins[1].clone())?;
+                    let second_type = search_input_type(&snarl, in_pins.get(1).unwrap().clone())?;
                     match (first_type, second_type) {
                         (NodeInfoTypes::Number, NodeInfoTypes::Array1F64)
                         | (NodeInfoTypes::Array1F64, NodeInfoTypes::Number) => {
@@ -226,7 +224,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                 Ok(get_expr_out_type(snarl, &now_node_id.node, in_ty))
             } else {
-                let ty = now_node.to_as_info().output_types()[now_node_id.output].clone();
+                let ty = now_node.to_as_info().output_types().get(now_node_id.output).unwrap().clone();
                 if ty == NodeInfoTypes::AnyInput {
                     panic!("AnyInput is not supported");
                 } else if ty == NodeInfoTypes::AnyOutput {
@@ -239,7 +237,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                         FlowNodes::FrameBufferNode(frame_buffer_node) => match frame_buffer_node {
                             FrameBufferNode::FrameQueueNode(_) => unimplemented!(),
                             FrameBufferNode::CycleBufferNode(_) => {
-                                let second_type = search_input_type(&snarl, in_pins[1].clone())?;
+                                let second_type = search_input_type(&snarl, in_pins.get(1).unwrap().clone())?;
                                 Ok(second_type)
                             }
                         },
@@ -250,6 +248,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 }
             }
         }
+
+        log::info!("Output input node id: {:?}", out_pin_id);
 
         search_input_type(&snarl, out_pin_id.clone()).unwrap()
     };
@@ -733,6 +733,14 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[test]
+fn test_analysis() {
+    let snarl_str = include_str!("./audio_analyzer_config.json");
+    let config: crate::apps::config::Config = serde_json::from_str(&snarl_str).unwrap();
+    let snarl = config.snarl;
+    analysis(&snarl).unwrap();
 }
 
 fn get_next_nodes(snarl: &Snarl<FlowNodes>, node: NodeId) -> Vec<(OutPinId, InPinId)> {
