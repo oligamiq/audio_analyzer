@@ -660,53 +660,64 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                     let in_data = gen_node_name_out(in_pins.get(&1).unwrap().first().unwrap());
 
+                    let array_code = quote::quote! {
+                        let #out_data = {
+                            let extended = ndarray::stacking::concatenate(
+                                ndarray::Axis(0),
+                                &[
+                                    #node_name.view(),
+                                    #in_data.view(),
+                                ],
+                            ).unwrap();
+
+                            let new_len = extended.len();
+
+                            if new_len > #size {
+                                let diff = new_len - #size;
+                                let new_buffer = extended.slice(ndarray::s![diff..]);
+                                #node_name = new_buffer.to_owned();
+
+                                assert!(new_buffer.len() == #size);
+                            } else {
+                                #node_name = extended.to_owned();
+                            }
+
+                            #node_name.clone()
+                        };
+                    };
+
                     match in_ty {
                         NodeInfoTypes::Array1F64 => {
                             outer_code.extend(quote::quote! {
-                                // calculator
                                 let mut #node_name = Array1::<f64>::zeros(#size);
                             });
 
-                            let in_data = gen_node_name_scratch(&node, 0);
-
-                            code.extend(quote::quote! {
-                                let #out_data = {
-                                    let extended = ndarray::stacking::concatenate(
-                                        ndarray::Axis(0),
-                                        &[
-                                            #node_name.view(),
-                                            #in_data.view(),
-                                        ],
-                                    );
-
-                                    let new_len = extended.len();
-
-                                    if new_len > #size {
-                                        let diff = new_len - #size;
-                                        let new_buffer = extended.slice(ndarray::s![diff..]);
-                                        #node_name = new_buffer.to_owned();
-
-                                        assert!(new_buffer.len() == #size);
-                                    } else {
-                                        #node_name = extended.to_owned();
-                                    }
-
-                                    #node_name.clone()
-                                };
-                            });
+                            code.extend(array_code.clone());
                         }
-                        NodeInfoTypes::Array1TupleF64F64 => todo!(),
+                        NodeInfoTypes::Array1TupleF64F64 => {
+                            outer_code.extend(quote::quote! {
+                                let mut #node_name = Array1::<(f64, f64)>::zeros(#size);
+                            });
+
+                            code.extend(array_code.clone());
+                        },
+                        NodeInfoTypes::Array1ComplexF64 => {
+                            outer_code.extend(quote::quote! {
+                                let mut #node_name = Array1::<num_complex::Complex<f64>>::zeros(#size);
+                            });
+
+                            code.extend(array_code.clone());
+                        },
                         NodeInfoTypes::Array2F64 => todo!(),
-                        NodeInfoTypes::Array1ComplexF64 => todo!(),
                         _ => unimplemented!("Unknown type"),
                     }
                 }
             },
-            FlowNodes::FrequencyNodes(frequency_nodes) => todo!(),
-            FlowNodes::FilterNodes(filter_nodes) => todo!(),
-            FlowNodes::IterNodes(iter_nodes) => todo!(),
-            FlowNodes::LpcNodes(lpc_nodes) => todo!(),
-            FlowNodes::UnknownNode(unknown_node) => todo!(),
+            FlowNodes::FrequencyNodes(_) => todo!(),
+            FlowNodes::FilterNodes(_) => todo!(),
+            FlowNodes::IterNodes(_) => todo!(),
+            FlowNodes::LpcNodes(_) => todo!(),
+            FlowNodes::UnknownNode(_) => todo!(),
         }
     }
 
