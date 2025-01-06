@@ -865,7 +865,67 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     });
                 },
             },
-            FlowNodes::IterNodes(_) => todo!(),
+            FlowNodes::IterNodes(iter_node) => match iter_node {
+                IterNodes::EnumerateIterNode(enumerate_iter_node) => {
+                    let iterated_name = unique_node_name(node);
+                    let state = Ident::new(
+                        &format!("{}_state", iterated_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    outer_code.extend(quote::quote! {
+                        // iterated array
+                        let mut #iterated_name = (0..10).step_by(1).map(|x| x as f64).collect();
+                        // state
+                        let mut #state = (0, 1, 10);
+                    });
+
+                    let in_node_names: std::collections::HashMap<usize, Vec<Ident>, egui::ahash::RandomState> = gen_in_pins_with_ident(&node);
+
+                    let start = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = enumerate_iter_node.start.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+
+                    let step = in_node_names
+                        .get(&1)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = enumerate_iter_node.step.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+
+                    let end = in_node_names
+                        .get(&2)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = enumerate_iter_node.end.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+
+                    let out_data = gen_node_name_scratch(&node, 0);
+
+                    code.extend(quote::quote! {
+                        let #out_data = {
+                            if #state != (#start, #step, #end) {
+                                #state = (#start, #step, #end);
+                                #iterated_name = (#start..#end).step_by(#step).map(|x| x as f64).collect();
+                            }
+
+                            #iterated_name.clone()
+                        };
+                    });
+                },
+            },
             FlowNodes::LpcNodes(lpc_node) => match lpc_node {
                 LpcNodes::LpcNode(lpc_node) => {
                     let node_name = unique_node_name(node);
