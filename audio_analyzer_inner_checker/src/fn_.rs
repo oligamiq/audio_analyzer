@@ -230,7 +230,10 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                 stft_layer_out_5_0
             };
             let tmp_expr_nodes_26 = stft_layer_out_5_0.clone();
-            let expr_nodes_out_26_0 = {
+            let expr_nodes_out_26_0: ndarray::ArrayBase<
+                ndarray::OwnedRepr<(f64, f64)>,
+                ndarray::Dim<[usize; 1]>,
+            > = {
                 tmp_expr_nodes_26
                     .into_iter()
                     .map(|num_complex::Complex { re: x, im: y }| {
