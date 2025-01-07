@@ -36,7 +36,7 @@ pub fn load_AudioMNIST<T: Send + Sync>(
         data_s
     };
 
-    let mut progress =
+    let progress =
         std::sync::Arc::new(std::sync::Mutex::new(pbr::ProgressBar::new(60 * 10 * 50)));
     println!("Loading AudioMNIST dataset...");
 

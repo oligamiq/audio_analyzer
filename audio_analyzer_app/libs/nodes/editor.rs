@@ -437,6 +437,20 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 ui.close_menu();
             }
         });
+
+        ui.menu_button("lpc", |ui| {
+            if ui.button("LpcNode").clicked() {
+                snarl.insert_node(pos, LpcNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("output", |ui| {
+            if ui.button("OutputNode").clicked() {
+                snarl.insert_node(pos, OutputNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
     }
 
     fn has_node_menu(&mut self, _node: &FlowNodes) -> bool {
