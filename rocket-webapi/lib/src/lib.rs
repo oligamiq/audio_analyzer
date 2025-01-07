@@ -20,3 +20,26 @@ pub fn run_inner(code: Code) -> Msg {
     Msg::CompileStart
     // Msg::CompileEnd
 }
+
+pub fn rewrite_code(code: Code) {
+    let Code { code } = code;
+
+    let file_pos_base = std::concat!(std::env!("CARGO_MANIFEST_DIR"), "/../..");
+
+    let file_pos = format!(r"{file_pos_base}/audio_analyzer_inner_checker/src/fn_.rs");
+
+    println!("file_pos: {}", file_pos);
+
+    // overwrite file
+    std::fs::write(file_pos, code).unwrap();
+
+    // fmt
+    let out = std::process::Command::new("cargo")
+        .arg("fmt")
+        .current_dir(file_pos_base)
+        .output()
+        .expect("failed to execute process");
+
+    println!("out: {}", String::from_utf8_lossy(&out.stdout));
+    println!("err: {}", String::from_utf8_lossy(&out.stderr));
+}

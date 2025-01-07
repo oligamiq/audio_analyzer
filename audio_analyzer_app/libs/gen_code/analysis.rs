@@ -8,7 +8,7 @@ use syn::Ident;
 
 use crate::prelude::nodes::*;
 
-pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
+pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     let abstract_input_node_id = snarl
         .nodes_ids_data()
         .find(|(_, node)| matches!(node.value, FlowNodes::AbstractInputNode(_)))
@@ -29,19 +29,25 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
             let name =
                 proc_macro2::Ident::new(&format!("out_{}_0", id), proc_macro2::Span::call_site());
 
+            let sample_rate_ident =
+                proc_macro2::Ident::new(&format!("out_{}_1", id), proc_macro2::Span::call_site());
+
             move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream| {
                 quote::quote! {
-                    let analyzer = |wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32| {
+                    pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
+                        use audio_analyzer_core::data::RawDataStreamLayer as _;
+
                         let sample_rate = sample_rate;
 
                         #outer_code
 
                         loop {
-                            let #name = wav_file.try_recv().unwrap();
+                            let #name: ndarray::Array1<f64> = wav_file.try_recv().unwrap().into_iter().map(|v| v as f64).collect();
+                            let #sample_rate_ident = sample_rate;
 
                             #next_code
                         }
-                    };
+                    }
                 }
             }
         }
@@ -66,7 +72,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
     fn gen_node_name_scratch(node: &NodeId, output: usize) -> proc_macro2::Ident {
         proc_macro2::Ident::new(
-            &format!("scratch_{}_{}", node.0, output),
+            &format!("out_{}_{}", node.0, output),
             proc_macro2::Span::call_site(),
         )
     }
@@ -360,7 +366,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     let out_data = gen_node_name_scratch(&node, 0);
 
                     code.extend(quote::quote! {
-                        let #out_data = #node_name.through_inner(#in_data);
+                        let #out_data = #node_name.through_inner(#in_data).unwrap().first().unwrap().to_owned();
 
                         if #node_name_fft_size != #fft_size || #node_name_hop_size != #hop_size {
                             #node_name_fft_size = #fft_size;
@@ -499,7 +505,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                 let eval_alt = match in_ty {
                     NodeInfoTypes::Number if outputs_num == 1 => {
                         quote::quote! {
-                            #normal_eval
+                            {
+                                let x = #translator;
+                                #normal_eval
+                            }
                         }
                     }
                     NodeInfoTypes::Number if outputs_num == 2 => match ret {
@@ -682,7 +691,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
                     let node_name = unique_node_name(node);
 
                     let size: TokenStream = in_pins
-                        .get(&1)
+                        .get(&0)
                         .map(|v| {
                             v.first().map(|v| {
                                 let ident = gen_node_name_out(v);
@@ -702,7 +711,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
                     let array_code = quote::quote! {
                         let #out_data = {
-                            let extended = ndarray::stacking::concatenate(
+                            let extended = ndarray::concatenate(
                                 ndarray::Axis(0),
                                 &[
                                     #node_name.view(),
@@ -1025,9 +1034,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<()> {
 
     let code = first_code(&outer_code, &code);
 
-    println!("{}", code);
-
-    Ok(())
+    Ok(code)
 }
 
 // cargo test -p audio_analyzer_app --bin audio_analyzer_app -- libs::gen_code::analysis::test_analysis --exact --show-output --nocapture
@@ -1039,7 +1046,11 @@ fn test_analysis() {
     let snarl_str = include_str!("./audio_analyzer_config.json");
     let config: crate::apps::config::Config = serde_json::from_str(&snarl_str).unwrap();
     let snarl = config.snarl;
-    analysis(&snarl).unwrap();
+    let code = analysis(&snarl).unwrap();
+
+    reqwest_client::lib::rewrite_code(reqwest_client::lib::Code {
+        code: code.to_string(),
+    });
 }
 
 fn get_next_nodes(snarl: &Snarl<FlowNodes>, node: NodeId) -> Vec<(OutPinId, InPinId)> {
