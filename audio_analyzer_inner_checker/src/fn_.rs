@@ -2,10 +2,11 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
     use crate::presets::*;
     use audio_analyzer_core::data::RawDataStreamLayer as _;
     let sample_rate = sample_rate as f64;
+    let mut cycle_buffer_node_4 = ndarray::Array1::<f64>::zeros(0);
+    let mut lpc_node_30_lpc_order = 10;
     let mut enumerate_iter_node_19: ndarray::Array1<f64> =
         (0..10).step_by(1).map(|x| x as f64).collect();
     let mut enumerate_iter_node_19_state = (0, 1, 10);
-    let mut cycle_buffer_node_4 = ndarray::Array1::<f64>::zeros(0);
     let mut enumerate_iter_node_22: ndarray::Array1<f64> =
         (0..10).step_by(1).map(|x| x as f64).collect();
     let mut enumerate_iter_node_22_state = (0, 1, 10);
@@ -21,7 +22,6 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
         fft
     };
     let mut ifft_1_scratch_buf = vec![num_complex::Complex::new(0.0, 0.0); ifft_1_fft_size];
-    let mut lpc_node_30_lpc_order = 10;
     let mut fft_17_fft_size = 400;
     let mut fft_17 = {
         let mut planner = rustfft::FftPlanner::new();
@@ -39,6 +39,57 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                 break;
             }
             let abstract_input_node_out_37_1 = sample_rate;
+            let tmp_expr_nodes_18 = abstract_input_node_out_37_1.clone();
+            let expr_nodes_out_18_0 = {
+                let x = tmp_expr_nodes_18;
+                x * 50f64 / 1000f64
+            };
+            let tmp_expr_nodes_3 = expr_nodes_out_18_0.clone();
+            let expr_nodes_out_3_0 = {
+                let x = tmp_expr_nodes_3;
+                round(x / 16f64) * 16f64
+            };
+            let cycle_buffer_node_out_4_0 = {
+                let extended = ndarray::concatenate(
+                    ndarray::Axis(0),
+                    &[
+                        cycle_buffer_node_4.view(),
+                        abstract_input_node_out_37_0.view(),
+                    ],
+                )
+                .unwrap();
+                let new_len = extended.len() as f64;
+                if new_len > expr_nodes_out_3_0 {
+                    let diff = (new_len - expr_nodes_out_3_0) as usize;
+                    let new_buffer = extended.slice(ndarray::s![diff..]);
+                    cycle_buffer_node_4 = new_buffer.to_owned();
+                    assert!(new_buffer.len() as f64 == expr_nodes_out_3_0);
+                } else {
+                    cycle_buffer_node_4 = extended.to_owned();
+                }
+                cycle_buffer_node_4.clone()
+            };
+            let tmp_expr_nodes_36 = cycle_buffer_node_out_4_0.clone();
+            let expr_nodes_out_36_0 = {
+                tmp_expr_nodes_36
+                    .iter()
+                    .map(|&x| (float(x > 0.0001) * x) as f64)
+                    .collect::<ndarray::Array1<f64>>()
+            };
+            if lpc_node_30_lpc_order != 100usize {
+                lpc_node_30_lpc_order = 100usize;
+            }
+            let lpc_node_out_30_0 = linear_predictive_coding::calc_lpc_by_levinson_durbin(
+                expr_nodes_out_36_0.view(),
+                100usize,
+            );
+            let tmp_expr_nodes_34 = lpc_node_out_30_0.clone();
+            let expr_nodes_out_34_0 = {
+                tmp_expr_nodes_34
+                    .iter()
+                    .map(|&x| (x * 2f64) as f64)
+                    .collect::<ndarray::Array1<f64>>()
+            };
             let enumerate_iter_node_out_19_0 = {
                 let (
                     enumerate_iter_node_19_start,
@@ -72,36 +123,6 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                     .map(|&x| (x / 10f64) as f64)
                     .collect::<ndarray::Array1<f64>>()
             };
-            let tmp_expr_nodes_18 = abstract_input_node_out_37_1.clone();
-            let expr_nodes_out_18_0 = {
-                let x = tmp_expr_nodes_18;
-                x * 50f64 / 1000f64
-            };
-            let tmp_expr_nodes_3 = expr_nodes_out_18_0.clone();
-            let expr_nodes_out_3_0 = {
-                let x = tmp_expr_nodes_3;
-                round(x / 16f64) * 16f64
-            };
-            let cycle_buffer_node_out_4_0 = {
-                let extended = ndarray::concatenate(
-                    ndarray::Axis(0),
-                    &[
-                        cycle_buffer_node_4.view(),
-                        abstract_input_node_out_37_0.view(),
-                    ],
-                )
-                .unwrap();
-                let new_len = extended.len() as f64;
-                if new_len > expr_nodes_out_3_0 {
-                    let diff = (new_len - expr_nodes_out_3_0) as usize;
-                    let new_buffer = extended.slice(ndarray::s![diff..]);
-                    cycle_buffer_node_4 = new_buffer.to_owned();
-                    assert!(new_buffer.len() as f64 == expr_nodes_out_3_0);
-                } else {
-                    cycle_buffer_node_4 = extended.to_owned();
-                }
-                cycle_buffer_node_4.clone()
-            };
             let enumerate_iter_node_out_22_0 = {
                 let (
                     enumerate_iter_node_22_start,
@@ -134,8 +155,9 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
             };
             let tmp_expr_nodes_23 = {
                 enumerate_iter_node_out_22_0
+                    .clone()
                     .into_iter()
-                    .map(|v| (expr_nodes_out_3_0.clone(), v))
+                    .map(|v| (v, expr_nodes_out_3_0.clone()))
                     .collect::<ndarray::Array1<(f64, f64)>>()
             }
             .clone();
@@ -207,6 +229,16 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                 assert!(!stft_layer_out_5_0.is_empty());
                 stft_layer_out_5_0
             };
+            let tmp_expr_nodes_26 = stft_layer_out_5_0.clone();
+            let expr_nodes_out_26_0 = {
+                tmp_expr_nodes_26
+                    .into_iter()
+                    .map(|num_complex::Complex { re: x, im: y }| {
+                        let (a, b) = (x, y);
+                        (a as f64, b as f64)
+                    })
+                    .collect::<ndarray::Array1<(f64, f64)>>()
+            };
             let tmp_expr_nodes_7 = stft_layer_out_5_0.clone();
             let expr_nodes_out_7_0 = {
                 tmp_expr_nodes_7
@@ -265,37 +297,6 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                 tmp_expr_nodes_15
                     .iter()
                     .map(|&x| (x / 10000f64) as f64)
-                    .collect::<ndarray::Array1<f64>>()
-            };
-            let tmp_expr_nodes_26 = stft_layer_out_5_0.clone();
-            let expr_nodes_out_26_0 = {
-                tmp_expr_nodes_26
-                    .into_iter()
-                    .map(|num_complex::Complex { re: x, im: y }| {
-                        let (a, b) = (x, y);
-                        (a as f64, b as f64)
-                    })
-                    .collect::<ndarray::Array1<(f64, f64)>>()
-            };
-            let tmp_expr_nodes_36 = cycle_buffer_node_out_4_0.clone();
-            let expr_nodes_out_36_0 = {
-                tmp_expr_nodes_36
-                    .iter()
-                    .map(|&x| (float(x > 0.0001) * x) as f64)
-                    .collect::<ndarray::Array1<f64>>()
-            };
-            if lpc_node_30_lpc_order != 100usize {
-                lpc_node_30_lpc_order = 100usize;
-            }
-            let lpc_node_out_30_0 = linear_predictive_coding::calc_lpc_by_levinson_durbin(
-                expr_nodes_out_36_0.view(),
-                100usize,
-            );
-            let tmp_expr_nodes_34 = lpc_node_out_30_0.clone();
-            let expr_nodes_out_34_0 = {
-                tmp_expr_nodes_34
-                    .iter()
-                    .map(|&x| (x * 2f64) as f64)
                     .collect::<ndarray::Array1<f64>>()
             };
             if fft_17_fft_size != expr_nodes_out_25_0.len() {
