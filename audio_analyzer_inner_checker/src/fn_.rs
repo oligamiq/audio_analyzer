@@ -39,6 +39,7 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
         if out_37_0.len() == 0 {
             break;
         }
+        println!("{:?}", out_37_0);
         let out_37_1 = sample_rate;
         let out_19_0 = {
             let (

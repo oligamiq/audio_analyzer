@@ -12,6 +12,7 @@ pub struct AudioMNISTData<T> {
 pub fn load_AudioMNIST<T: Send + Sync>(
     base_path: &str,
     analyzer: impl Fn(&mut TestData, u32) -> T + Send + Sync,
+    is_parallel: bool,
 ) -> anyhow::Result<AudioMNISTData<T>> {
     let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
         assert!(say_n <= 9);
@@ -35,7 +36,8 @@ pub fn load_AudioMNIST<T: Send + Sync>(
         data_s
     };
 
-    let data = (1..=60)
+    let data = if is_parallel {
+        (1..=60)
         .into_par_iter()
         .map(|speaker_n| {
             (0..9)
@@ -49,7 +51,24 @@ pub fn load_AudioMNIST<T: Send + Sync>(
                 })
                 .collect::<Vec<_>>()
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+    } else {
+        (1..=60)
+        .into_iter()
+        .map(|speaker_n| {
+            (0..9)
+                .into_iter()
+                .flat_map(|j| {
+                    (0..50).into_iter().map(move |k| {
+                        let path = gen_path(speaker_n, j, k);
+
+                        get_data(&path)
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
+    };
 
     let mut speakers = [const { Vec::new() }; 60];
 
