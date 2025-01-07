@@ -586,6 +586,7 @@ dependencies = [
  "anyhow",
  "audio_analyzer_core",
  "console_error_panic_hook",
+ "convert_case",
  "eframe",
  "egui",
  "egui-plotter",

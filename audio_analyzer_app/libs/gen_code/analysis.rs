@@ -133,12 +133,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     };
 
     let unique_node_name = |node_id: NodeId| {
+        use convert_case::{Case, Casing};
+
         let node_title = snarl
             .get_node(node_id)
             .unwrap()
             .to_as_info()
             .name()
-            .to_owned();
+            .to_owned()
+            .to_case(Case::Snake);
         let id = node_id.0;
         proc_macro2::Ident::new(
             &format!("{node_title}_{id}"),
@@ -619,7 +622,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 {
                                     let x = #translator;
                                     ndarray::Array1::from(vec![{
-                                        let (mut a, mut b) = #removed_tuple;
+                                        let (a, b) = #removed_tuple;
                                         (a as f64, b as f64)
                                     }])
                                 }
@@ -632,7 +635,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 {
                                     let x = #translator;
                                     ndarray::Array1::from(vec![{
-                                        let (mut a, mut b) = #removed_complex;
+                                        let (a, b) = #removed_complex;
                                         num_complex::Complex::new(a as f64, b as f64)
                                     }])
                                 }
@@ -661,7 +664,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|x| {
-                                            let (mut a, mut b) = #removed_tuple;
+                                            let (a, b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<(f64, f64)>>()
@@ -676,7 +679,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|x| {
-                                            let (mut a, mut b) = #removed_complex;
+                                            let (a, b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
@@ -706,7 +709,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|(x, y)| {
-                                            let (mut a, mut b) = #removed_tuple;
+                                            let (a, b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<(f64, f64)>>()
@@ -721,7 +724,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|(x, y)| {
-                                            let (mut a, mut b) = #removed_complex;
+                                            let (a, b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
@@ -751,7 +754,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|num_complex::Complex { re: x, im: y }| {
-                                            let (mut a, mut b) = #removed_tuple;
+                                            let (a, b) = #removed_tuple;
                                             (a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<(f64, f64)>>()
@@ -766,7 +769,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                     #translator
                                         .into_iter()
                                         .map(|num_complex::Complex { re: x, im: y }| {
-                                            let (mut a, mut b) = #removed_complex;
+                                            let (a, b) = #removed_complex;
                                             num_complex::Complex::new(a as f64, b as f64)
                                         })
                                         .collect::<ndarray::Array1<num_complex::Complex<f64>>>()
