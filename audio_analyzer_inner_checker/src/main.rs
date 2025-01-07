@@ -1,5 +1,6 @@
 pub mod fn_;
 pub mod libs;
+pub mod presets;
 
 const MNIST_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");

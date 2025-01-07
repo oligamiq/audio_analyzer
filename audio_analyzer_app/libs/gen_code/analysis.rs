@@ -36,8 +36,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                 quote::quote! {
                     pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
                         use audio_analyzer_core::data::RawDataStreamLayer as _;
+                        use crate::presets::*;
 
-                        let sample_rate = sample_rate;
+                        let sample_rate = sample_rate as f64;
 
                         #outer_code
 
@@ -553,7 +554,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             {
                                 #translator
                                     .iter()
-                                    .map(|x| {
+                                    .map(|&x| {
                                         #normal_eval as f64
                                     })
                                     .collect::<ndarray::Array1<f64>>()
@@ -819,9 +820,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         }
 
                         let #out_data = {
-                            let mut #out_data = #in_data.clone();
+                            let mut #out_data = #in_data.to_vec();
                             #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
-                            #out_data
+                            #out_data.into_iter().collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                         };
                     });
                 }
@@ -873,9 +874,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         }
 
                         let #out_data = {
-                            let mut #out_data = #in_data.clone();
+                            let mut #out_data = #in_data.to_vec();
                             #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
-                            #out_data
+                            #out_data.into_iter().collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                         };
                     });
                 }
@@ -933,7 +934,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                     outer_code.extend(quote::quote! {
                         // iterated array
-                        let mut #iterated_name = (0..10).step_by(1).map(|x| x as f64).collect();
+                        let mut #iterated_name: ndarray::Array1<f64> = (0..10).step_by(1).map(|x| x as f64).collect();
                         // state
                         let mut #state = (0, 1, 10);
                     });
