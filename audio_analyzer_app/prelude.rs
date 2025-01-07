@@ -17,6 +17,7 @@ pub mod nodes {
         },
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
         lpc::{LpcNode, LpcNodeInfo, LpcNodes},
+        output::{OutputNode, OutputNodeInfo, OutputNodes},
         pin_info::MyPinInfo,
         raw_input::{AbstractInputNode, AbstractInputNodeInfo, FileInputNode, MicrophoneInputNode},
         unknown::{UnknownNode, UnknownNodeInfo},
@@ -25,7 +26,6 @@ pub mod nodes {
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,
             SchemaViewerNodeInfo,
         },
-        output::{OutputNode, OutputNodes, OutputNodeInfo},
         GraphNode, NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
     };
     pub use egui_editable_num::EditableOnText;

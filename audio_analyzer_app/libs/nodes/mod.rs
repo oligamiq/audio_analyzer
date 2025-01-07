@@ -9,12 +9,12 @@ pub mod iter;
 pub mod layer;
 pub mod lifter;
 pub mod lpc;
+pub mod output;
 pub mod pin_info;
 pub mod raw_input;
 pub mod unknown;
 pub mod utils;
 pub mod viewer;
-pub mod output;
 
 pub trait NodeInfo {
     fn name(&self) -> &str;

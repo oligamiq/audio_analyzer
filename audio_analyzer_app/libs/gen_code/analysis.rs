@@ -1149,6 +1149,30 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
     let before_nodes = gen_in_pins_with_node_id(snarl, &abstract_input_node_id);
 
+    fn get_ancestors(
+        snarl: &Snarl<FlowNodes>,
+        node_id: &NodeId,
+        checked: &Vec<NodeId>,
+    ) -> Vec<NodeId> {
+        gen_in_pins_with_node_id(snarl, &node_id)
+            .into_iter()
+            .flat_map(|(_, out_pin)| {
+                out_pin.into_iter().flat_map(|out_pin| {
+                    if checked.contains(&out_pin.node) {
+                        vec![]
+                    } else {
+                        get_ancestors(
+                            snarl,
+                            &out_pin.node,
+                            &[checked.to_owned(), vec![out_pin.node]].concat(),
+                        )
+                    }
+                })
+            })
+            .chain(vec![node_id.clone()])
+            .collect::<Vec<_>>()
+    }
+
     if let Some(in_pins) = before_nodes.get(&0) {
         let all_nodes = get_ancestors(
             snarl,
@@ -1156,37 +1180,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
             &vec![abstract_input_node_id],
         );
 
-        fn get_ancestors(
-            snarl: &Snarl<FlowNodes>,
-            node_id: &NodeId,
-            checked: &Vec<NodeId>,
-        ) -> Vec<NodeId> {
-            gen_in_pins_with_node_id(snarl, &node_id)
-                .into_iter()
-                .flat_map(|(_, out_pin)| {
-                    out_pin.into_iter().flat_map(|out_pin| {
-                        if checked.contains(&out_pin.node) {
-                            vec![]
-                        } else {
-                            get_ancestors(
-                                snarl,
-                                &out_pin.node,
-                                &[checked.to_owned(), vec![out_pin.node]].concat(),
-                            )
-                        }
-                    })
-                })
-                .chain(vec![node_id.clone()])
-                .collect::<Vec<_>>()
-        }
-
-        println!(
-            "all_nodes: {:?}",
-            all_nodes
-                .iter()
-                .map(|v| node_title(snarl.get_node(*v).unwrap()))
-                .collect::<Vec<_>>()
-        );
+        // println!(
+        //     "all_nodes: {:?}",
+        //     all_nodes
+        //         .iter()
+        //         .map(|v| node_title(snarl.get_node(*v).unwrap()))
+        //         .collect::<Vec<_>>()
+        // );
 
         let mut all_nodes = all_nodes
             .into_iter()
@@ -1271,8 +1271,16 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     }
 
     let mut all_nodes = snarl
-        .node_ids()
-        .map(|(id, _)| {
+        .nodes_ids_data()
+        .filter_map(|(id, data)| {
+            if let FlowNodes::OutputNodes(OutputNodes::OutputNode(..)) = data.value {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .flat_map(|id| get_ancestors(snarl, &id, &vec![abstract_input_node_id]))
+        .map(|id| {
             let before_nodes = gen_in_pins(&id);
             (
                 id,
@@ -1282,7 +1290,13 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     .collect::<Vec<_>>(),
             )
         })
-        .filter(|(id, _)| *id != abstract_input_node_id)
+        .filter(|(id, _)| {
+            *id != abstract_input_node_id
+                && !matches!(
+                    snarl.get_node(*id).unwrap(),
+                    FlowNodes::OutputNodes(OutputNodes::OutputNode(..))
+                )
+        })
         .collect::<HashMap<_, _>>();
 
     loop {

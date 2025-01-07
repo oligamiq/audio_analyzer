@@ -8,13 +8,11 @@ pub enum OutputNodes {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct OutputNode {
-}
+pub struct OutputNode {}
 
 impl Default for OutputNode {
     fn default() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
@@ -45,8 +43,7 @@ impl FlowNodesViewerTrait for OutputNode {
 
 impl OutputNode {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
