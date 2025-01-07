@@ -8,7 +8,7 @@ const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/data
 
 fn main() {
     let analyzer = fn_::analyzer;
-    let data = libs::load_dataset::load_AudioMNIST(MNIST_BASE_PATH, analyzer, false).unwrap();
+    let data = libs::load_dataset::load_AudioMNIST(MNIST_BASE_PATH, analyzer, true).unwrap();
 
     println!("{:?}", data);
 

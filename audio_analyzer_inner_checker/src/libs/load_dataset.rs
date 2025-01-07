@@ -36,22 +36,36 @@ pub fn load_AudioMNIST<T: Send + Sync>(
         data_s
     };
 
+    let mut progress =
+        std::sync::Arc::new(std::sync::Mutex::new(pbr::ProgressBar::new(60 * 10 * 50)));
+    println!("Loading AudioMNIST dataset...");
+
     let data = if is_parallel {
-        (1..=60)
+        let ret = (1..=60)
             .into_par_iter()
             .map(|speaker_n| {
                 (0..9)
                     .into_iter()
                     .flat_map(|j| {
+                        let progress = progress.clone();
+
                         (0..50).into_iter().map(move |k| {
                             let path = gen_path(speaker_n, j, k);
 
+                            progress.clone().lock().unwrap().inc();
                             get_data(&path)
                         })
                     })
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+        progress
+            .lock()
+            .unwrap()
+            .finish_println("Finished loading AudioMNIST dataset.");
+
+        ret
     } else {
         (1..=60)
             .into_iter()

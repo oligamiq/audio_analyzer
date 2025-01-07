@@ -8,6 +8,7 @@ anyhow = "1.0.95"
 rayon = "1.10.0"
 audio_analyzer_core.workspace = true
 walkdir = "2.5.0"
+pbr = "1.1"
 
 rustfft = "*"
 num-complex = "*"

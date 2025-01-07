@@ -83,8 +83,6 @@ impl ToSpectrogramLayer {
             if let Some(fft_result) = fft_result {
                 ret.push(fft_result);
             }
-
-            println!("ret.len() = {}", ret.len());
         }
 
         Ok(ret)
