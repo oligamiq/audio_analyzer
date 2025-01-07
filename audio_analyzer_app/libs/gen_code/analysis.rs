@@ -322,24 +322,41 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     if let Some(in_pins) = before_nodes.get(&0) {
         let out_pin = in_pins.first().unwrap();
 
-        let mut all_nodes = get_ancestors(snarl, out_pin, &vec![]);
+        let mut all_nodes = get_ancestors(
+            snarl,
+            &abstract_input_node_id,
+            &vec![],
+            &abstract_input_node_id,
+        );
 
         fn get_ancestors(
             snarl: &Snarl<FlowNodes>,
-            node_id: &OutPinId,
+            node_id: &NodeId,
             checked: &Vec<NodeId>,
-        ) -> Vec<OutPinId> {
-            gen_in_pins_with_node_id(snarl, &node_id.node)
+            abstract_input_node_id: &NodeId,
+        ) -> Vec<NodeId> {
+            println!(
+                "checked: {:?}",
+                checked
+                    .into_iter()
+                    .map(|v| node_title(snarl.get_node(*v).unwrap()))
+                    .collect::<Vec<_>>()
+            );
+
+            gen_in_pins_with_node_id(snarl, &node_id)
                 .into_iter()
                 .flat_map(|(_, out_pin)| {
                     out_pin.into_iter().flat_map(|out_pin| {
-                        if checked.contains(&out_pin.node) {
+                        if out_pin.node == *abstract_input_node_id {
+                            vec![]
+                        } else if checked.contains(&out_pin.node) {
                             vec![]
                         } else {
                             get_ancestors(
                                 snarl,
-                                &out_pin,
-                                &[checked.to_owned(), vec![out_pin.node, node_id.node]].concat(),
+                                &out_pin.node,
+                                &[checked.to_owned(), vec![out_pin.node]].concat(),
+                                abstract_input_node_id,
                             )
                         }
                     })
@@ -352,7 +369,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
             "all_nodes: {:?}",
             all_nodes
                 .into_iter()
-                .map(|v| node_title(snarl.get_node(v.node).unwrap()))
+                .map(|v| node_title(snarl.get_node(v).unwrap()))
                 .collect::<Vec<_>>()
         );
     } else {
