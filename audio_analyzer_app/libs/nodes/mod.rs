@@ -14,6 +14,7 @@ pub mod raw_input;
 pub mod unknown;
 pub mod utils;
 pub mod viewer;
+pub mod output;
 
 pub trait NodeInfo {
     fn name(&self) -> &str;
@@ -124,6 +125,7 @@ impl NodeInfos {
             Box::new(LifterNodeInfo),
             Box::new(EnumerateIterNodeInfo),
             Box::new(LpcNodeInfo),
+            Box::new(OutputNodeInfo),
         ]
     }
 }

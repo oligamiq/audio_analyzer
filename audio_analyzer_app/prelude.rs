@@ -25,6 +25,7 @@ pub mod nodes {
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,
             SchemaViewerNodeInfo,
         },
+        output::{OutputNode, OutputNodes, OutputNodeInfo},
         GraphNode, NodeInfo, NodeInfoTypes, NodeInfoTypesWithData,
     };
     pub use egui_editable_num::EditableOnText;

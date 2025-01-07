@@ -87,6 +87,9 @@ impl FlowNodes {
                 }
             },
             FlowNodes::UnknownNode(unknown_node) => unknown_node.get_result(),
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(_) => unreachable!(),
+            },
         }
     }
 }

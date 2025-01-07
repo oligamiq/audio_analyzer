@@ -12,6 +12,7 @@ pub enum FlowNodes {
     FilterNodes(FilterNodes),
     IterNodes(IterNodes),
     LpcNodes(LpcNodes),
+    OutputNodes(OutputNodes),
     UnknownNode(UnknownNode),
 }
 
@@ -50,6 +51,9 @@ impl FlowNodes {
                 LpcNodes::LpcNode(node) => Box::new(node.to_info()),
             },
             FlowNodes::UnknownNode(unknown_node) => Box::new(unknown_node.to_info()),
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(node) => Box::new(node.to_info()),
+            },
         }
     }
 }
@@ -140,6 +144,9 @@ impl FlowNodesViewer {
             FlowNodes::UnknownNode(unknown_node) => {
                 unknown_node.show_input(&ctx, pin, ui, scale, snarl)
             }
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
         }
     }
 }
@@ -293,6 +300,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             FlowNodes::UnknownNode(_) => {
                 return CustomPinInfo::none_status();
             }
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(_) => {
+                    ui.label("OutputNode");
+                }
+            },
         }
         if !self.running {
             return CustomPinInfo::none_status();

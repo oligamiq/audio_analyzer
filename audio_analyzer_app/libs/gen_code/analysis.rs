@@ -1141,6 +1141,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                 }
             },
             FlowNodes::UnknownNode(_) => todo!(),
+            FlowNodes::OutputNodes(_) => todo!(),
         }
 
         Ok(())
