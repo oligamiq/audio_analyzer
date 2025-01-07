@@ -66,6 +66,11 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
         )
     }
 
+    fn gen_node_name_out_with_clone(node_id: &OutPinId) -> TokenStream {
+        let node_name = gen_node_name_out(node_id);
+        quote::quote! { #node_name.clone() }
+    }
+
     fn gen_node_name_scratch(node: &NodeId, output: usize) -> proc_macro2::Ident {
         proc_macro2::Ident::new(
             &format!("out_{}_{}", node.0, output),
@@ -99,7 +104,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
             })
     }
 
-    let gen_in_pins_with_ident = |node: &NodeId| -> HashMap<usize, Vec<syn::Ident>> {
+    let gen_in_pins_with_ident = |node: &NodeId| -> HashMap<usize, Vec<Ident>> {
         gen_in_pins(node)
             .iter()
             .map(|(out_pin, in_pin)| {
@@ -384,7 +389,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     let out_data = gen_node_name_scratch(&node, 0);
 
                     code.extend(quote::quote! {
-                        let #out_data = #node_name.through_inner(&#in_data.to_vec()).unwrap().first().unwrap().to_owned();
+                        let #out_data = #node_name.through_inner(&#in_data.clone().to_vec()).unwrap().first().unwrap().to_owned();
 
                         {
                             let #fft_size = #fft_size as usize;
@@ -447,7 +452,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 {
                                     #second_in_pin_ident
                                         .into_iter()
-                                        .map(|v| (#first_in_pin_ident, v))
+                                        .map(|v| (#first_in_pin_ident.clone(), v))
                                         .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             },
@@ -456,9 +461,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             NodeInfoTypes::Array1TupleF64F64,
                             quote::quote! {
                                 {
-                                    #first_in_pin_ident
+                                    #first_in_pin_ident.clone()
                                         .into_iter()
-                                        .map(|v| (v, #second_in_pin_ident))
+                                        .map(|v| (v, #second_in_pin_ident.clone()))
                                         .collect::<ndarray::Array1<(f64, f64)>>()
                                 }
                             },
@@ -471,15 +476,17 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                                     if is_first_longer {
                                         #first_in_pin_ident
+                                            .clone()
                                             .slice_move(ndarray::s![..#second_in_pin_ident.len()])
                                             .into_iter()
-                                            .zip(#second_in_pin_ident.into_iter())
+                                            .zip(#second_in_pin_ident.clone().into_iter())
                                             .collect::<ndarray::Array1<(f64, f64)>>()
                                     } else {
                                         #first_in_pin_ident
+                                            .clone()
                                             .slice_move(ndarray::s![..#first_in_pin_ident.len()])
                                             .into_iter()
-                                            .zip(#first_in_pin_ident.into_iter())
+                                            .zip(#first_in_pin_ident.clone().into_iter())
                                             .collect::<ndarray::Array1<(f64, f64)>>()
                                     }
                                 }
@@ -498,7 +505,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     );
 
                     code.extend(quote::quote! {
-                        let #unique_tmp_name = #translator;
+                        let #unique_tmp_name = #translator.clone();
                     });
 
                     unique_tmp_name
@@ -868,7 +875,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         let mut #node_name_fft_size = 400;
                         // calculator
                         let mut #node_name = {
-                            let planner = rustfft::FftPlanner::new();
+                            let mut planner = rustfft::FftPlanner::new();
                             let fft = planner.plan_fft_forward(#node_name_fft_size);
                             fft
                         };
@@ -892,7 +899,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             #node_name_fft_size = #fft_size;
 
                             #node_name = {
-                                let planner = rustfft::FftPlanner::new();
+                                let mut planner = rustfft::FftPlanner::new();
                                 let fft = planner.plan_fft_forward(#node_name_fft_size);
                                 fft
                             };
@@ -900,7 +907,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         }
 
                         let #out_data = {
-                            let mut #out_data = #in_data.to_vec();
+                            let mut #out_data = #in_data.clone().to_vec();
                             #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
                             #out_data.into_iter().collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                         };
@@ -922,7 +929,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         let mut #node_name_fft_size = 400;
                         // calculator
                         let mut #node_name = {
-                            let planner = rustfft::FftPlanner::new();
+                            let mut planner = rustfft::FftPlanner::new();
                             let fft = planner.plan_fft_inverse(#node_name_fft_size);
                             fft
                         };
@@ -946,7 +953,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             #node_name_fft_size = #fft_size;
 
                             #node_name = {
-                                let planner = rustfft::FftPlanner::new();
+                                let mut planner = rustfft::FftPlanner::new();
                                 let fft = planner.plan_fft_inverse(#node_name_fft_size);
                                 fft
                             };
@@ -954,7 +961,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         }
 
                         let #out_data = {
-                            let mut #out_data = #in_data.to_vec();
+                            let mut #out_data = #in_data.clone().to_vec();
                             #node_name.process_with_scratch(#out_data.as_mut_slice(), #node_name_scratch_buf.as_mut_slice());
                             #out_data.into_iter().collect::<ndarray::Array1<num_complex::Complex<f64>>>()
                         };
@@ -1057,12 +1064,22 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                     let out_data = gen_node_name_scratch(&node, 0);
 
+                    let gen_ident = |name: &str| {
+                        Ident::new(
+                            &format!("{iterated_name}_{name}"),
+                            proc_macro2::Span::call_site(),
+                        )
+                    };
+                    let start_ident = gen_ident("start");
+                    let step_ident = gen_ident("step");
+                    let end_ident = gen_ident("end");
+
                     code.extend(quote::quote! {
                         let #out_data = {
-                            let (#start, #step, #end) = (#start as usize, #step as usize, #end as usize);
-                            if #state != (#start, #step, #end) {
-                                #state = (#start, #step, #end);
-                                #iterated_name = (#start..#end).step_by(#step).map(|x| x as f64).collect();
+                            let (#start_ident, #step_ident, #end_ident) = (#start as usize, #step as usize, #end as usize);
+                            if #state != (#start_ident, #step_ident, #end_ident) {
+                                #state = (#start_ident, #step_ident, #end_ident);
+                                #iterated_name = (#start_ident..#end_ident).step_by(#step_ident).map(|x| x as f64).collect();
                             }
 
                             #iterated_name.clone()
@@ -1108,7 +1125,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         }
 
                         let #out_data = linear_predictive_coding::calc_lpc_by_levinson_durbin(
-                            #in_data,
+                            #in_data.view(),
                             #lpc_order,
                         );
                     });
