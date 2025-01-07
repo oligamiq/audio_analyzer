@@ -57,12 +57,6 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     let mut outer_code = proc_macro2::TokenStream::new();
     let mut code = proc_macro2::TokenStream::new();
 
-    let mut next_nodes = get_next_nodes(snarl, abstract_input_node_id);
-
-    let mut checked = vec![abstract_input_node_id];
-
-    println!("Next nodes: {:?}", next_nodes);
-
     fn gen_node_name_out(node_id: &OutPinId) -> proc_macro2::Ident {
         proc_macro2::Ident::new(
             &format!("out_{}_{}", node_id.node.0, node_id.output),
@@ -284,26 +278,40 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
         search_input_type(&snarl, out_pin_id.clone()).unwrap()
     };
 
-    log::info!("Output input node id: {:?}", &next_nodes);
+    let mut all_nodes = snarl
+        .node_ids()
+        .map(|(id, _)| {
+            let before_nodes = gen_in_pins(&id);
+            (
+                id,
+                before_nodes
+                    .iter()
+                    .map(|(out_pin, _)| out_pin.clone())
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+
+    all_nodes.remove(&abstract_input_node_id);
 
     loop {
         let node = {
-            let (_, in_pin) = match next_nodes.pop() {
-                Some(node) => node,
+            let next_node = all_nodes.iter().find(|(_, before_nodes)| {
+                before_nodes
+                    .iter()
+                    .all(|out_pin| !all_nodes.contains_key(&out_pin.node))
+            });
+
+            let node = match next_node {
+                Some((id, _)) => id,
                 None => {
                     log::info!("No more nodes");
                     break;
                 }
-            };
-
-            let node = in_pin.node;
-
-            if checked.contains(&node) {
-                log::info!("Already checked node: {:?}", node);
-
-                continue;
             }
-            checked.push(node);
+            .to_owned();
+
+            all_nodes.remove(&node);
 
             node
         };
@@ -366,7 +374,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     let out_data = gen_node_name_scratch(&node, 0);
 
                     code.extend(quote::quote! {
-                        let #out_data = #node_name.through_inner(#in_data).unwrap().first().unwrap().to_owned();
+                        let #out_data = #node_name.through_inner(&#in_data.to_vec()).unwrap().first().unwrap().to_owned();
 
                         if #node_name_fft_size != #fft_size || #node_name_hop_size != #hop_size {
                             #node_name_fft_size = #fft_size;
@@ -1026,10 +1034,6 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
             },
             FlowNodes::UnknownNode(_) => todo!(),
         }
-
-        next_nodes.extend(get_next_nodes(snarl, node));
-
-        log::info!("Next nodes: {:?}", next_nodes);
     }
 
     let code = first_code(&outer_code, &code);
