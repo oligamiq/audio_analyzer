@@ -40,7 +40,9 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                 proc_macro2::Span::call_site(),
             );
 
-            move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream, hop_size: &proc_macro2::TokenStream| {
+            move |outer_code: &proc_macro2::TokenStream,
+                  next_code: &proc_macro2::TokenStream,
+                  hop_size: &proc_macro2::TokenStream| {
                 quote::quote! {
                     pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
                         use audio_analyzer_core::data::RawDataStreamLayer as _;
@@ -318,10 +320,45 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     let mut before_nodes = gen_in_pins_with_node_id(snarl, &abstract_input_node_id);
 
     if let Some(in_pins) = before_nodes.get(&0) {
+        let out_pin = in_pins.first().unwrap();
+
+        let mut all_nodes = get_ancestors(snarl, out_pin, &vec![]);
+
+        fn get_ancestors(
+            snarl: &Snarl<FlowNodes>,
+            node_id: &OutPinId,
+            checked: &Vec<NodeId>,
+        ) -> Vec<OutPinId> {
+            gen_in_pins_with_node_id(snarl, &node_id.node)
+                .into_iter()
+                .flat_map(|(_, out_pin)| {
+                    out_pin.into_iter().flat_map(|out_pin| {
+                        if checked.contains(&out_pin.node) {
+                            vec![]
+                        } else {
+                            get_ancestors(
+                                snarl,
+                                &out_pin,
+                                &[checked.to_owned(), vec![out_pin.node, node_id.node]].concat(),
+                            )
+                        }
+                    })
+                })
+                .chain(vec![node_id.clone()])
+                .collect::<Vec<_>>()
+        }
+
+        println!(
+            "all_nodes: {:?}",
+            all_nodes
+                .into_iter()
+                .map(|v| node_title(snarl.get_node(v.node).unwrap()))
+                .collect::<Vec<_>>()
+        );
     } else {
         hop_size.extend({
-            let hop_size = snarl.get_node(abstract_input_node_id).unwrap();
-            let hop_size = match hop_size {
+            let abstract_input_node = snarl.get_node(abstract_input_node_id).unwrap();
+            let hop_size = match abstract_input_node {
                 FlowNodes::AbstractInputNode(node) => node.hop_size.get(),
                 _ => unreachable!(),
             };
@@ -1196,7 +1233,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
         gen_code(&node, &snarl, &mut outer_code, &mut code).unwrap();
     }
 
-    let code = first_code(&outer_code, &code);
+    let code = first_code(&outer_code, &code, &hop_size);
 
     Ok(code)
 }
