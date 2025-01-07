@@ -9,7 +9,7 @@ pub enum RawInputNodes {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct AbstractInputNode {
-    hop_size: EditableOnText<usize>,
+    pub(crate) hop_size: EditableOnText<usize>,
 
     input: RawInputNodes,
 }

@@ -40,13 +40,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                 proc_macro2::Span::call_site(),
             );
 
-            move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream| {
+            move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream, hop_size: &proc_macro2::TokenStream| {
                 quote::quote! {
                     pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
                         use audio_analyzer_core::data::RawDataStreamLayer as _;
                         use crate::presets::*;
 
                         let sample_rate = sample_rate as f64;
+
+                        let hop_size = #hop_size;
 
                         #outer_code
 
@@ -74,6 +76,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
     let mut outer_code = proc_macro2::TokenStream::new();
     let mut code = proc_macro2::TokenStream::new();
+    let mut hop_size = proc_macro2::TokenStream::new();
 
     fn node_title(node: &FlowNodes) -> String {
         use convert_case::{Case, Casing};
@@ -312,6 +315,20 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
         search_input_type(&snarl, out_pin_id.clone()).unwrap()
     }
 
+    let mut before_nodes = gen_in_pins_with_node_id(snarl, &abstract_input_node_id);
+
+    if let Some(in_pins) = before_nodes.get(&0) {
+    } else {
+        hop_size.extend({
+            let hop_size = snarl.get_node(abstract_input_node_id).unwrap();
+            let hop_size = match hop_size {
+                FlowNodes::AbstractInputNode(node) => node.hop_size.get(),
+                _ => unreachable!(),
+            };
+            quote::quote! { #hop_size }
+        });
+    }
+
     let mut all_nodes = snarl
         .node_ids()
         .map(|(id, _)| {
@@ -324,9 +341,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     .collect::<Vec<_>>(),
             )
         })
+        .filter(|(id, _)| *id != abstract_input_node_id)
         .collect::<HashMap<_, _>>();
-
-    all_nodes.remove(&abstract_input_node_id);
 
     loop {
         let node = {
@@ -362,7 +378,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
             match snarl.get_node(node).unwrap() {
                 FlowNodes::AbstractInputNode(_) => {
-                    unreachable!("Double abstract input node");
+                    return Err(anyhow::anyhow!("AbstractInputNode is not allowed here"));
                 }
                 FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                     LayerNodes::STFTLayer(stftlayer_node) => {
