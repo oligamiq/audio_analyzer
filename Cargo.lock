@@ -643,6 +643,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "audio_analyzer_core",
+ "linear-predictive-coding",
  "ndarray",
  "num-complex",
  "rayon",

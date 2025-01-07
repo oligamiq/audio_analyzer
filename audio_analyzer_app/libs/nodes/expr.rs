@@ -190,6 +190,11 @@ impl ExprNodes {
                         return Some(0.0);
                     }
                 }
+                "float" => {
+                    if args.len() == 1 {
+                        return Some(args[0]);
+                    }
+                }
                 _ => {}
             }
 

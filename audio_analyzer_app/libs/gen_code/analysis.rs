@@ -4,6 +4,7 @@ use egui::ahash::HashMap;
 use egui_snarl::{InPinId, Node, OutPinId, Snarl};
 use fasteval3::{Compiler, Evaler, Instruction};
 use proc_macro2::TokenStream;
+use quote::ToTokens;
 use syn::Ident;
 
 use crate::prelude::nodes::*;
@@ -150,7 +151,15 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                 "complex" => Some(crate::libs::nodes::expr::Ret::Complex(0., 0.)),
                 _ => unreachable!("Unknown function"),
             },
-            _ => None,
+            _ => {
+                if eval_str.contains("complex") {
+                    Some(crate::libs::nodes::expr::Ret::Complex(0., 0.))
+                } else if eval_str.contains("tuple") {
+                    Some(crate::libs::nodes::expr::Ret::Tuple(vec![0.; 2]))
+                } else {
+                    None
+                }
+            }
         };
         ret
     }
@@ -342,8 +351,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         );
 
                         // keep the state
-                        let mut #node_name_fft_size = 400;
-                        let mut #node_name_hop_size = 160;
+                        let mut #node_name_fft_size = 400usize;
+                        let mut #node_name_hop_size = 160usize;
                     });
 
                     let in_node_names: std::collections::HashMap<
@@ -377,16 +386,21 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     code.extend(quote::quote! {
                         let #out_data = #node_name.through_inner(&#in_data.to_vec()).unwrap().first().unwrap().to_owned();
 
-                        if #node_name_fft_size != #fft_size || #node_name_hop_size != #hop_size {
-                            #node_name_fft_size = #fft_size;
-                            #node_name_hop_size = #hop_size;
+                        {
+                            let #fft_size = #fft_size as usize;
+                            let #hop_size = #hop_size as usize;
 
-                            #node_name = audio_analyzer_core::prelude::ToSpectrogramLayer::new(
-                                audio_analyzer_core::prelude::FftConfig {
-                                    fft_size: #fft_size,
-                                    hop_size: #hop_size,
-                                }
-                            );
+                            if #node_name_fft_size != #fft_size || #node_name_hop_size != #hop_size {
+                                #node_name_fft_size = #fft_size;
+                                #node_name_hop_size = #hop_size;
+
+                                #node_name = audio_analyzer_core::prelude::ToSpectrogramLayer::new(
+                                    audio_analyzer_core::prelude::FftConfig {
+                                        fft_size: #fft_size,
+                                        hop_size: #hop_size,
+                                    }
+                                );
+                            }
                         }
                     });
                 }
@@ -425,7 +439,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     .get(1)
                     .map(|v| gen_node_name_out(v));
 
-                let (in_ty, translator) = if in_pins.len() == 2 {
+                let (in_ty, translator) = if in_pins.get(&0).unwrap().len() == 2 {
                     match (first_ty, second_ty.unwrap()) {
                         (NodeInfoTypes::Number, NodeInfoTypes::Array1F64) => (
                             NodeInfoTypes::Array1TupleF64F64,
@@ -453,7 +467,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             NodeInfoTypes::Array1TupleF64F64,
                             quote::quote! {
                                 {
-                                    let is_first_longer = #first_in_pin_ident.len() > #second_in_pin_ident.len();
+                                    let is_first_longer = #first_in_pin_ident.len() as f64 > #second_in_pin_ident.len() as f64;
 
                                     if is_first_longer {
                                         #first_in_pin_ident
@@ -492,25 +506,91 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                 let normal_eval = expr_nodes.expr.clone();
                 let striped_eval = normal_eval.replace(" ", "");
+
+                fn append_f64(expr_: String) -> String {
+                    let expr = expr_.clone();
+                    // Append `as f64` where you think it is a integer
+                    let mut integers = vec![];
+                    let mut index = 0;
+                    loop {
+                        // find the first integer
+                        let start = match expr[index..]
+                            .find(|c: char| c.is_digit(10))
+                            .map(|v| index + v)
+                        {
+                            Some(v) => v,
+                            None => break,
+                        };
+                        let end = match expr[start..]
+                            .find(|c: char| !c.is_digit(10) && c != '.')
+                            .map(|v| start + v)
+                        {
+                            Some(v) => v - 1,
+                            None => expr.len() - 1,
+                        };
+
+                        let integer = &expr[start..=end];
+
+                        if let Ok(integer) = integer.parse::<i64>() {
+                            integers.push((start, end, integer));
+                        }
+
+                        index = end + 1;
+                    }
+
+                    let mut expr = expr.clone();
+                    let mut diff = 0;
+                    for (_, end, _) in integers {
+                        if end + diff + 1 >= expr.len() {
+                            expr.push_str("f64");
+                            break;
+                        } else {
+                            expr.insert_str(end + diff + 1, "f64");
+                            diff += "f64".len();
+                        }
+                    }
+
+                    expr
+                }
                 let rm_tuple = |s: &str| {
                     assert!(s.starts_with("tuple("));
                     assert!(s.ends_with(")"));
-                    s.strip_prefix("tuple")
+                    let expr = s
+                        .strip_prefix("tuple")
                         .unwrap()
                         .to_owned()
                         .parse::<TokenStream>()
-                        .unwrap()
+                        .unwrap();
+                    let expr = append_f64(
+                        syn::parse2::<syn::Expr>(expr)
+                            .unwrap()
+                            .to_token_stream()
+                            .to_string(),
+                    );
+                    expr.parse::<TokenStream>().unwrap()
                 };
                 let rm_complex = |s: &str| {
                     assert!(s.starts_with("complex("));
                     assert!(s.ends_with(")"));
-                    s.strip_prefix("complex")
+                    let expr = s
+                        .strip_prefix("complex")
                         .unwrap()
                         .to_owned()
                         .parse::<TokenStream>()
-                        .unwrap()
+                        .unwrap();
+                    let expr = append_f64(
+                        syn::parse2::<syn::Expr>(expr)
+                            .unwrap()
+                            .to_token_stream()
+                            .to_string(),
+                    );
+                    expr.parse::<TokenStream>().unwrap()
                 };
-                let normal_eval = normal_eval.parse::<TokenStream>().unwrap();
+                let normal_eval = {
+                    let normal_eval =
+                        append_f64(normal_eval.parse::<TokenStream>().unwrap().to_string());
+                    normal_eval.parse::<TokenStream>().unwrap()
+                };
                 let eval_alt = match in_ty {
                     NodeInfoTypes::Number if outputs_num == 1 => {
                         quote::quote! {
@@ -555,7 +635,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 #translator
                                     .iter()
                                     .map(|&x| {
-                                        #normal_eval as f64
+                                        (#normal_eval) as f64
                                     })
                                     .collect::<ndarray::Array1<f64>>()
                             }
@@ -728,14 +808,14 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 ],
                             ).unwrap();
 
-                            let new_len = extended.len();
+                            let new_len = extended.len() as f64;
 
                             if new_len > #size {
-                                let diff = new_len - #size;
+                                let diff = (new_len - #size) as usize;
                                 let new_buffer = extended.slice(ndarray::s![diff..]);
                                 #node_name = new_buffer.to_owned();
 
-                                assert!(new_buffer.len() == #size);
+                                assert!(new_buffer.len() as f64 == #size);
                             } else {
                                 #node_name = extended.to_owned();
                             }
@@ -979,6 +1059,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                     code.extend(quote::quote! {
                         let #out_data = {
+                            let (#start, #step, #end) = (#start as usize, #step as usize, #end as usize);
                             if #state != (#start, #step, #end) {
                                 #state = (#start, #step, #end);
                                 #iterated_name = (#start..#end).step_by(#step).map(|x| x as f64).collect();

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use audio_analyzer_core::prelude::TestData;
 use rayon::prelude::*;
