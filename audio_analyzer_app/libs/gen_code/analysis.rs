@@ -45,6 +45,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                         loop {
                             let #name: ndarray::Array1<f64> = wav_file.try_recv().unwrap().into_iter().map(|v| v as f64).collect();
+                            if #name.len() == 0 {
+                                break;
+                            }
+
                             let #sample_rate_ident = sample_rate;
 
                             #next_code
