@@ -50,15 +50,20 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
                         #outer_code
 
-                        loop {
-                            let #name: ndarray::Array1<f64> = wav_file.try_recv().unwrap().into_iter().map(|v| v as f64).collect();
-                            if #name.len() == 0 {
-                                break;
+                        let mut buffer = Vec::new();
+                        for frame in wav_file.try_recv() {
+                            buffer.extend(frame);
+
+                            while buffer.len() >= hop_size {
+                                let #name: ndarray::Array1<f64> = buffer.drain(..hop_size).collect::<ndarray::Array1<_>>();
+                                if #name.len() == 0 {
+                                    break;
+                                }
+
+                                let #sample_rate_ident = sample_rate;
+
+                                #next_code
                             }
-
-                            let #sample_rate_ident = sample_rate;
-
-                            #next_code
                         }
                     }
                 }
