@@ -20,18 +20,25 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
     println!("Abstract input node id: {:?}", abstract_input_node_id);
 
-    let first_code = match snarl.get_node(abstract_input_node_id) {
+    let abstract_input_node = snarl.get_node(abstract_input_node_id);
+    let first_code = match abstract_input_node {
         Some(FlowNodes::AbstractInputNode(node)) => {
             // log::info!("Abstract input node: {:?}", node);
 
             println!("call first_code: AbstractInputNode");
 
-            let id = abstract_input_node_id.0;
-            let name =
-                proc_macro2::Ident::new(&format!("out_{}_0", id), proc_macro2::Span::call_site());
+            let title = node_title(abstract_input_node.unwrap());
 
-            let sample_rate_ident =
-                proc_macro2::Ident::new(&format!("out_{}_1", id), proc_macro2::Span::call_site());
+            let id = abstract_input_node_id.0;
+            let name = proc_macro2::Ident::new(
+                &format!("{title}_out_{}_0", id),
+                proc_macro2::Span::call_site(),
+            );
+
+            let sample_rate_ident = proc_macro2::Ident::new(
+                &format!("{title}_out_{}_1", id),
+                proc_macro2::Span::call_site(),
+            );
 
             move |outer_code: &proc_macro2::TokenStream, next_code: &proc_macro2::TokenStream| {
                 quote::quote! {
@@ -63,24 +70,29 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     let mut outer_code = proc_macro2::TokenStream::new();
     let mut code = proc_macro2::TokenStream::new();
 
-    fn gen_node_name_out(node_id: &OutPinId) -> proc_macro2::Ident {
-        proc_macro2::Ident::new(
-            &format!("out_{}_{}", node_id.node.0, node_id.output),
-            proc_macro2::Span::call_site(),
-        )
+    fn node_title(node: &FlowNodes) -> String {
+        use convert_case::{Case, Casing};
+
+        node.to_as_info().name().to_owned().to_case(Case::Snake)
     }
 
-    fn gen_node_name_out_with_clone(node_id: &OutPinId) -> TokenStream {
-        let node_name = gen_node_name_out(node_id);
-        quote::quote! { #node_name.clone() }
-    }
+    let gen_node_name_out = |node_id: &OutPinId| -> proc_macro2::Ident {
+        let title = node_title(snarl.get_node(node_id.node).unwrap());
 
-    fn gen_node_name_scratch(node: &NodeId, output: usize) -> proc_macro2::Ident {
         proc_macro2::Ident::new(
-            &format!("out_{}_{}", node.0, output),
+            &format!("{title}_out_{}_{}", node_id.node.0, node_id.output),
             proc_macro2::Span::call_site(),
         )
-    }
+    };
+
+    let gen_node_name_scratch = |node: &NodeId, output: usize| -> proc_macro2::Ident {
+        let title = node_title(snarl.get_node(node.clone()).unwrap());
+
+        proc_macro2::Ident::new(
+            &format!("{title}_out_{}_{}", node.0, output),
+            proc_macro2::Span::call_site(),
+        )
+    };
 
     fn gen_in_pins_inner(snarl: &Snarl<FlowNodes>, node: &NodeId) -> Vec<(OutPinId, InPinId)> {
         let mut unsorted_in_pins = snarl
@@ -133,15 +145,7 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
     };
 
     let unique_node_name = |node_id: NodeId| {
-        use convert_case::{Case, Casing};
-
-        let node_title = snarl
-            .get_node(node_id)
-            .unwrap()
-            .to_as_info()
-            .name()
-            .to_owned()
-            .to_case(Case::Snake);
+        let node_title = node_title(snarl.get_node(node_id).unwrap());
         let id = node_id.0;
         proc_macro2::Ident::new(
             &format!("{node_title}_{id}"),
@@ -396,8 +400,6 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                     let out_data = gen_node_name_scratch(&node, 0);
 
                     code.extend(quote::quote! {
-                        let #out_data = #node_name.through_inner(&#in_data.clone().to_vec()).unwrap().first().unwrap().to_owned();
-
                         {
                             let #fft_size = #fft_size as usize;
                             let #hop_size = #hop_size as usize;
@@ -414,6 +416,16 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 );
                             }
                         }
+
+                        let #out_data = {
+                            let #out_data = match #node_name.through_inner(&#in_data.clone().to_vec()).unwrap().first() {
+                                Some(v) => v.to_owned(),
+                                None => continue,
+                            };
+                            assert!(!#out_data.is_empty());
+
+                            #out_data
+                        };
                     });
                 }
                 LayerNodes::MelLayer(mel_layer_node) => todo!(),

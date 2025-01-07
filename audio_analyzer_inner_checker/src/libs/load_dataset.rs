@@ -38,36 +38,36 @@ pub fn load_AudioMNIST<T: Send + Sync>(
 
     let data = if is_parallel {
         (1..=60)
-        .into_par_iter()
-        .map(|speaker_n| {
-            (0..9)
-                .into_iter()
-                .flat_map(|j| {
-                    (0..50).into_iter().map(move |k| {
-                        let path = gen_path(speaker_n, j, k);
+            .into_par_iter()
+            .map(|speaker_n| {
+                (0..9)
+                    .into_iter()
+                    .flat_map(|j| {
+                        (0..50).into_iter().map(move |k| {
+                            let path = gen_path(speaker_n, j, k);
 
-                        get_data(&path)
+                            get_data(&path)
+                        })
                     })
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>()
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
     } else {
         (1..=60)
-        .into_iter()
-        .map(|speaker_n| {
-            (0..9)
-                .into_iter()
-                .flat_map(|j| {
-                    (0..50).into_iter().map(move |k| {
-                        let path = gen_path(speaker_n, j, k);
+            .into_iter()
+            .map(|speaker_n| {
+                (0..9)
+                    .into_iter()
+                    .flat_map(|j| {
+                        (0..50).into_iter().map(move |k| {
+                            let path = gen_path(speaker_n, j, k);
 
-                        get_data(&path)
+                            get_data(&path)
+                        })
                     })
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>()
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
     };
 
     let mut speakers = [const { Vec::new() }; 60];
