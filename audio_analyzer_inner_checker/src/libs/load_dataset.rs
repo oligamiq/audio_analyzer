@@ -38,12 +38,14 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
         data_s
     };
 
-    let progress = parking_lot::Mutex::new(pbr::ProgressBar::new(60 * 10 * 50));
+    let current_loaded = save_data.len();
+    let progress = parking_lot::Mutex::new(pbr::ProgressBar::new(
+        (60 * 10 * 50 - current_loaded) as u64,
+    ));
     {
         let mut progress = progress.lock();
-        progress.set(save_data.len() as u64);
-        progress.reset_start_time();
         progress.message("Loading AudioMNIST dataset...");
+        progress.message(&format!("current loaded: {current_loaded}"));
         progress.message("analyzing...");
     }
 
