@@ -8,6 +8,8 @@ use dashmap::DashMap;
 pub mod fn_;
 pub mod libs;
 pub mod presets;
+pub mod brotli_system;
+pub mod deserialize;
 
 const MNIST_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");
@@ -23,14 +25,23 @@ fn main() {
 
     let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.json.br");
     let save_data: MapType<_> = match std::fs::File::open(save_data_path).map(|f| {
+        let now = std::time::Instant::now();
         let reader = std::io::BufReader::new(f);
         let mut decompressor = brotli::Decompressor::new(reader, 4096);
         let mut str = String::new();
         let str = decompressor.read_to_string(&mut str).map(|_| str);
-        str.map(|str| json5::from_str::<Vec<(AudioMNISTKey, _)>>(&str))
+        println!("decompress time: {:?}", now.elapsed());
+        str.map(|str| {
+            let now = std::time::Instant::now();
+            let str = serde_json::from_str::<Vec<(AudioMNISTKey, _)>>(&str);
+            println!("parse time: {:?}", now.elapsed());
+            str
+        })
     }) {
         Ok(Ok(Ok(save_data))) => {
+            let now = std::time::Instant::now();
             let data = vec_to_dash_map(&save_data);
+            println!("load time: {:?}", now.elapsed());
             println!("load save data: number of keys: {}", data.len());
             data
         }
@@ -43,17 +54,21 @@ fn main() {
             DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
         }
     };
-    let boxed_save_data = Box::new(save_data);
-    let leaked_save_data: &'static MapType<_> = Box::leak(boxed_save_data);
+    let leaked_save_data_mut: &'static mut MapType<_> = Box::leak(Box::new(save_data));
+    let leaked_save_data: &'static MapType<_> = leaked_save_data_mut;
 
-    let stopper = AtomicBool::new(false);
-    let boxed_stopper = Box::new(stopper);
-    let leaked_stopper: &'static AtomicBool = Box::leak(boxed_stopper);
+    let leaked_stopper_mut: &'static mut AtomicBool = Box::leak(Box::new(AtomicBool::new(false)));
+    let leaked_stopper: &'static AtomicBool = leaked_stopper_mut;
 
     let (blocker, waiter) = std::sync::mpsc::channel::<()>();
 
     ctrlc::set_handler(move || {
-        save_with_compress_file(leaked_save_data, save_data_path, leaked_stopper, &blocker);
+        save_with_compress_file(
+            leaked_save_data,
+            save_data_path,
+            Some(leaked_stopper),
+            Some(&blocker),
+        );
     })
     .unwrap();
 
@@ -70,10 +85,17 @@ fn main() {
         return;
     }
 
-    save_with_compress_file(leaked_save_data, save_data_path, leaked_stopper, &blocker);
-    waiter.recv().unwrap();
-    std::mem::drop(unsafe { Box::from_raw(leaked_save_data) });
-    std::mem::drop(unsafe { Box::from_raw(leaked_stopper) });
+    ctrlc::set_handler(|| {}).unwrap();
+
+    save_with_compress_file(leaked_save_data, save_data_path, None, None);
+
+    fn release<T>(ptr: &T) {
+        let ptr = ptr as *const T;
+        std::mem::drop(unsafe { Box::<T>::from_raw(ptr as *mut T) });
+    }
+    release(leaked_save_data_mut);
+    release(leaked_stopper_mut);
+    std::mem::drop(waiter);
 
     println!("{:?}", data);
 
@@ -112,20 +134,31 @@ fn save_with_compress_file<
 >(
     save_data: &DashMap<K, V, Hasher>,
     save_data_path: &str,
-    stopper: &AtomicBool,
-    blocker: &std::sync::mpsc::Sender<()>,
+    stopper: Option<&AtomicBool>,
+    blocker: Option<&std::sync::mpsc::Sender<()>>,
 ) {
-    stopper.store(true, std::sync::atomic::Ordering::SeqCst);
+    stopper.map(|stopper| stopper.store(true, std::sync::atomic::Ordering::SeqCst));
     println!("\n\rsaving...");
+    let now = std::time::Instant::now();
     let saveable_data = dash_map_to_vec(save_data);
-    let str = json5::to_string(&saveable_data).unwrap();
+    let str = serde_json::to_string(&saveable_data).unwrap();
     let mut params = brotli::enc::BrotliEncoderParams::default();
     params.quality = 4;
-    let mut out_data = Vec::new();
-    match brotli::BrotliCompress(&mut str.as_bytes(), &mut out_data, &params) {
-        Ok(_) => println!("save success"),
-        Err(e) => println!("failed to save: {:?}", e),
+
+    let bytes = str.as_bytes().to_owned();
+
+    let out_data = match brotli_system::compress_multi_thread(&params, bytes) {
+        Ok(out_data) => {
+            println!("save success");
+            out_data
+        },
+        Err(e) => {
+            println!("failed to save: {:?}", e);
+            return;
+        }
     };
+
     std::fs::write(save_data_path, out_data).unwrap();
-    blocker.send(()).unwrap();
+    println!("save time: {:?}", now.elapsed());
+    blocker.map(|blocker| blocker.send(()));
 }

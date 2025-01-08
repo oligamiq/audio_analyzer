@@ -1,7 +1,7 @@
 pub fn analyzer(
     wav_file: &mut audio_analyzer_core::prelude::TestData,
     sample_rate: u32,
-) -> Vec<Vec<f64>> {
+) -> Vec<Vec<Option<f64>>> {
     use crate::presets::*;
     use audio_analyzer_core::data::RawDataStreamLayer as _;
     let sample_rate = sample_rate as f64;
@@ -82,7 +82,17 @@ pub fn analyzer(
                 expr_nodes_out_36_0.view(),
                 100usize,
             );
-            lpc_node_out_30_0s.push(lpc_node_out_30_0.into_iter().collect::<Vec<_>>());
+            lpc_node_out_30_0s.push(lpc_node_out_30_0.into_iter().map(
+                |x| {
+                    if x.is_nan() {
+                        None
+                    } else if x.is_infinite() {
+                        None
+                    } else {
+                        Some(x)
+                    }
+                },
+            ).collect::<Vec<_>>());
         }
     }
 
