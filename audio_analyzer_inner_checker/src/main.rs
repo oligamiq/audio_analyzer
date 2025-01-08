@@ -1,8 +1,6 @@
 // $ENV:RUSTFLAGS="-C target-cpu=native"
 // cargo run -p audio_analyzer_inner_checker -r
 
-use std::collections::HashSet;
-
 use dashmap::DashMap;
 
 pub mod fn_;
@@ -23,7 +21,7 @@ fn main() {
 
     let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.json");
     let save_data: MapType<_> = if let Ok(Ok(save_data)) = std::fs::read_to_string(save_data_path)
-        .map(|v| serde_json::from_str::<HashSet<(AudioMNISTKey, _), gxhash::GxBuildHasher>>(&v))
+        .map(|v| serde_json::from_str::<Vec<(AudioMNISTKey, _)>>(&v))
     {
         let data = hash_set_to_dash_map(save_data);
         println!("load save data: number of keys: {}", data.len());
@@ -58,19 +56,19 @@ fn main() {
     println!("{:?}", data);
 }
 
-fn hash_set_to_dash_map<K: std::hash::Hash + std::cmp::Eq, V: std::hash::Hash + std::cmp::Eq>(
-    hash_set: HashSet<(K, V), gxhash::GxBuildHasher>,
+fn hash_set_to_dash_map<K: Eq + std::hash::Hash + Clone, V: Clone>(
+    hash_set: Vec<(K, V)>,
 ) -> DashMap<K, V, gxhash::GxBuildHasher> {
     hash_set
         .into_iter()
         .collect::<DashMap<K, V, gxhash::GxBuildHasher>>()
 }
 
-fn dash_map_to_hash_set<K: std::hash::Hash + std::cmp::Eq, V: std::hash::Hash + std::cmp::Eq>(
+fn dash_map_to_hash_set<K: Eq + std::hash::Hash + Clone, V: Clone>(
     dash_map: DashMap<K, V, gxhash::GxBuildHasher>,
-) -> HashSet<(K, V), gxhash::GxBuildHasher> {
+) -> Vec<(K, V)> {
     dash_map
         .into_iter()
         .map(|(k, v)| (k, v))
-        .collect::<HashSet<(K, V), gxhash::GxBuildHasher>>()
+        .collect::<Vec<(K, V)>>()
 }

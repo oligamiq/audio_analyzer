@@ -1,4 +1,4 @@
-pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
+pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) -> Vec<Vec<f64>> {
     use crate::presets::*;
     use audio_analyzer_core::data::RawDataStreamLayer as _;
     let sample_rate = sample_rate as f64;
@@ -25,6 +25,7 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
     let mut cycle_buffer_node_4 = ndarray::Array1::<f64>::zeros(0);
     let mut lpc_node_30_lpc_order = 10;
     let mut buffer = Vec::new();
+    let mut lpc_node_out_30_0s = Vec::new();
     while let Some(frame) = wav_file.try_recv() {
         buffer.extend(frame);
         while buffer.len() >= hop_size {
@@ -78,6 +79,9 @@ pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_ra
                 expr_nodes_out_36_0.view(),
                 100usize,
             );
+            lpc_node_out_30_0s.push(lpc_node_out_30_0.into_iter().collect::<Vec<_>>());
         }
     }
+
+    return lpc_node_out_30_0s;
 }
