@@ -27,10 +27,10 @@ fn main() {
         let mut decompressor = brotli::Decompressor::new(reader, 4096);
         let mut str = String::new();
         let str = decompressor.read_to_string(&mut str).map(|_| str);
-        str.map(|str| json5::from_str(&str))
+        str.map(|str| json5::from_str::<Vec<(AudioMNISTKey, _)>>(&str))
     }) {
         Ok(Ok(Ok(save_data))) => {
-            let data = vec_to_dash_map(save_data);
+            let data = vec_to_dash_map(&save_data);
             println!("load save data: number of keys: {}", data.len());
             data
         }
@@ -53,22 +53,7 @@ fn main() {
     let (blocker, waiter) = std::sync::mpsc::channel::<()>();
 
     ctrlc::set_handler(move || {
-        leaked_stopper.store(true, std::sync::atomic::Ordering::SeqCst);
-        println!("\n\rsaving...");
-        let saveable_data = dash_map_to_vec(leaked_save_data.clone());
-        let str = json5::to_string(&saveable_data).unwrap();
-        let mut params = brotli::enc::BrotliEncoderParams::default();
-        params.quality = 4;
-        match brotli::BrotliCompress(
-            &mut str.as_bytes(),
-            &mut std::fs::File::create(save_data_path).unwrap(),
-            &params,
-        ) {
-            Ok(_) => println!("save success"),
-            Err(e) => println!("failed to save: {:?}", e),
-        };
-        blocker.send(()).unwrap();
-        std::process::exit(0);
+        save_with_compress_file(leaked_save_data, save_data_path, leaked_stopper, &blocker);
     })
     .unwrap();
 
@@ -92,18 +77,50 @@ fn main() {
     println!("{:?}", data);
 }
 
-fn vec_to_dash_map<K: Eq + std::hash::Hash + Clone, V: Clone>(
-    vec: Vec<(K, V)>,
-) -> DashMap<K, V, gxhash::GxBuildHasher> {
-    vec.into_iter()
-        .collect::<DashMap<K, V, gxhash::GxBuildHasher>>()
+fn vec_to_dash_map<
+    K: Eq + std::hash::Hash + Clone,
+    V: Clone,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+>(
+    vec: &[(K, V)],
+) -> DashMap<K, V, Hasher> {
+    vec.into_iter().cloned().collect::<DashMap<K, V, Hasher>>()
 }
 
-fn dash_map_to_vec<K: Eq + std::hash::Hash + Clone, V: Clone>(
-    dash_map: DashMap<K, V, gxhash::GxBuildHasher>,
+fn dash_map_to_vec<
+    K: Eq + std::hash::Hash + Clone,
+    V: Clone,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+>(
+    dash_map: &DashMap<K, V, Hasher>,
 ) -> Vec<(K, V)> {
     dash_map
-        .into_iter()
-        .map(|(k, v)| (k, v))
+        .iter()
+        .map(|multi| (multi.key().clone(), multi.value().clone()))
         .collect::<Vec<(K, V)>>()
+}
+
+fn save_with_compress_file<
+    K: Eq + std::hash::Hash + Clone + serde::Serialize,
+    V: Clone + serde::Serialize,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+>(
+    save_data: &DashMap<K, V, Hasher>,
+    save_data_path: &str,
+    stopper: &AtomicBool,
+    blocker: &std::sync::mpsc::Sender<()>,
+) {
+    stopper.store(true, std::sync::atomic::Ordering::SeqCst);
+    println!("\n\rsaving...");
+    let saveable_data = dash_map_to_vec(save_data);
+    let str = json5::to_string(&saveable_data).unwrap();
+    let mut params = brotli::enc::BrotliEncoderParams::default();
+    params.quality = 4;
+    let mut out_data = Vec::new();
+    match brotli::BrotliCompress(&mut str.as_bytes(), &mut out_data, &params) {
+        Ok(_) => println!("save success"),
+        Err(e) => println!("failed to save: {:?}", e),
+    };
+    std::fs::write(save_data_path, out_data).unwrap();
+    blocker.send(()).unwrap();
 }

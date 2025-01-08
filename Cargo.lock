@@ -671,6 +671,7 @@ dependencies = [
  "pbr",
  "rayon",
  "rustfft",
+ "serde",
  "serde_json",
  "walkdir",
 ]
