@@ -19,3 +19,4 @@ linear-predictive-coding = "0.2.2"
 gxhash = "3.4.1"
 ctrlc = { version = "3.4.5", features = ["termination"] }
 parking_lot = "0.12.3"
+json5 = "0.4.1"

@@ -20,27 +20,33 @@ fn main() {
     type MapType<V> = DashMap<AudioMNISTKey, V, gxhash::GxBuildHasher>;
 
     let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.json");
-    let save_data: MapType<_> = if let Ok(Ok(save_data)) = std::fs::read_to_string(save_data_path)
-        .map(|v| serde_json::from_str::<Vec<(AudioMNISTKey, _)>>(&v))
+    let save_data: MapType<_> = match std::fs::read_to_string(save_data_path)
+        .map(|v| json5::from_str::<Vec<(AudioMNISTKey, _)>>(&v))
     {
-        let data = hash_set_to_dash_map(save_data);
-        println!("load save data: number of keys: {}", data.len());
-        data
-    } else {
-        let hasher = gxhash::GxBuildHasher::default();
-        let save_data = DashMap::with_capacity_and_hasher(60 * 10 * 50, hasher);
-        save_data
+        Ok(Ok(save_data)) => {
+            let data = vec_to_dash_map(save_data);
+            println!("load save data: number of keys: {}", data.len());
+            data
+        }
+        Err(e) => {
+            println!("failed to load save data: {:?}", e);
+            DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
+        }
+        Ok(Err(e)) => {
+            println!("failed to load save data: {:?}", e);
+            DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
+        }
     };
     let boxed_save_data = Box::new(save_data);
     let leaked_save_data: &'static mut MapType<_> = Box::leak(boxed_save_data);
     let static_ref_save_data: &'static MapType<_> = leaked_save_data;
 
     ctrlc::set_handler(move || {
-        let saveable_data = dash_map_to_hash_set(static_ref_save_data.clone());
+        let saveable_data = dash_map_to_vec(static_ref_save_data.clone());
 
         std::fs::write(
             save_data_path,
-            serde_json::to_string(&saveable_data).unwrap(),
+            json5::to_string(&saveable_data).unwrap(),
         )
         .unwrap();
         std::process::exit(0);
@@ -56,15 +62,14 @@ fn main() {
     println!("{:?}", data);
 }
 
-fn hash_set_to_dash_map<K: Eq + std::hash::Hash + Clone, V: Clone>(
-    hash_set: Vec<(K, V)>,
+fn vec_to_dash_map<K: Eq + std::hash::Hash + Clone, V: Clone>(
+    vec: Vec<(K, V)>,
 ) -> DashMap<K, V, gxhash::GxBuildHasher> {
-    hash_set
-        .into_iter()
+    vec.into_iter()
         .collect::<DashMap<K, V, gxhash::GxBuildHasher>>()
 }
 
-fn dash_map_to_hash_set<K: Eq + std::hash::Hash + Clone, V: Clone>(
+fn dash_map_to_vec<K: Eq + std::hash::Hash + Clone, V: Clone>(
     dash_map: DashMap<K, V, gxhash::GxBuildHasher>,
 ) -> Vec<(K, V)> {
     dash_map

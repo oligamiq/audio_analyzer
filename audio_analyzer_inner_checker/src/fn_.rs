@@ -1,4 +1,7 @@
-pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) -> Vec<Vec<f64>> {
+pub fn analyzer(
+    wav_file: &mut audio_analyzer_core::prelude::TestData,
+    sample_rate: u32,
+) -> Vec<Vec<f64>> {
     use crate::presets::*;
     use audio_analyzer_core::data::RawDataStreamLayer as _;
     let sample_rate = sample_rate as f64;
