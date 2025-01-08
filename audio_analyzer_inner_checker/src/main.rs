@@ -70,6 +70,11 @@ fn main() {
         return;
     }
 
+    save_with_compress_file(leaked_save_data, save_data_path, leaked_stopper, &blocker);
+    waiter.recv().unwrap();
+    std::mem::drop(unsafe { Box::from_raw(leaked_save_data) });
+    std::mem::drop(unsafe { Box::from_raw(leaked_stopper) });
+
     println!("{:?}", data);
 
     let data = load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
