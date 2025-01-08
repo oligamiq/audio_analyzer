@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use audio_analyzer_core::prelude::TestData;
+use dashmap::DashMap;
 use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -9,10 +10,11 @@ pub struct AudioMNISTData<T> {
 }
 
 #[allow(non_snake_case)]
-pub fn load_AudioMNIST<T: Send + Sync>(
+pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
     base_path: &str,
     analyzer: impl Fn(&mut TestData, u32) -> T + Send + Sync,
     is_parallel: bool,
+    save_data: &DashMap<(usize, usize, usize), T, gxhash::GxBuildHasher>,
 ) -> anyhow::Result<AudioMNISTData<T>> {
     let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
         assert!(say_n <= 9);
@@ -36,37 +38,64 @@ pub fn load_AudioMNIST<T: Send + Sync>(
         data_s
     };
 
-    let progress = std::sync::Arc::new(std::sync::Mutex::new(pbr::ProgressBar::new(60 * 10 * 50)));
-    println!("Loading AudioMNIST dataset...");
+    let progress = parking_lot::Mutex::new(pbr::ProgressBar::new(60 * 10 * 50));
+    {
+        let mut progress = progress.lock();
+        progress.set(save_data.len() as u64);
+        progress.reset_start_time();
+        progress.message("Loading AudioMNIST dataset...");
+        progress.message("analyzing...");
+    }
 
-    let data = if is_parallel {
-        let ret = (1..=60)
+    if is_parallel {
+        (1..=60)
             .into_par_iter()
             .map(|speaker_n| {
-                (0..9)
-                    .into_iter()
-                    .flat_map(|j| {
-                        let progress = progress.clone();
+                for j in 0..9 {
+                    for k in 0..50 {
+                        if save_data.contains_key(&(speaker_n, j, k)) {
+                            continue;
+                        }
 
-                        (0..50).into_iter().map(move |k| {
-                            let path = gen_path(speaker_n, j, k);
+                        let path = gen_path(speaker_n, j, k);
 
-                            progress.clone().lock().unwrap().inc();
-                            get_data(&path)
-                        })
-                    })
-                    .collect::<Vec<_>>()
+                        progress.lock().inc();
+                        save_data.insert((speaker_n, j, k), get_data(&path));
+                    }
+                }
             })
-            .collect::<Vec<_>>();
+            .count();
 
         progress
             .lock()
-            .unwrap()
             .finish_println("Finished loading AudioMNIST dataset.");
 
-        ret
+        let mut speakers = [const { Vec::new() }; 60];
+
+        let speaker_data = (1..=60)
+            .into_par_iter()
+            .map(|speaker_n| {
+                let mut data = Vec::with_capacity(9 * 50);
+
+                for j in 0..9 {
+                    for k in 0..50 {
+                        let data_s = save_data.get(&(speaker_n, j, k)).unwrap().to_owned();
+
+                        data.push(data_s);
+                    }
+                }
+
+                data
+            })
+            .collect::<Vec<_>>();
+
+        for (i, speaker) in speaker_data.into_iter().enumerate() {
+            speakers[i] = speaker;
+        }
+
+        return Ok(AudioMNISTData { speakers });
     } else {
-        (1..=60)
+        let data = (1..=60)
             .into_iter()
             .map(|speaker_n| {
                 (0..9)
@@ -80,16 +109,16 @@ pub fn load_AudioMNIST<T: Send + Sync>(
                     })
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>()
-    };
+            .collect::<Vec<_>>();
 
-    let mut speakers = [const { Vec::new() }; 60];
+        let mut speakers = [const { Vec::new() }; 60];
 
-    for (i, speaker) in data.into_iter().enumerate() {
-        speakers[i] = speaker;
+        for (i, speaker) in data.into_iter().enumerate() {
+            speakers[i] = speaker;
+        }
+
+        return Ok(AudioMNISTData { speakers });
     }
-
-    Ok(AudioMNISTData { speakers })
 }
 
 #[derive(Debug, Clone)]

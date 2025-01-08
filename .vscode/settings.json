@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "BAVED",
         "bindgen",
         "Calibri",
         "crossterm",
@@ -9,11 +10,13 @@
         "Evaler",
         "fasteval",
         "fundsp",
+        "gxhash",
         "IDCT",
         "IFFT",
         "liftered",
         "LOGLEVEL",
         "mels",
+        "MNIST",
         "ndarray",
         "Quefrency",
         "ratatui",
