@@ -5,16 +5,17 @@ use std::{io::Read, sync::atomic::AtomicBool};
 
 use dashmap::DashMap;
 
+pub mod brotli_system;
+pub mod deserialize;
 pub mod fn_;
 pub mod libs;
 pub mod presets;
-pub mod brotli_system;
-pub mod deserialize;
 
 const MNIST_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");
 const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/BAVED/remake");
 
+use deserialize::DashMapWrapper;
 use libs::load_dataset::{load_AudioMNIST, load_BAVED};
 
 fn main() {
@@ -32,18 +33,17 @@ fn main() {
         let str = decompressor.read_to_string(&mut str).map(|_| str);
         println!("decompress time: {:?}", now.elapsed());
         str.map(|str| {
-            let now = std::time::Instant::now();
-            let str = serde_json::from_str::<Vec<(AudioMNISTKey, _)>>(&str);
-            println!("parse time: {:?}", now.elapsed());
-            str
-        })
+                let now = std::time::Instant::now();
+                let str = serde_json::from_str::<
+                    DashMapWrapper<AudioMNISTKey, _, gxhash::GxBuildHasher>,
+                > (&str);
+                println!("parse time: {:?}", now.elapsed());
+                str
+            })
     }) {
         Ok(Ok(Ok(save_data))) => {
-            let now = std::time::Instant::now();
-            let data = vec_to_dash_map(&save_data);
-            println!("load time: {:?}", now.elapsed());
-            println!("load save data: number of keys: {}", data.len());
-            data
+            println!("loaded save data");
+            save_data.dash_map
         }
         Ok(Ok(Err(e))) => {
             println!("failed to load save data: {:?}", e);
@@ -104,16 +104,6 @@ fn main() {
     println!("{:?}", data);
 }
 
-fn vec_to_dash_map<
-    K: Eq + std::hash::Hash + Clone,
-    V: Clone,
-    Hasher: Default + std::hash::BuildHasher + Clone,
->(
-    vec: &[(K, V)],
-) -> DashMap<K, V, Hasher> {
-    vec.into_iter().cloned().collect::<DashMap<K, V, Hasher>>()
-}
-
 fn dash_map_to_vec<
     K: Eq + std::hash::Hash + Clone,
     V: Clone,
@@ -137,7 +127,12 @@ fn save_with_compress_file<
     stopper: Option<&AtomicBool>,
     blocker: Option<&std::sync::mpsc::Sender<()>>,
 ) {
-    stopper.map(|stopper| stopper.store(true, std::sync::atomic::Ordering::SeqCst));
+    if let Some(stopper) = stopper {
+        if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+            std::process::exit(0);
+        }
+        stopper.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
     println!("\n\rsaving...");
     let now = std::time::Instant::now();
     let saveable_data = dash_map_to_vec(save_data);
@@ -147,16 +142,19 @@ fn save_with_compress_file<
 
     let bytes = str.as_bytes().to_owned();
 
+    let compress_now = std::time::Instant::now();
     let out_data = match brotli_system::compress_multi_thread(&params, bytes) {
         Ok(out_data) => {
             println!("save success");
             out_data
-        },
+        }
         Err(e) => {
             println!("failed to save: {:?}", e);
             return;
         }
     };
+
+    println!("compress time: {:?}", compress_now.elapsed());
 
     std::fs::write(save_data_path, out_data).unwrap();
     println!("save time: {:?}", now.elapsed());

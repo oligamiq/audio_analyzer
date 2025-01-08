@@ -1,5 +1,7 @@
 use std::ops;
 
+use brotli::enc::BrotliEncoderMaxCompressedSizeMulti;
+
 #[derive(Clone, Copy, Default)]
 pub struct HeapAllocator {}
 
@@ -61,26 +63,32 @@ impl<T> alloc_no_stdlib::SliceWrapperMut<T> for Rebox<T> {
 }
 
 pub fn compress_multi_thread(
-    params: &brotli::enc::BrotliEncoderParams, input: Vec<u8>
+    params: &brotli::enc::BrotliEncoderParams,
+    input: Vec<u8>,
 ) -> Result<Vec<u8>, brotli::enc::BrotliEncoderThreadError> {
     let max_threads = num_cpus::get();
+
+    let max_threads = max_threads - 1;
+
     let mut alloc_array = vec![0; max_threads]
         .iter()
         .map(|_| get_alloc())
         .collect::<Vec<_>>()
         .into_boxed_slice();
-    let mut out_data = Vec::new();
+    let mut out_data = vec![0u8; BrotliEncoderMaxCompressedSizeMulti(input.len(), max_threads)];
 
     brotli::enc::compress_worker_pool(
         &params,
         &mut brotli::enc::Owned::new(Rebox::from(input)),
-        &mut out_data,
+        out_data.as_mut_slice(),
         &mut alloc_array,
         &mut brotli::enc::worker_pool::new_work_pool(max_threads),
-    ).map(|_| out_data)
+    )
+    .map(|size| out_data[..size].to_vec())
 }
 
-fn get_alloc<ReturnValue, Join>() -> brotli::enc::SendAlloc<ReturnValue, brotli::enc::UnionHasher::<HeapAllocator>, HeapAllocator, Join>
+fn get_alloc<ReturnValue, Join>(
+) -> brotli::enc::SendAlloc<ReturnValue, brotli::enc::UnionHasher<HeapAllocator>, HeapAllocator, Join>
 where
     ReturnValue: Send + 'static,
     Join: brotli::enc::threading::Joinable<ReturnValue, brotli::enc::BrotliEncoderThreadError>,
