@@ -15,6 +15,7 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
     analyzer: impl Fn(&mut TestData, u32) -> T + Send + Sync,
     is_parallel: bool,
     save_data: &DashMap<(usize, usize, usize), T, gxhash::GxBuildHasher>,
+    stopper: &std::sync::atomic::AtomicBool,
 ) -> anyhow::Result<AudioMNISTData<T>> {
     let gen_path = |speaker_n: usize, say_n: usize, num_n: usize| {
         assert!(say_n <= 9);
@@ -59,6 +60,10 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
                             continue;
                         }
 
+                        if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
+
                         let path = gen_path(speaker_n, j, k);
 
                         progress.lock().inc();
@@ -67,6 +72,12 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
                 }
             })
             .count();
+
+        if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+            return Ok(AudioMNISTData {
+                speakers: [const { Vec::new() }; 60],
+            });
+        }
 
         progress
             .lock()
