@@ -141,8 +141,12 @@ fn save_with_compress_file<
     params.quality = 4;
 
     let bytes = str.as_bytes().to_owned();
+    std::mem::drop(str);
 
     let compress_now = std::time::Instant::now();
+
+    println!("compressing...");
+
     let out_data = match brotli_system::compress_multi_thread(&params, bytes) {
         Ok(out_data) => {
             println!("save success");

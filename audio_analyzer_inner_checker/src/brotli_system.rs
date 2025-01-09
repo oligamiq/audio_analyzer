@@ -75,7 +75,7 @@ pub fn compress_multi_thread(
         .map(|_| get_alloc())
         .collect::<Vec<_>>()
         .into_boxed_slice();
-    let mut out_data = vec![0u8; BrotliEncoderMaxCompressedSizeMulti(input.len(), max_threads)];
+    let mut out_data = vec![0u8; BrotliEncoderMaxCompressedSizeMulti(input.len(), max_threads) / 2];
 
     brotli::enc::compress_worker_pool(
         &params,
