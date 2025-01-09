@@ -92,7 +92,8 @@ where
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         serialize_dash_map(self.dash_map, serializer)
     }
 }

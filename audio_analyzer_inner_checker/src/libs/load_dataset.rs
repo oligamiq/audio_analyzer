@@ -3,10 +3,37 @@ use std::collections::HashMap;
 use audio_analyzer_core::prelude::TestData;
 use dashmap::DashMap;
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub struct AudioMNISTData<T> {
     pub speakers: [Vec<T>; 60],
+}
+
+impl<'de, T: for<'b> Deserialize<'b>> Deserialize<'de> for AudioMNISTData<T> {
+    fn deserialize<D>(deserializer: D) -> Result<AudioMNISTData<T>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let speakers_array = Vec::<Vec<T>>::deserialize(deserializer)?;
+
+        let mut speakers = [const { Vec::new() }; 60];
+
+        for (i, speaker) in speakers_array.into_iter().enumerate() {
+            speakers[i] = speaker;
+        }
+
+        Ok(AudioMNISTData { speakers })
+    }
+}
+
+impl<T: Serialize> Serialize for AudioMNISTData<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.speakers.serialize(serializer)
+    }
 }
 
 #[allow(non_snake_case)]
@@ -83,6 +110,8 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
             .lock()
             .finish_println("Finished loading AudioMNIST dataset.");
 
+        let now = std::time::Instant::now();
+
         let mut speakers = [const { Vec::new() }; 60];
 
         let speaker_data = (1..=60)
@@ -102,9 +131,13 @@ pub fn load_AudioMNIST<T: Send + Sync + ToOwned<Owned = T>>(
             })
             .collect::<Vec<_>>();
 
+        println!("\n\rto Vec: {:?}", now.elapsed());
+
         for (i, speaker) in speaker_data.into_iter().enumerate() {
             speakers[i] = speaker;
         }
+
+        println!("to array: {:?}", now.elapsed());
 
         return Ok(AudioMNISTData { speakers });
     } else {
