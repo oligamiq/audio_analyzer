@@ -106,7 +106,7 @@ fn main() {
             );
         });
 
-        let data = load_AudioMNIST(
+        let data: AudioMNISTData<Vec<Vec<Option<f64>>>> = load_AudioMNIST(
             MNIST_BASE_PATH,
             analyzer,
             true,

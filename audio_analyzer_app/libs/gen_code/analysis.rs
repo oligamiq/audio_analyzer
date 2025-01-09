@@ -45,9 +45,10 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
 
             move |outer_code: &proc_macro2::TokenStream,
                   next_code: &proc_macro2::TokenStream,
-                  hop_size: &proc_macro2::TokenStream| {
+                  hop_size: &proc_macro2::TokenStream,
+                  ret_type: &proc_macro2::TokenStream| {
                 quote::quote! {
-                    pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) {
+                    pub fn analyzer(wav_file: &mut audio_analyzer_core::prelude::TestData, sample_rate: u32) -> #ret_type {
                         use audio_analyzer_core::data::RawDataStreamLayer as _;
                         use crate::presets::*;
 
@@ -57,6 +58,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         let hop_size = hop_size as usize;
 
                         #outer_code
+
+                        let mut return_data = Vec::new();
 
                         let mut buffer = Vec::new();
                         while let Some(frame) = wav_file.try_recv() {
@@ -73,6 +76,8 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                                 #next_code
                             }
                         }
+
+                        return return_data;
                     }
                 }
             }
@@ -1326,7 +1331,64 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
         gen_code(&node, &snarl, &mut outer_code, &mut code).unwrap();
     }
 
-    let code = first_code(&outer_code, &code, &hop_size);
+    let all_nodes = snarl
+        .nodes_ids_data()
+        .filter_map(|(id, data)| {
+            if let FlowNodes::OutputNodes(OutputNodes::OutputNode(..)) = data.value {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .flat_map(|id| {
+            gen_in_pins_with_node_id(&snarl, &id)
+                .get(&0)
+                .unwrap()
+                .clone()
+        })
+        .map(|v| gen_node_name_out(snarl, &v))
+        .map(|v| {
+            quote::quote! {
+                #v
+                .into_iter()
+                .map(|x| {
+                    if x.is_nan() {
+                        None
+                    } else if x.is_infinite() {
+                        None
+                    } else {
+                        Some(x)
+                    }
+                })
+                .collect::<Vec<Option<f64>>>()
+            }
+        })
+        .collect::<Vec<_>>();
+
+    code.extend(if all_nodes.len() == 1 {
+        let all_nodes = all_nodes.first().unwrap();
+        quote::quote! {
+            return_data.push(#all_nodes);
+        }
+    } else {
+        quote::quote! {
+            return_data.push((#(#all_nodes),*));
+        }
+    });
+
+    let ret_type = all_nodes
+        .iter()
+        .map(|_| quote::quote! { Vec<Option<f64>> })
+        .collect::<Vec<_>>();
+
+    let ret_type = if all_nodes.len() == 1 {
+        let ret_type = ret_type.first().unwrap();
+        quote::quote! { Vec<#ret_type> }
+    } else {
+        quote::quote! { Vec<(#(#ret_type),*)> }
+    };
+
+    let code = first_code(&outer_code, &code, &hop_size, &ret_type);
 
     Ok(code)
 }

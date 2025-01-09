@@ -27,8 +27,8 @@ pub fn analyzer(
     let hop_size = hop_size as usize;
     let mut cycle_buffer_node_4 = ndarray::Array1::<f64>::zeros(0);
     let mut lpc_node_30_lpc_order = 10;
+    let mut return_data = Vec::new();
     let mut buffer = Vec::new();
-    let mut lpc_node_out_30_0s = Vec::new();
     while let Some(frame) = wav_file.try_recv() {
         buffer.extend(frame);
         while buffer.len() >= hop_size {
@@ -82,7 +82,7 @@ pub fn analyzer(
                 expr_nodes_out_36_0.view(),
                 100usize,
             );
-            lpc_node_out_30_0s.push(
+            return_data.push(
                 lpc_node_out_30_0
                     .into_iter()
                     .map(|x| {
@@ -94,10 +94,9 @@ pub fn analyzer(
                             Some(x)
                         }
                     })
-                    .collect::<Vec<_>>(),
+                    .collect::<Vec<Option<f64>>>(),
             );
         }
     }
-
-    return lpc_node_out_30_0s;
+    return return_data;
 }
