@@ -1138,10 +1138,14 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                             #node_name_lpc_order = #lpc_order;
                         }
 
-                        let #out_data = linear_predictive_coding::calc_lpc_by_levinson_durbin(
+                        let #out_data = if let Some(data) = linear_predictive_coding::calc_lpc_by_levinson_durbin(
                             #in_data.view(),
                             #lpc_order,
-                        );
+                        ) {
+                            data
+                        } else {
+                            continue;
+                        };
                     });
                 }
             },

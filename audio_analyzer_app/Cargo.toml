@@ -60,7 +60,7 @@ serde_json.workspace = true
 fasteval3.workspace = true
 
 anyhow.workspace = true
-linear-predictive-coding = "0.2.2"
+linear-predictive-coding = "0.3.1"
 
 reqwest-client.workspace = true
 

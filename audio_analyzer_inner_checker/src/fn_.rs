@@ -78,10 +78,15 @@ pub fn analyzer(
             if lpc_node_30_lpc_order != 100usize {
                 lpc_node_30_lpc_order = 100usize;
             }
-            let lpc_node_out_30_0 = linear_predictive_coding::calc_lpc_by_levinson_durbin(
-                expr_nodes_out_36_0.view(),
-                100usize,
-            );
+            let lpc_node_out_30_0 = if let Some(data) =
+                linear_predictive_coding::calc_lpc_by_levinson_durbin(
+                    expr_nodes_out_36_0.view(),
+                    100usize,
+                ) {
+                data
+            } else {
+                continue;
+            };
             return_data.push(
                 lpc_node_out_30_0
                     .into_iter()

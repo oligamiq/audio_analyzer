@@ -290,7 +290,8 @@ pub fn load_BAVED<T: Send + Sync>(
         .collect();
 
     let data_s = level_files
-        .into_par_iter()
+        // .into_par_iter()
+        .into_iter()
         .map(|level| {
             let gen_data = |pattern: &Vec<Pattern>| {
                 pattern

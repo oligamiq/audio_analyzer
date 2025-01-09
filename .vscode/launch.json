@@ -316,10 +316,16 @@
                 "filter": {
                     "name": "audio_analyzer_inner_checker",
                     "kind": "bin"
+                },
+                "env": {
+                    "RUSTFLAGS": "-C target-cpu=native"
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_BACKTRACE": "1"
+            }
         },
         {
             "type": "lldb",

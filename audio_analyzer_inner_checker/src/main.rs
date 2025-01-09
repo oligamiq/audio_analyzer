@@ -46,10 +46,16 @@ fn main() {
     let data = if let Ok(Ok(data)) = {
         std::fs::File::open(save_data_path)
             .map(|f| {
+                println!("loading...");
+                let now = std::time::Instant::now();
                 let mut reader = std::io::BufReader::new(f);
                 let data = bincode::deserialize_from::<_, AudioMNISTData<_>>(&mut reader);
                 data.map_err(|e| {
                     println!("failed to load save audio_mnist_complete data: {:?}", e);
+                })
+                .map(|data| {
+                    println!("loaded save audio_mnist_complete data: {:?}", now.elapsed());
+                    data
                 })
             })
             .map_err(|e| {
@@ -147,11 +153,11 @@ fn main() {
         data
     };
 
-    println!("{:?}", data);
+    // println!("{:?}", data);
 
     let data = load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
 
-    println!("{:?}", data);
+    // println!("{:?}", data);
 }
 
 fn save_with_compress_file<
