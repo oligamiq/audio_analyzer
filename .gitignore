@@ -2,4 +2,4 @@
 /dist
 **/out/*.png
 **/chime_home/*
-audio_analyzer_inner_checker/audio_mnist_data.json.br
+audio_analyzer_inner_checker/audio_mnist_data.bincode
