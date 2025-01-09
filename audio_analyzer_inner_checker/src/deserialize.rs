@@ -3,7 +3,8 @@ use std::marker::PhantomData;
 use dashmap::DashMap;
 use serde::{
     de::{SeqAccess, Visitor},
-    Deserialize, Deserializer,
+    ser::SerializeSeq,
+    Deserialize, Deserializer, Serialize,
 };
 use std::fmt;
 
@@ -73,3 +74,55 @@ where
 
     deserializer.deserialize_seq(MyVisitor(PhantomData))
 }
+
+pub struct DashMapWrapperRef<
+    'a,
+    K: Eq + std::hash::Hash + Clone + Serialize,
+    V: Clone + Serialize,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+> {
+    pub dash_map: &'a DashMap<K, V, Hasher>,
+}
+
+impl<'a, K, V, Hasher> Serialize for DashMapWrapperRef<'a, K, V, Hasher>
+where
+    K: Eq + std::hash::Hash + Clone + Serialize,
+    V: Clone + Serialize,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        serialize_dash_map(self.dash_map, serializer)
+    }
+}
+
+fn serialize_dash_map<S, K, V, Hasher>(
+    dash_map: &DashMap<K, V, Hasher>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+    K: Eq + std::hash::Hash + Clone + Serialize,
+    V: Clone + Serialize,
+    Hasher: Default + std::hash::BuildHasher + Clone,
+{
+    let mut seq = serializer.serialize_seq(Some(dash_map.len()))?;
+    for ref_multi in dash_map.iter() {
+        seq.serialize_element(&(ref_multi.key().clone(), ref_multi.value().clone()))?;
+    }
+    seq.end()
+}
+
+// fn dash_map_to_vec<
+//     K: Eq + std::hash::Hash + Clone,
+//     V: Clone,
+//     Hasher: Default + std::hash::BuildHasher + Clone,
+// >(
+//     dash_map: &DashMap<K, V, Hasher>,
+// ) -> Vec<(K, V)> {
+//     dash_map
+//         .iter()
+//         .map(|multi| (multi.key().clone(), multi.value().clone()))
+//         .collect::<Vec<(K, V)>>()
+// }

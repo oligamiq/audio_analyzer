@@ -15,7 +15,7 @@ const MNIST_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");
 const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/BAVED/remake");
 
-use deserialize::DashMapWrapper;
+use deserialize::{DashMapWrapper, DashMapWrapperRef};
 use libs::load_dataset::{load_AudioMNIST, load_BAVED};
 
 fn main() {
@@ -24,33 +24,28 @@ fn main() {
     type AudioMNISTKey = (usize, usize, usize);
     type MapType<V> = DashMap<AudioMNISTKey, V, gxhash::GxBuildHasher>;
 
-    let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.json.br");
+    let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.bincode");
     let save_data: MapType<_> = match std::fs::File::open(save_data_path).map(|f| {
         let now = std::time::Instant::now();
-        let reader = std::io::BufReader::new(f);
-        let mut decompressor = brotli::Decompressor::new(reader, 4096);
-        let mut str = String::new();
-        let str = decompressor.read_to_string(&mut str).map(|_| str);
+        let mut reader = std::io::BufReader::new(f);
+        // let mut reader = snap::read::FrameDecoder::new(reader);
+        let save_data = bincode::deserialize_from::<_, DashMapWrapper<AudioMNISTKey, _, gxhash::GxBuildHasher>>(&mut reader);
+        // let mut reader = std::io::BufReader::new(reader);
+        // let save_data = serde_json::from_reader::<_, DashMapWrapper<AudioMNISTKey, _, gxhash::GxBuildHasher>>(reader);
         println!("decompress time: {:?}", now.elapsed());
-        str.map(|str| {
-                let now = std::time::Instant::now();
-                let str = serde_json::from_str::<
-                    DashMapWrapper<AudioMNISTKey, _, gxhash::GxBuildHasher>,
-                > (&str);
-                println!("parse time: {:?}", now.elapsed());
-                str
-            })
+
+        save_data
     }) {
-        Ok(Ok(Ok(save_data))) => {
+        Ok(Ok(save_data)) => {
             println!("loaded save data");
             save_data.dash_map
         }
-        Ok(Ok(Err(e))) => {
+        Err(e) => {
             println!("failed to load save data: {:?}", e);
             DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
         }
-        Ok(Err(e)) | Err(e) => {
-            println!("failed to load save data on decompress: {:?}", e);
+        Ok(Err(e)) => {
+            println!("failed to load save data: {:?}", e);
             DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
         }
     };
@@ -104,19 +99,6 @@ fn main() {
     println!("{:?}", data);
 }
 
-fn dash_map_to_vec<
-    K: Eq + std::hash::Hash + Clone,
-    V: Clone,
-    Hasher: Default + std::hash::BuildHasher + Clone,
->(
-    dash_map: &DashMap<K, V, Hasher>,
-) -> Vec<(K, V)> {
-    dash_map
-        .iter()
-        .map(|multi| (multi.key().clone(), multi.value().clone()))
-        .collect::<Vec<(K, V)>>()
-}
-
 fn save_with_compress_file<
     K: Eq + std::hash::Hash + Clone + serde::Serialize,
     V: Clone + serde::Serialize,
@@ -135,32 +117,36 @@ fn save_with_compress_file<
     }
     println!("\n\rsaving...");
     let now = std::time::Instant::now();
-    let saveable_data = dash_map_to_vec(save_data);
-    let str = serde_json::to_string(&saveable_data).unwrap();
-    let mut params = brotli::enc::BrotliEncoderParams::default();
-    params.quality = 4;
-
-    let bytes = str.as_bytes().to_owned();
-    std::mem::drop(str);
-
+    let saveable_data = DashMapWrapperRef { dash_map: save_data };
     let compress_now = std::time::Instant::now();
 
     println!("compressing...");
 
-    let out_data = match brotli_system::compress_multi_thread(&params, bytes) {
-        Ok(out_data) => {
-            println!("save success");
-            out_data
-        }
-        Err(e) => {
-            println!("failed to save: {:?}", e);
-            return;
-        }
-    };
+    let mut file = std::fs::File::create(save_data_path).unwrap();
 
-    println!("compress time: {:?}", compress_now.elapsed());
+    // let mut wtr = snap::write::FrameEncoder::new(
+    //     &mut file,
+    // );
 
-    std::fs::write(save_data_path, out_data).unwrap();
-    println!("save time: {:?}", now.elapsed());
+    // let mut wtr = std::io::BufWriter::with_capacity(1024 * 1024 * 10, wtr);
+    let mut wtr = std::io::BufWriter::new(&mut file);
+    bincode::serialize_into(wtr, &saveable_data).unwrap();
+    // serde_json::to_writer(&mut wtr, &saveable_data).unwrap();
+
+    println!("compress and save time: {:?}", compress_now.elapsed());
+
+    // let file = std::fs::File::open(save_data_path).unwrap();
+    let file_size = file.metadata().unwrap().len();
+    println!("file size: {} bytes", si_scale::helpers::bibytes2(file_size as f64));
+
+    // let file2 = std::fs::File::create(format!("{}.s", save_data_path)).unwrap();
+    // let mut file2 = std::io::BufWriter::with_capacity(1024 * 1024 * 10, file2);
+    // bincode::serialize_into(file2, &saveable_data).unwrap();
+    // serde_json::to_writer(&mut file2, &saveable_data).unwrap();
+
+    // let file2 = std::fs::File::open(format!("{}.s", save_data_path)).unwrap();
+    // let file_size = file2.metadata().unwrap().len();
+    // println!("file size: {} bytes", si_scale::helpers::bibytes2(file_size as f64));
+
     blocker.map(|blocker| blocker.send(()));
 }
