@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{any, collections::HashMap};
 
 use audio_analyzer_core::prelude::TestData;
 use dashmap::DashMap;
@@ -353,11 +353,291 @@ pub fn load_BAVED<T: Send + Sync + ToOwned<Owned = T>>(
     Ok(AudioBAVED { speakers })
 }
 
+use crate::LoadAndAnalysis;
 pub trait GetAnalyzedData<T>
 where
     Self: Fn(&mut TestData, u32) -> T + Send + Sync,
 {
     fn get_data<S: AsRef<str>>(&self, path: S) -> T;
+
+    fn load_and_analysis<Dataset: LoadAndAnalysis<T, Self>, P, D, Hasher>(
+        &self,
+        base_path: P,
+        save_data_dir: D,
+        set_handler: impl Fn(Box<dyn Fn() + 'static + Send + Sync>) + Send + Sync,
+    ) -> anyhow::Result<Dataset>
+    where
+        Dataset: LoadAndAnalysis<T, Self> + serde::Serialize + for<'de> serde::Deserialize<'de>,
+        T: ToOwned<Owned = T>
+            + Send
+            + Sync
+            + Clone
+            + serde::Serialize
+            + for<'de> serde::Deserialize<'de>
+            + 'static,
+        P: AsRef<str>,
+        D: AsRef<str>,
+        Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync + 'static,
+        Dataset::Key: serde::Serialize + for<'de> serde::Deserialize<'de> + 'static,
+        Dataset::AllPattern: serde::Serialize + for<'de> serde::Deserialize<'de>,
+        Self: Sized,
+    {
+        use crate::deserialize::DashMapWrapper;
+        use convert_case::{Case, Casing as _};
+        use std::sync::atomic::AtomicBool;
+
+        let base_path = base_path.as_ref();
+        let save_data_dir = save_data_dir.as_ref();
+
+        let unique_id = <Dataset as LoadAndAnalysis<T, Self>>::UNIQUE_ID;
+        let snake_unique_id = unique_id.to_case(Case::Snake);
+        let save_data_path_mid = format!("{save_data_dir}/{snake_unique_id}_mid.bincode");
+        let save_data_path = format!("{save_data_dir}/{snake_unique_id}.bincode");
+        let save_data_all_pattern_path =
+            format!("{save_data_dir}/{snake_unique_id}_all_pattern.bincode");
+
+        let data: Dataset = if let Ok(Ok(data)) = std::fs::File::open(&save_data_path)
+            .map(|f| {
+                println!("loading...");
+                let now = std::time::Instant::now();
+                let mut reader = std::io::BufReader::new(f);
+                let data = bincode::deserialize_from::<_, Dataset>(&mut reader);
+                data.map_err(|e| {
+                    println!("failed to load save audio_mnist_complete data: {:?}", e);
+                })
+                .map(|data| {
+                    println!("loaded save audio_mnist_complete data: {:?}", now.elapsed());
+                    data
+                })
+            })
+            .map_err(|e| {
+                println!("failed to load save audio_mnist_complete data: {:?}", e);
+            }) {
+            data
+        } else {
+            let load_all_pattern = || {
+                if let Ok(Ok(all_data)) = {
+                    std::fs::File::open(save_data_all_pattern_path)
+                        .map(|f| {
+                            let now = std::time::Instant::now();
+                            println!("loading...");
+                            let mut reader = std::io::BufReader::new(f);
+                            let all_data = bincode::deserialize_from::<
+                                _,
+                                <Dataset as LoadAndAnalysis<T, Self>>::AllPattern,
+                            >(&mut reader);
+                            println!("loaded save all pattern data: {:?}", now.elapsed());
+
+                            all_data
+                        })
+                        .map_err(|e| {
+                            println!("failed to load save data about all pattern: {:?}", e);
+                        })
+                } {
+                    Ok(all_data)
+                } else {
+                    Dataset::get_all_pattern(base_path)
+                }
+            };
+
+            let (save_data, all_data) = match std::fs::File::open(&save_data_path_mid).map(|f| {
+                let now = std::time::Instant::now();
+                println!("loading...");
+                let mut reader = std::io::BufReader::new(f);
+                let save_data =
+                    bincode::deserialize_from::<_, DashMapWrapper<_, _, Hasher>>(&mut reader);
+                println!("load time: {:?}", now.elapsed());
+
+                save_data
+            }) {
+                Ok(Ok(save_data)) => {
+                    println!("loaded save data");
+                    (save_data.dash_map, load_all_pattern()?)
+                }
+                Err(e) => {
+                    println!("failed to load save data: {:?}", e);
+                    let all_data = load_all_pattern()?;
+                    let len = Dataset::get_all_pattern_count(&all_data);
+                    (
+                        DashMap::with_capacity_and_hasher(len, Hasher::default()),
+                        all_data,
+                    )
+                }
+                Ok(Err(e)) => {
+                    println!("failed to load save data: {:?}", e);
+                    let all_data = load_all_pattern()?;
+                    let len = Dataset::get_all_pattern_count(&all_data);
+                    (
+                        DashMap::with_capacity_and_hasher(len, Hasher::default()),
+                        all_data,
+                    )
+                }
+            };
+
+            let leaked_save_data_mut: &'static mut _ = Box::leak(Box::new(save_data));
+            let leaked_save_data: &'static _ = leaked_save_data_mut;
+
+            let leaked_stopper_mut: &'static mut AtomicBool =
+                Box::leak(Box::new(AtomicBool::new(false)));
+            let leaked_stopper: &'static AtomicBool = leaked_stopper_mut;
+
+            let (blocker, waiter) = std::sync::mpsc::channel::<()>();
+
+            fn save_with_compress_file<
+                K: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync,
+                V: Clone + serde::Serialize + Send + Sync,
+                Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync,
+            >(
+                save_data: &'static DashMap<K, V, Hasher>,
+                save_data_path: &str,
+                stopper: Option<&AtomicBool>,
+                blocker: Option<&std::sync::mpsc::Sender<()>>,
+            ) {
+                println!("save with compress file");
+
+                if let Some(stopper) = stopper {
+                    if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+                        std::process::exit(0);
+                    }
+                    stopper.store(true, std::sync::atomic::Ordering::SeqCst);
+                }
+                println!("\n\rsaving...");
+
+                let save_data_path = save_data_path.to_string();
+
+                std::thread::spawn(move || {
+                    let saveable_data = crate::DashMapWrapperRef {
+                        dash_map: save_data,
+                    };
+                    let compress_now = std::time::Instant::now();
+
+                    let mut file = std::fs::File::create(save_data_path).unwrap();
+                    let mut wtr = std::io::BufWriter::new(&mut file);
+                    bincode::serialize_into(&mut wtr, &saveable_data).unwrap();
+
+                    println!("save time: {:?}", compress_now.elapsed());
+
+                    std::mem::drop(wtr);
+                    let file_size = file.metadata().unwrap().len();
+                    println!(
+                        "file size: {} bytes",
+                        si_scale::helpers::bibytes2(file_size as f64)
+                    );
+                })
+                .join()
+                .unwrap();
+
+                blocker.map(|blocker| blocker.send(()));
+            }
+
+            let save_data_path_mid_clone = save_data_path_mid.clone();
+            set_handler(Box::new(move || {
+                save_with_compress_file(
+                    leaked_save_data,
+                    &save_data_path_mid_clone,
+                    Some(leaked_stopper),
+                    Some(&blocker),
+                );
+            }));
+
+            let data = {
+                let save_data = leaked_save_data;
+                let stopper = leaked_stopper;
+
+                let current_loaded = save_data.len();
+
+                let progress = parking_lot::Mutex::new(pbr::ProgressBar::new(
+                    (60 * 10 * 50 - current_loaded) as u64,
+                ));
+                {
+                    let mut progress = progress.lock();
+                    progress.message("Loading dataset...");
+                    progress.message(&format!("current loaded: {current_loaded}"));
+                    progress.message("analyzing...");
+                }
+
+                if let Err(e) =
+                    Dataset::iterate(&all_data, |pattern: &Dataset::Key| -> anyhow::Result<()> {
+                        if save_data.contains_key(pattern) {
+                            return Ok(());
+                        }
+
+                        if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+                            return Err(anyhow::anyhow!("stopped"));
+                        }
+
+                        let path = Dataset::gen_path_from_key(pattern, base_path);
+
+                        save_data.insert(pattern.clone(), self.get_data(&path));
+
+                        if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+                            return Err(anyhow::anyhow!("stopped"));
+                        }
+
+                        progress.lock().inc();
+
+                        Ok(())
+                    })
+                {
+                    if stopper.load(std::sync::atomic::Ordering::Relaxed) {
+                        // The whole program should stop eventually.
+                        waiter.recv().unwrap();
+                    } else {
+                        save_with_compress_file(leaked_save_data, &save_data_path_mid, None, None);
+                    }
+
+                    set_handler(Box::new(move || {
+                        std::process::exit(0);
+                    }));
+
+                    release(leaked_save_data);
+                    release(leaked_stopper);
+
+                    return Err(e);
+                }
+
+                set_handler(Box::new(move || {
+                    std::process::exit(0);
+                }));
+
+                let data_from = Dataset::iterate(
+                    &all_data,
+                    |pattern: &Dataset::Key| -> anyhow::Result<(Dataset::Key, T)> {
+                        let data = save_data.get(pattern).unwrap().to_owned();
+
+                        let pattern = pattern.clone();
+
+                        Ok((pattern, data))
+                    },
+                )?;
+
+                let data = Dataset::to_self(data_from);
+
+                let now = std::time::Instant::now();
+                println!("saving... audio mnist data");
+                let mut file = std::fs::File::create(save_data_path).unwrap();
+                let mut wtr = std::io::BufWriter::new(&mut file);
+                bincode::serialize_into(&mut wtr, &data).unwrap();
+
+                println!("save time: {:?}", now.elapsed());
+
+                release(leaked_save_data_mut);
+                release(leaked_stopper_mut);
+                std::mem::drop(waiter);
+
+                data
+            };
+
+            data
+        };
+
+        fn release<T>(ptr: &T) {
+            let ptr = ptr as *const T;
+            std::mem::drop(unsafe { Box::<T>::from_raw(ptr as *mut T) });
+        }
+
+        Ok(data)
+    }
 }
 
 impl<F, T> GetAnalyzedData<T> for F
@@ -374,5 +654,3 @@ where
         self(&mut data, sample_rate)
     }
 }
-
-// impl<

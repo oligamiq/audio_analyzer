@@ -16,7 +16,7 @@ const MNIST_BASE_PATH: &'static str =
 const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/BAVED/remake");
 
 use deserialize::{DashMapWrapper, DashMapWrapperRef};
-use libs::load_dataset::{load_AudioMNIST, load_BAVED, AudioMNISTData};
+use libs::load_dataset::{load_AudioMNIST, load_BAVED, AudioMNISTData, GetAnalyzedData};
 use rayon::iter::IntoParallelRefIterator;
 
 static CTRLC_HANDLER: std::sync::LazyLock<
@@ -31,6 +31,10 @@ fn set_handler<F: Fn() + 'static + Send + Sync>(handler: F) {
     *CTRLC_HANDLER.lock() = Box::new(handler);
 }
 
+fn set_handler_boxed(handler: Box<dyn Fn() + 'static + Send + Sync>) {
+    *CTRLC_HANDLER.lock() = handler;
+}
+
 fn main() -> anyhow::Result<()> {
     let analyzer = fn_::analyzer;
 
@@ -40,7 +44,12 @@ fn main() -> anyhow::Result<()> {
     .unwrap();
 
     // load AudioMNIST
-    let data = load_and_analysis(analyzer)?;
+    // let data = load_and_analysis_old(analyzer)?;
+    let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+        MNIST_BASE_PATH,
+        env!("CARGO_MANIFEST_DIR"),
+        set_handler_boxed,
+    )?;
 
     // load BAVED
 
@@ -53,13 +62,7 @@ fn main() -> anyhow::Result<()> {
 
 pub trait LoadAndAnalysis<T, F>
 where
-    T: Send
-        + Sync
-        + ToOwned<Owned = T>
-        + Clone
-        + serde::Serialize
-        + for<'de> serde::Deserialize<'de>
-        + 'static,
+    T: Send + Sync + Clone + 'static,
     F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
     Self: Sized,
 {
@@ -75,6 +78,10 @@ where
 
     fn gen_path_from_key(key: &Self::Key, base_path: &str) -> String;
 
+    fn get_all_pattern(base_path: &str) -> anyhow::Result<Self::AllPattern>;
+
+    fn get_all_pattern_count(all_pattern: &Self::AllPattern) -> usize;
+
     fn iterate<U: Send + Sync>(
         patterns: &Self::AllPattern,
         f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
@@ -85,13 +92,7 @@ where
 
 impl<T, F> LoadAndAnalysis<T, F> for AudioMNISTData<T>
 where
-    T: Send
-        + Sync
-        + ToOwned<Owned = T>
-        + Clone
-        + serde::Serialize
-        + for<'de> serde::Deserialize<'de>
-        + 'static,
+    T: Send + Sync + Clone + 'static,
     F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
 {
     const UNIQUE_ID: &'static str = "AudioMNISTData";
@@ -112,18 +113,58 @@ where
         path
     }
 
+    fn get_all_pattern(base_path: &str) -> anyhow::Result<Self::AllPattern> {
+        use rayon::prelude::*;
+
+        let all_pattern = (1..=60)
+            .into_par_iter()
+            .map(|speaker_n| {
+                (0..10)
+                    .into_iter()
+                    .flat_map(|say_n| {
+                        (0..50)
+                            .into_iter()
+                            .filter_map(|num_n| {
+                                let path = <Self as LoadAndAnalysis<T, F>>::gen_path_from_key(
+                                    &(speaker_n, say_n, num_n),
+                                    base_path,
+                                );
+
+                                if std::path::Path::new(&path).exists() {
+                                    Some((speaker_n, say_n, num_n))
+                                } else {
+                                    panic!("not found: {}", path);
+                                }
+                            })
+                            .collect::<Vec<Self::Key>>()
+                    })
+                    .collect::<Vec<Self::Key>>()
+            })
+            .collect::<Vec<Vec<Self::Key>>>();
+
+        Ok(all_pattern)
+    }
+
+    fn get_all_pattern_count(all_pattern: &Self::AllPattern) -> usize {
+        all_pattern.iter().map(|v| v.len()).sum::<usize>()
+    }
+
     fn iterate<U: Send + Sync>(
         patterns: &Self::AllPattern,
         f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
     ) -> anyhow::Result<Vec<U>> {
         use rayon::iter::ParallelIterator;
 
-        patterns.par_iter().map(|pattern| {
-            pattern
-                .iter()
-                .map(|key| f(key))
-                .collect::<anyhow::Result<Vec<U>>>()
-        }).collect::<anyhow::Result<Vec<Vec<U>>>>().map(|v| v.into_iter().flatten().collect())
+        patterns
+            .par_iter()
+            .map(|pattern| {
+                pattern
+                    .iter()
+                    .map(|key| f(key))
+                    .collect::<anyhow::Result<Vec<U>>>()
+            })
+            .collect::<anyhow::Result<Vec<Vec<U>>>>()
+            .map(|v| v.into_iter().flatten().collect())
     }
 
     fn to_self(pattern_and_data: Vec<(Self::Key, T)>) -> Self {
@@ -141,7 +182,7 @@ where
     }
 }
 
-fn load_and_analysis<
+fn load_and_analysis_old<
     T: Send
         + Sync
         + ToOwned<Owned = T>

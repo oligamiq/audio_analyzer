@@ -662,6 +662,7 @@ dependencies = [
  "audio_analyzer_core",
  "bincode",
  "brotli",
+ "convert_case",
  "ctrlc",
  "dashmap",
  "gxhash",
