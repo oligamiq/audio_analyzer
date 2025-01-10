@@ -1,7 +1,7 @@
 // $ENV:RUSTFLAGS="-C target-cpu=native"
 // cargo run -p audio_analyzer_inner_checker -r
 
-use std::{collections::HashMap, sync::atomic::AtomicBool};
+use std::{collections::HashMap, path, sync::atomic::AtomicBool};
 
 use dashmap::DashMap;
 
@@ -14,9 +14,14 @@ pub mod presets;
 const MNIST_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/AudioMNIST/data");
 const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/BAVED/remake");
+const CHIME_HOME_BASE_PATH: &'static str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/ChimeHome/chunks");
 
 use deserialize::{DashMapWrapper, DashMapWrapperRef};
-use libs::load_dataset::{AudioBAVED, AudioMNISTData, BAVEDPattern, GetAnalyzedData};
+use libs::load_dataset::{
+    AudioBAVED, AudioChimeHome, AudioChimeHomePattern, AudioMNISTData, BAVEDPattern,
+    GetAnalyzedData,
+};
 use rayon::iter::IntoParallelRefIterator;
 
 static CTRLC_HANDLER: std::sync::LazyLock<
@@ -44,24 +49,25 @@ fn main() -> anyhow::Result<()> {
     .unwrap();
 
     // load AudioMNIST
-    // let data = load_and_analysis_old(analyzer)?;
-    let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
-        MNIST_BASE_PATH,
-        env!("CARGO_MANIFEST_DIR"),
+    // let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+    //     MNIST_BASE_PATH,
+    //     concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
+    //     set_handler_boxed,
+    // )?;
+
+    // load AudioBAVED
+    // let data = analyzer.load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
+    //     BAVED_BASE_PATH,
+    //     concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
+    //     set_handler_boxed,
+    // )?;
+
+    // load AudioChimeHome
+    let data = analyzer.load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
+        CHIME_HOME_BASE_PATH,
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
         set_handler_boxed,
     )?;
-
-    let data = analyzer.load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
-        BAVED_BASE_PATH,
-        env!("CARGO_MANIFEST_DIR"),
-        set_handler_boxed,
-    )?;
-
-    // load BAVED
-
-    // let data = load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
-
-    // println!("{:?}", data);
 
     Ok(())
 }
@@ -179,7 +185,6 @@ where
         };
 
         for ((speaker_n, _, _), data) in pattern_and_data {
-
             ret_data.speakers[speaker_n].push(data);
         }
 
@@ -299,7 +304,10 @@ where
     }
 
     fn get_all_pattern_count(all_pattern: &Self::AllPattern) -> usize {
-        all_pattern.iter().map(|v| v.iter().map(|(_, v)| v.len()).sum::<usize>()).sum::<usize>()
+        all_pattern
+            .iter()
+            .map(|v| v.iter().map(|(_, v)| v.len()).sum::<usize>())
+            .sum::<usize>()
     }
 
     fn iterate<U: Send + Sync>(
@@ -362,6 +370,155 @@ where
         }
 
         Self { speakers }
+    }
+}
+
+impl<T, F> LoadAndAnalysis<T, F> for AudioChimeHome<T>
+where
+    T: Send + Sync + Clone + 'static + Default,
+    F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+{
+    const UNIQUE_ID: &'static str = "AudioChimeHome";
+
+    type Key = AudioChimeHomePattern;
+
+    type AllPattern = Vec<Self::Key>;
+
+    fn gen_path_from_key(key: &Self::Key, base_path: &str) -> String {
+        let AudioChimeHomePattern { file_name, .. } = key;
+
+        let path = format!("{base_path}/{file_name}.48kHz.wav");
+
+        path
+    }
+
+    fn get_all_pattern(base_path: &str) -> anyhow::Result<Self::AllPattern> {
+        use rayon::prelude::*;
+
+        Ok(walkdir::WalkDir::new(format!("{base_path}"))
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter(|f| {
+                f.path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .ends_with(".csv")
+            })
+            .collect::<Vec<_>>()
+            .par_iter()
+            .filter_map(|e| {
+                let path = e.path();
+                let file_name_with_csv = path.file_name().unwrap().to_str().unwrap();
+                let file_name = &file_name_with_csv[..file_name_with_csv.len() - 4];
+
+                // csv file
+                let mut rdr = csv::Reader::from_path(path).unwrap();
+
+                let records = rdr
+                    .records()
+                    .map(|r| r.unwrap())
+                    .filter(|r| {
+                        r.get(0)
+                            .map_or_else(|| false, |v| v.starts_with("annotation"))
+                    })
+                    .map(|r| r.get(1).unwrap().to_string())
+                    .collect::<Vec<_>>();
+
+                if records.iter().all(|r| {
+                    r.contains("f") as u8 + r.contains("m") as u8 + r.contains("c") as u8 == 1
+                }) {
+                    let count = records.iter().count() as u8;
+                    let sum = records
+                        .iter()
+                        .map(|r| {
+                            r.contains("f") as u8
+                                + r.contains("m") as u8 * 2
+                                + r.contains("c") as u8 * 3
+                        })
+                        .sum::<u8>();
+
+                    let human_activity_noise = records.iter().any(|r| r.contains("p"));
+                    let television_noise = records.iter().any(|r| r.contains("b"));
+                    let household_appliance_noise = records.iter().any(|r| r.contains("o"));
+
+                    let speaker_id = match sum {
+                        _ if 1 * count == sum => char::from(b"f"[0]),
+                        _ if 2 * count == sum => char::from(b"m"[0]),
+                        _ if 3 * count == sum => char::from(b"c"[0]),
+                        _ => return None,
+                    };
+
+                    return Some(AudioChimeHomePattern {
+                        file_name: file_name.to_string(),
+                        speaker_id,
+                        human_activity_noise,
+                        television_noise,
+                        household_appliance_noise,
+                    });
+                }
+
+                return None;
+            })
+            .collect::<Vec<_>>())
+    }
+
+    fn get_all_pattern_count(all_pattern: &Self::AllPattern) -> usize {
+        all_pattern.len()
+    }
+
+    fn iterate<U: Send + Sync>(
+        patterns: &Self::AllPattern,
+        f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
+    ) -> anyhow::Result<Vec<U>> {
+        use rayon::iter::ParallelIterator;
+
+        patterns
+            .par_iter()
+            .map(|pattern| f(pattern))
+            .collect::<anyhow::Result<Vec<U>>>()
+    }
+
+    fn to_self(pattern_and_data: Vec<(Self::Key, T)>) -> Self {
+        let mut ret_data = Self::default();
+
+        for (pattern, data) in pattern_and_data.into_iter() {
+            let data = data.clone();
+
+            let AudioChimeHomePattern {
+                speaker_id,
+                human_activity_noise,
+                television_noise,
+                household_appliance_noise,
+                ..
+            } = pattern;
+
+            let speaker = match speaker_id {
+                'f' => &mut ret_data.father,
+                'm' => &mut ret_data.mother,
+                'c' => &mut ret_data.child,
+                _ => unreachable!("Invalid speaker id: {}", speaker_id),
+            };
+
+            match (
+                human_activity_noise,
+                television_noise,
+                household_appliance_noise,
+            ) {
+                (true, true, true) => speaker.all.push(data),
+                (true, true, false) => speaker.human_activity_and_television.push(data),
+                (true, false, true) => speaker.human_activity_and_household_appliance.push(data),
+                (true, false, false) => speaker.human_activity.push(data),
+                (false, true, true) => speaker.television_and_household_appliance.push(data),
+                (false, true, false) => speaker.television.push(data),
+                (false, false, true) => speaker.household_appliance.push(data),
+                (false, false, false) => speaker.none.push(data),
+            }
+        }
+
+        ret_data
     }
 }
 

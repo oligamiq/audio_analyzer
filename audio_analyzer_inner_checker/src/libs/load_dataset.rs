@@ -625,3 +625,39 @@ where
         self(&mut data, sample_rate)
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub struct AudioChimeHome<T> {
+    pub father: AudioChimeHomeNoise<T>,
+    pub mother: AudioChimeHomeNoise<T>,
+    pub child: AudioChimeHomeNoise<T>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub struct AudioChimeHomeNoise<T> {
+    pub none: Vec<T>,
+    pub human_activity: Vec<T>,
+    pub television: Vec<T>,
+    pub household_appliance: Vec<T>,
+    pub human_activity_and_television: Vec<T>,
+    pub human_activity_and_household_appliance: Vec<T>,
+    pub television_and_household_appliance: Vec<T>,
+    pub all: Vec<T>,
+}
+
+/// https://paperswithcode.com/dataset/chime-home
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub struct AudioChimeHomePattern {
+    // f: father, m: mother, c: child
+    pub speaker_id: char,
+
+    // p
+    pub human_activity_noise: bool,
+    // b
+    pub television_noise: bool,
+    // o
+    pub household_appliance_noise: bool,
+
+    // file name
+    pub file_name: String,
+}
