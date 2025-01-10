@@ -360,7 +360,10 @@ where
     fn get_data<S: AsRef<str>>(&self, path: S) -> T;
 }
 
-impl<F: Fn(&mut TestData, u32) -> T + Send + Sync, T> GetAnalyzedData<T> for F {
+impl<F, T> GetAnalyzedData<T> for F
+where
+    F: Fn(&mut TestData, u32) -> T + Send + Sync,
+{
     fn get_data<S: AsRef<str>>(&self, path: S) -> T {
         let mut data = TestData::new_with_path(path.as_ref().to_owned());
 
@@ -371,3 +374,5 @@ impl<F: Fn(&mut TestData, u32) -> T + Send + Sync, T> GetAnalyzedData<T> for F {
         self(&mut data, sample_rate)
     }
 }
+
+// impl<

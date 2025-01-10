@@ -17,6 +17,7 @@ const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/data
 
 use deserialize::{DashMapWrapper, DashMapWrapperRef};
 use libs::load_dataset::{load_AudioMNIST, load_BAVED, AudioMNISTData};
+use rayon::iter::IntoParallelRefIterator;
 
 static CTRLC_HANDLER: std::sync::LazyLock<
     parking_lot::Mutex<Box<dyn Fn() + 'static + Send + Sync>>,
@@ -50,6 +51,96 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+pub trait LoadAndAnalysis<T, F>
+where
+    T: Send
+        + Sync
+        + ToOwned<Owned = T>
+        + Clone
+        + serde::Serialize
+        + for<'de> serde::Deserialize<'de>
+        + 'static,
+    F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+    Self: Sized,
+{
+    const UNIQUE_ID: &'static str;
+
+    /// The key type for the data
+    /// maybe pattern
+    type Key: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync;
+
+    /// The top iterator item type
+    /// Person level
+    type AllPattern;
+
+    fn gen_path_from_key(key: &Self::Key, base_path: &str) -> String;
+
+    fn iterate<U: Send + Sync>(
+        patterns: &Self::AllPattern,
+        f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
+    ) -> anyhow::Result<Vec<U>>;
+
+    fn to_self(pattern_and_data: Vec<(Self::Key, T)>) -> Self;
+}
+
+impl<T, F> LoadAndAnalysis<T, F> for AudioMNISTData<T>
+where
+    T: Send
+        + Sync
+        + ToOwned<Owned = T>
+        + Clone
+        + serde::Serialize
+        + for<'de> serde::Deserialize<'de>
+        + 'static,
+    F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+{
+    const UNIQUE_ID: &'static str = "AudioMNISTData";
+
+    type Key = (usize, usize, usize);
+
+    type AllPattern = Vec<Vec<Self::Key>>;
+
+    fn gen_path_from_key(key: &Self::Key, base_path: &str) -> String {
+        let (speaker_n, say_n, num_n) = key.clone();
+
+        assert!(say_n <= 9);
+
+        assert!(num_n <= 49);
+
+        let path = format!("{base_path}/{speaker_n:02}/{say_n}_{speaker_n:02}_{num_n}.wav");
+
+        path
+    }
+
+    fn iterate<U: Send + Sync>(
+        patterns: &Self::AllPattern,
+        f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
+    ) -> anyhow::Result<Vec<U>> {
+        use rayon::iter::ParallelIterator;
+
+        patterns.par_iter().map(|pattern| {
+            pattern
+                .iter()
+                .map(|key| f(key))
+                .collect::<anyhow::Result<Vec<U>>>()
+        }).collect::<anyhow::Result<Vec<Vec<U>>>>().map(|v| v.into_iter().flatten().collect())
+    }
+
+    fn to_self(pattern_and_data: Vec<(Self::Key, T)>) -> Self {
+        let mut ret_data = Self {
+            speakers: [const { Vec::<T>::new() }; 60],
+        };
+
+        for (key, data) in pattern_and_data {
+            let (speaker_n, say_n, num_n) = key;
+
+            ret_data.speakers[speaker_n].push(data);
+        }
+
+        ret_data
+    }
+}
+
 fn load_and_analysis<
     T: Send
         + Sync
@@ -59,11 +150,11 @@ fn load_and_analysis<
         + for<'de> serde::Deserialize<'de>
         + 'static,
     // K: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync,
-    // Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync,
 >(
     analyzer: impl Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
 ) -> anyhow::Result<AudioMNISTData<T>> {
-    type MapType<K, V> = DashMap<K, V, gxhash::GxBuildHasher>;
+    type Hasher = gxhash::GxBuildHasher;
+    type MapType<K, V> = DashMap<K, V, Hasher>;
 
     let save_data_path_mid = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data_mid.bincode");
     let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.bincode");
@@ -93,10 +184,8 @@ fn load_and_analysis<
             let now = std::time::Instant::now();
             println!("loading...");
             let mut reader = std::io::BufReader::new(f);
-            let save_data = bincode::deserialize_from::<
-                _,
-                DashMapWrapper<_, _, gxhash::GxBuildHasher>,
-            >(&mut reader);
+            let save_data =
+                bincode::deserialize_from::<_, DashMapWrapper<_, _, Hasher>>(&mut reader);
             println!("load time: {:?}", now.elapsed());
 
             save_data
@@ -107,11 +196,11 @@ fn load_and_analysis<
             }
             Err(e) => {
                 println!("failed to load save data: {:?}", e);
-                DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
+                DashMap::with_capacity_and_hasher(60 * 10 * 50, Hasher::default())
             }
             Ok(Err(e)) => {
                 println!("failed to load save data: {:?}", e);
-                DashMap::with_capacity_and_hasher(60 * 10 * 50, gxhash::GxBuildHasher::default())
+                DashMap::with_capacity_and_hasher(60 * 10 * 50, Hasher::default())
             }
         };
         let leaked_save_data_mut: &'static mut MapType<_, _> = Box::leak(Box::new(save_data));
@@ -134,13 +223,8 @@ fn load_and_analysis<
             );
         });
 
-        let data = load_AudioMNIST(
-            MNIST_BASE_PATH,
-            analyzer,
-            leaked_save_data,
-            &leaked_stopper,
-        )
-        .unwrap();
+        let data =
+            load_AudioMNIST(MNIST_BASE_PATH, analyzer, leaked_save_data, &leaked_stopper).unwrap();
 
         if leaked_stopper.load(std::sync::atomic::Ordering::Relaxed) {
             waiter.recv().unwrap();
