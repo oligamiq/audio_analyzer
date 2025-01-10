@@ -30,7 +30,7 @@ fn set_handler<F: Fn() + 'static + Send + Sync>(handler: F) {
     *CTRLC_HANDLER.lock() = Box::new(handler);
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let analyzer = fn_::analyzer;
 
     ctrlc::set_handler(move || {
@@ -38,6 +38,31 @@ fn main() {
     })
     .unwrap();
 
+    // load AudioMNIST
+    let data = load_and_analysis(analyzer)?;
+
+    // load BAVED
+
+    // let data = load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
+
+    // println!("{:?}", data);
+
+    Ok(())
+}
+
+fn load_and_analysis<
+    T: Send
+        + Sync
+        + ToOwned<Owned = T>
+        + Clone
+        + serde::Serialize
+        + for<'de> serde::Deserialize<'de>
+        + 'static,
+    // K: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync,
+    // Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync,
+>(
+    analyzer: impl Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+) -> anyhow::Result<AudioMNISTData<T>> {
     type MapType<K, V> = DashMap<K, V, gxhash::GxBuildHasher>;
 
     let save_data_path_mid = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data_mid.bincode");
@@ -68,13 +93,10 @@ fn main() {
             let now = std::time::Instant::now();
             println!("loading...");
             let mut reader = std::io::BufReader::new(f);
-            // let mut reader = snap::read::FrameDecoder::new(reader);
             let save_data = bincode::deserialize_from::<
                 _,
                 DashMapWrapper<_, _, gxhash::GxBuildHasher>,
             >(&mut reader);
-            // let mut reader = std::io::BufReader::new(reader);
-            // let save_data = serde_json::from_reader::<_, DashMapWrapper<_, _, gxhash::GxBuildHasher>>(reader);
             println!("load time: {:?}", now.elapsed());
 
             save_data
@@ -112,10 +134,9 @@ fn main() {
             );
         });
 
-        let data: AudioMNISTData<Vec<Vec<Option<f64>>>> = load_AudioMNIST(
+        let data = load_AudioMNIST(
             MNIST_BASE_PATH,
             analyzer,
-            true,
             leaked_save_data,
             &leaked_stopper,
         )
@@ -131,7 +152,7 @@ fn main() {
             release(leaked_save_data);
             release(leaked_stopper);
 
-            return;
+            return Err(anyhow::anyhow!("stop"));
         }
 
         set_handler(move || {
@@ -153,11 +174,7 @@ fn main() {
         data
     };
 
-    // println!("{:?}", data);
-
-    let data = load_BAVED(BAVED_BASE_PATH, analyzer).unwrap();
-
-    // println!("{:?}", data);
+    Ok(data)
 }
 
 fn save_with_compress_file<
