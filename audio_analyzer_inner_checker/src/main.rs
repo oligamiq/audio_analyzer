@@ -49,18 +49,18 @@ fn main() -> anyhow::Result<()> {
     .unwrap();
 
     // load AudioMNIST
-    // let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
-    //     MNIST_BASE_PATH,
-    //     concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
-    //     set_handler_boxed,
-    // )?;
+    let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+        MNIST_BASE_PATH,
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
+        set_handler_boxed,
+    )?;
 
     // load AudioBAVED
-    // let data = analyzer.load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
-    //     BAVED_BASE_PATH,
-    //     concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
-    //     set_handler_boxed,
-    // )?;
+    let data = analyzer.load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
+        BAVED_BASE_PATH,
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"),
+        set_handler_boxed,
+    )?;
 
     // load AudioChimeHome
     let data = analyzer.load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
@@ -473,12 +473,26 @@ where
         patterns: &Self::AllPattern,
         f: impl Fn(&Self::Key) -> anyhow::Result<U> + Send + Sync,
     ) -> anyhow::Result<Vec<U>> {
-        use rayon::iter::ParallelIterator;
+        use rayon::prelude::*;
 
+        // patterns
+        //     .par_iter()
+        //     .map(|pattern| f(pattern))
+        //     .collect::<anyhow::Result<Vec<U>>>()
+
+        // divide 8
         patterns
-            .par_iter()
-            .map(|pattern| f(pattern))
-            .collect::<anyhow::Result<Vec<U>>>()
+            .chunks(patterns.len() / 8)
+            .collect::<Vec<_>>()
+            .into_par_iter()
+            .map(|patterns| {
+                patterns
+                    .iter()
+                    .map(|pattern| f(pattern))
+                    .collect::<anyhow::Result<Vec<U>>>()
+            })
+            .collect::<anyhow::Result<Vec<Vec<U>>>>()
+            .map(|v| v.into_iter().flatten().collect())
     }
 
     fn to_self(pattern_and_data: Vec<(Self::Key, T)>) -> Self {

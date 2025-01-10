@@ -363,15 +363,15 @@ where
                 let mut reader = std::io::BufReader::new(f);
                 let data = bincode::deserialize_from::<_, Dataset>(&mut reader);
                 data.map_err(|e| {
-                    println!("failed to load save audio_mnist_complete data: {:?}", e);
+                    println!("failed to load save {snake_unique_id} data: {:?}", e);
                 })
                 .map(|data| {
-                    println!("loaded save audio_mnist_complete data: {:?}", now.elapsed());
+                    println!("loaded save {snake_unique_id} data: {:?}", now.elapsed());
                     data
                 })
             })
             .map_err(|e| {
-                println!("failed to load save audio_mnist_complete data: {:?}", e);
+                println!("failed to load save {snake_unique_id} data: {:?}", e);
             }) {
             data
         } else {
@@ -386,12 +386,12 @@ where
                                 _,
                                 <Dataset as LoadAndAnalysis<T, Self>>::AllPattern,
                             >(&mut reader);
-                            println!("loaded save all pattern data: {:?}", now.elapsed());
+                            println!("loaded save {snake_unique_id} all pattern data: {:?}", now.elapsed());
 
                             all_data
                         })
                         .map_err(|e| {
-                            println!("failed to load save data about all pattern: {:?}", e);
+                            println!("failed to load save {snake_unique_id} data about all pattern: {:?}", e);
                         })
                 } {
                     Ok(all_data)
@@ -400,7 +400,7 @@ where
                         if let Ok(file) = std::fs::File::create(&save_data_all_pattern_path) {
                             let mut wtr = std::io::BufWriter::new(file);
                             if let Err(e) = bincode::serialize_into(&mut wtr, &all_pattern) {
-                                println!("failed to save all pattern data: {:?}", e);
+                                println!("failed to save {snake_unique_id} all pattern data: {:?}", e);
                             }
                         }
 
@@ -420,11 +420,11 @@ where
                 save_data
             }) {
                 Ok(Ok(save_data)) => {
-                    println!("loaded save data");
+                    println!("loaded {snake_unique_id} save data");
                     (save_data.dash_map, load_all_pattern()?)
                 }
                 Err(e) => {
-                    println!("failed to load save data: {:?}", e);
+                    println!("failed to load {snake_unique_id} save data: {:?}", e);
                     let all_data = load_all_pattern()?;
                     let len = Dataset::get_all_pattern_count(&all_data);
                     (
@@ -433,7 +433,7 @@ where
                     )
                 }
                 Ok(Err(e)) => {
-                    println!("failed to load save data: {:?}", e);
+                    println!("failed to load {snake_unique_id} save data: {:?}", e);
                     let all_data = load_all_pattern()?;
                     let len = Dataset::get_all_pattern_count(&all_data);
                     (
