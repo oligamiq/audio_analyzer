@@ -1,5 +1,3 @@
-use std::{any, collections::HashMap};
-
 use audio_analyzer_core::prelude::TestData;
 use dashmap::DashMap;
 use rayon::prelude::*;
@@ -346,6 +344,8 @@ where
         use convert_case::{Case, Casing as _};
         use std::sync::atomic::AtomicBool;
 
+        let first_now = std::time::Instant::now();
+
         let base_path = base_path.as_ref();
         let save_data_dir = save_data_dir.as_ref();
 
@@ -400,7 +400,10 @@ where
                         if let Ok(file) = std::fs::File::create(&save_data_all_pattern_path) {
                             let mut wtr = std::io::BufWriter::new(file);
                             if let Err(e) = bincode::serialize_into(&mut wtr, &all_pattern) {
-                                println!("failed to save {snake_unique_id} all pattern data: {:?}", e);
+                                println!(
+                                    "failed to save {snake_unique_id} all pattern data: {:?}",
+                                    e
+                                );
                             }
                         }
 
@@ -598,6 +601,8 @@ where
 
                 data
             };
+
+            println!("analyzed all: {:?}", first_now.elapsed());
 
             data
         };

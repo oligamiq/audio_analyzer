@@ -17,6 +17,21 @@ pub fn run(code: String) -> String {
 }
 
 pub fn run_inner(code: Code) -> Msg {
+    println!("rewriting code");
+
+    rewrite_code(code.clone());
+
+    let file_pos_base = std::concat!(std::env!("CARGO_MANIFEST_DIR"), "/../..");
+
+    // let out = std::process::Command::new("cargo")
+    //     .arg("run")
+    //     .arg("--release")
+    //     .arg("--package")
+    //     .arg("audio_analyzer_inner_checker")
+    //     .current_dir(file_pos_base)
+    //     .output()
+    //     .expect("failed to execute process");
+
     Msg::CompileStart
     // Msg::CompileEnd
 }

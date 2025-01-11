@@ -19,11 +19,7 @@ linear-predictive-coding = "0.3.1"
 gxhash = "3.4.1"
 ctrlc = { version = "3.4.5", features = ["termination"] }
 parking_lot = "0.12.3"
-brotli = "7.0.0"
 serde.workspace = true
-alloc-no-stdlib = "2.0.4"
-num_cpus = "1.16.0"
-snap = "1.1.1"
 bincode = "1.3.3"
 si-scale = "0.2.3"
 convert_case = "0.6.0"

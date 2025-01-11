@@ -1403,8 +1403,8 @@ fn test_analysis() {
     // print log to stdout
     env_logger::init();
 
-    // let snarl_str = include_str!("./lpc_audio_analyzer_config.json");
-    let snarl_str = include_str!("./liftered_audio_analyzer_config.json");
+    let snarl_str = include_str!("./lpc_audio_analyzer_config.json");
+    // let snarl_str = include_str!("./liftered_audio_analyzer_config.json");
     // let snarl_str = include_str!("./fft_audio_analyzer_config.json");
     let config: crate::apps::config::Config = serde_json::from_str(&snarl_str).unwrap();
     let snarl = config.snarl;

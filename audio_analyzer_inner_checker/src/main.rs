@@ -5,7 +5,7 @@ use std::{collections::HashMap, path, sync::atomic::AtomicBool};
 
 use dashmap::DashMap;
 
-pub mod brotli_system;
+// pub mod brotli_system;
 pub mod deserialize;
 pub mod fn_;
 pub mod libs;
@@ -31,10 +31,6 @@ static CTRLC_HANDLER: std::sync::LazyLock<
         std::process::exit(0);
     }))
 });
-
-fn set_handler<F: Fn() + 'static + Send + Sync>(handler: F) {
-    *CTRLC_HANDLER.lock() = Box::new(handler);
-}
 
 fn set_handler_boxed(handler: Box<dyn Fn() + 'static + Send + Sync>) {
     *CTRLC_HANDLER.lock() = handler;
@@ -185,7 +181,7 @@ where
         };
 
         for ((speaker_n, _, _), data) in pattern_and_data {
-            ret_data.speakers[speaker_n].push(data);
+            ret_data.speakers[speaker_n - 1].push(data);
         }
 
         ret_data
