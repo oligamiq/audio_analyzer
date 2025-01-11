@@ -6,6 +6,7 @@ use std::{collections::HashMap, path, sync::atomic::AtomicBool};
 use dashmap::DashMap;
 
 // pub mod brotli_system;
+pub mod analysis;
 pub mod deserialize;
 pub mod fn_;
 pub mod libs;

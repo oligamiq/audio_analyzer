@@ -645,6 +645,7 @@ dependencies = [
  "anyhow",
  "audio_analyzer_core",
  "bincode",
+ "const_struct",
  "convert_case",
  "csv",
  "ctrlc",
@@ -655,6 +656,7 @@ dependencies = [
  "num-complex",
  "parking_lot",
  "pbr",
+ "rand",
  "rayon",
  "rustfft",
  "serde",
@@ -1022,6 +1024,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "const_struct"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0caf2b92e36f14c5c46324047dc7b1c912b03fe98be908041af5a4a771c07323"
+dependencies = [
+ "const_struct_derive",
+ "crc",
+ "paste",
+]
+
+[[package]]
+name = "const_struct_derive"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed96d80b8c2dc84c1fd14f9f072cb5ac93121b13d5968b670f71059ffc9f4cc6"
+dependencies = [
+ "convert_case",
+ "crc",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.96",
+]
+
+[[package]]
 name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1154,6 +1180,21 @@ checksum = "16b80225097f2e5ae4e7179dd2266824648f3e2f49d9134d584b76389d31c4c3"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "crc"
+version = "3.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69e6e4d7b33a94f0991c26729976b10ebde1d34c3ee82408fb536164fa10d636"
+dependencies = [
+ "crc-catalog",
+]
+
+[[package]]
+name = "crc-catalog"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "crc32fast"

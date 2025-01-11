@@ -1,7 +1,7 @@
 pub fn analyzer(
     wav_file: &mut audio_analyzer_core::prelude::TestData,
     sample_rate: u32,
-) -> Vec<Vec<Option<f64>>> {
+) -> Vec<f64> {
     use crate::presets::*;
     use audio_analyzer_core::data::RawDataStreamLayer as _;
     let sample_rate = sample_rate as f64;
@@ -103,5 +103,18 @@ pub fn analyzer(
             );
         }
     }
+
+    // average
+    let return_data = (0..return_data[0].len())
+        .into_iter()
+        .map(|i| {
+            return_data
+                .iter()
+                .filter_map(|lifter| lifter[i].clone())
+                .sum::<f64>()
+                / return_data.len() as f64
+        })
+        .collect::<Vec<f64>>();
+
     return return_data;
 }

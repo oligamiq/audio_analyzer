@@ -24,6 +24,6 @@
     ],
     // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
     "rust-analyzer.cargo.extraEnv": {
-        // "RUSTFLAGS": "-C target-cpu=native"
+        "RUSTFLAGS": "-C target-cpu=native"
     }
 }
