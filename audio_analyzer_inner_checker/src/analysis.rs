@@ -1,4 +1,4 @@
-use crate::libs::load_dataset::{AudioBAVED, AudioBAVEDEmotion, AudioMNISTData};
+use crate::libs::load_dataset::{AudioBAVED, AudioBAVEDEmotion, AudioChimeHome, AudioMNISTData};
 use const_struct::primitive::F64Ty;
 use rand::Rng;
 use rayon::prelude::*;
@@ -17,7 +17,7 @@ pub fn analysis_time_series_baved<THRESHOLD: F64Ty>(data: AudioBAVED<TimeSeriesT
     let AudioBAVED { speakers } = data;
 
     #[derive(Default)]
-    struct LevelWrapper<T>([[T; 3]; 3]);
+    struct LevelWrapper<T>(pub [[T; 3]; 3]);
 
     let level_with_other_and_other_and_self_level_wrapper = speakers
         .par_iter()
@@ -264,6 +264,16 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty>(
         self_matching_probability as f64 / self_data_len_sum as f64,
         other_matching_probability as f64 / other_data_len_sum as f64,
     )
+}
+
+pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty>(
+    data: AudioChimeHome<TimeSeriesType>,
+) -> (f64, f64) {
+    let AudioChimeHome { father, mother, child } = data;
+
+    let speakers = [father, mother, child];
+
+    analysis_time_series_inner::<THRESHOLD>(&speakers)
 }
 
 trait CustomGetLength {
