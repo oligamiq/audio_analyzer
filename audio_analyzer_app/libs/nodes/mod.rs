@@ -125,6 +125,7 @@ impl NodeInfos {
             Box::new(LifterNodeInfo),
             Box::new(EnumerateIterNodeInfo),
             Box::new(LpcNodeInfo),
+            Box::new(BurgNodeInfo),
             Box::new(OutputNodeInfo),
         ]
     }

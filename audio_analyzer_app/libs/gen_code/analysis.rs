@@ -1148,6 +1148,52 @@ pub fn analysis(snarl: &Snarl<FlowNodes>) -> anyhow::Result<TokenStream> {
                         };
                     });
                 }
+                LpcNodes::BurgNode(burg_node) => {
+                    let node_name = unique_node_name(snarl, node);
+                    let node_name_lpc_order = Ident::new(
+                        &format!("{}_lpc_order", node_name),
+                        proc_macro2::Span::call_site(),
+                    );
+
+                    outer_code.extend(quote::quote! {
+                        // keep the state
+                        let mut #node_name_lpc_order = 10;
+                    });
+
+                    let in_node_names: std::collections::HashMap<
+                        usize,
+                        Vec<Ident>,
+                        egui::ahash::RandomState,
+                    > = gen_in_pins_with_ident(snarl, &node);
+
+                    let lpc_order: TokenStream = in_node_names
+                        .get(&0)
+                        .map(|v| v.first().map(|v| quote::quote! { #v }))
+                        .flatten()
+                        .unwrap_or_else(|| {
+                            let num = burg_node.order.get();
+                            quote::quote! { #num }
+                        })
+                        .to_owned();
+                    let in_data = in_node_names.get(&1).unwrap().first().unwrap().to_owned();
+
+                    let out_data = gen_node_name_scratch(snarl, &node, 0);
+
+                    code.extend(quote::quote! {
+                        if #node_name_lpc_order != #lpc_order {
+                            #node_name_lpc_order = #lpc_order;
+                        }
+
+                        let #out_data = if let Some(data) = linear_predictive_coding::calc_lpc_by_burg(
+                            #in_data.view(),
+                            #lpc_order,
+                        ) {
+                            data
+                        } else {
+                            continue;
+                        };
+                    });
+                }
             },
             FlowNodes::UnknownNode(_) => todo!(),
             FlowNodes::OutputNodes(_) => todo!(),

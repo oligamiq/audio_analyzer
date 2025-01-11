@@ -16,7 +16,7 @@ pub mod nodes {
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
         },
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
-        lpc::{LpcNode, LpcNodeInfo, LpcNodes},
+        lpc::{BurgNode, BurgNodeInfo, LpcNode, LpcNodeInfo, LpcNodes},
         output::{OutputNode, OutputNodeInfo, OutputNodes},
         pin_info::MyPinInfo,
         raw_input::{AbstractInputNode, AbstractInputNodeInfo, FileInputNode, MicrophoneInputNode},

@@ -85,6 +85,9 @@ impl FlowNodes {
                 LpcNodes::LpcNode(lpc_node) => {
                     Some(NodeInfoTypesWithData::Array1F64(lpc_node.get_result()?))
                 }
+                LpcNodes::BurgNode(burg_node) => {
+                    Some(NodeInfoTypesWithData::Array1F64(burg_node.get_result()?))
+                }
             },
             FlowNodes::UnknownNode(unknown_node) => unknown_node.get_result(),
             FlowNodes::OutputNodes(output_nodes) => match output_nodes {

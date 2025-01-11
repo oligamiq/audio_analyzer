@@ -49,6 +49,7 @@ impl FlowNodes {
             },
             FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
                 LpcNodes::LpcNode(node) => Box::new(node.to_info()),
+                LpcNodes::BurgNode(node) => Box::new(node.to_info()),
             },
             FlowNodes::UnknownNode(unknown_node) => Box::new(unknown_node.to_info()),
             FlowNodes::OutputNodes(output_nodes) => match output_nodes {
@@ -140,6 +141,7 @@ impl FlowNodesViewer {
             },
             FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
                 LpcNodes::LpcNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LpcNodes::BurgNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
             FlowNodes::UnknownNode(unknown_node) => {
                 unknown_node.show_input(&ctx, pin, ui, scale, snarl)
@@ -296,6 +298,9 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                 LpcNodes::LpcNode(_) => {
                     ui.label("LpcNode");
                 }
+                LpcNodes::BurgNode(_) => {
+                    ui.label("BurgNode");
+                }
             },
             FlowNodes::UnknownNode(_) => {
                 return CustomPinInfo::none_status();
@@ -441,6 +446,11 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui.menu_button("lpc", |ui| {
             if ui.button("LpcNode").clicked() {
                 snarl.insert_node(pos, LpcNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("BurgNode").clicked() {
+                snarl.insert_node(pos, BurgNodeInfo.flow_node());
                 ui.close_menu();
             }
         });
