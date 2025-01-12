@@ -38,12 +38,31 @@ fn set_handler_boxed(handler: Box<dyn Fn() + 'static + Send + Sync>) {
 }
 
 fn main() -> anyhow::Result<()> {
-    let analyzer = fn_::analyzer;
-
     ctrlc::set_handler(move || {
         CTRLC_HANDLER.lock()();
     })
     .unwrap();
+
+    // analysis()?;
+
+    let data = load_data::<Vec<f64>, _>("burg")?;
+
+    let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
+
+    let data = load_data::<Vec<f64>, _>("lpc")?;
+
+    let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
+
+    let data = load_data::<Vec<f64>, _>("fft")?;
+
+    let data = load_data::<Vec<f64>, _>("liftered")?;
+
+    Ok(())
+}
+
+#[allow(unused)]
+fn analysis() -> anyhow::Result<()> {
+    let analyzer = fn_::analyzer;
 
     // load AudioMNIST
     let data = analyzer.load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
@@ -67,6 +86,53 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     Ok(())
+}
+
+fn load_data<T, S: AsRef<str>>(
+    place: S,
+) -> anyhow::Result<(AudioMNISTData<T>, AudioBAVED<T>, AudioChimeHome<T>)>
+where
+    T: ToOwned<Owned = T>
+        + Send
+        + Sync
+        + Clone
+        + Default
+        + serde::Serialize
+        + for<'de> serde::Deserialize<'de>
+        + 'static,
+{
+    let place = place.as_ref();
+
+    println!("loading... {}", place);
+
+    let fake_analyzer = |_: &mut audio_analyzer_core::prelude::TestData, _: u32| -> T {
+        panic!("not implemented");
+    };
+
+    let place = format!("{}{place}/", concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"));
+
+    let mnist_data = fake_analyzer
+        .load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+            MNIST_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let baved_data = fake_analyzer
+        .load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
+            BAVED_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let chime_home_data = fake_analyzer
+        .load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
+            CHIME_HOME_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    Ok((mnist_data, baved_data, chime_home_data))
 }
 
 pub trait LoadAndAnalysis<T, F>
