@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "BAVED",
         "bindgen",
         "Calibri",
         "crossterm",
@@ -9,15 +10,20 @@
         "Evaler",
         "fasteval",
         "fundsp",
+        "gxhash",
         "IDCT",
         "IFFT",
         "liftered",
         "LOGLEVEL",
         "mels",
+        "MNIST",
         "ndarray",
         "Quefrency",
         "ratatui",
         "STFT"
     ],
-    "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+    // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+    "rust-analyzer.cargo.extraEnv": {
+        "RUSTFLAGS": "-C target-cpu=native"
+    }
 }

@@ -54,17 +54,27 @@ log.workspace = true
 mel_spec.workspace = true
 
 egui_editable_num.workspace = true
-serde.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 fasteval3.workspace = true
 
 anyhow.workspace = true
-linear-predictive-coding = "0.2.2"
+linear-predictive-coding = "0.3.1"
 
-filedl_on_web.workspace = true
+reqwest-client.workspace = true
+
+quote = "1.0"
+syn = "2.0"
+proc-macro2 = "1.0"
+convert_case = "0.6.0"
+
+# on test only
+[dev-dependencies]
+env_logger = "0.11"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+filedl_on_web.workspace = true
 wasm-bindgen = "0.2.95"
 serde-wasm-bindgen = "0.6"
 wasm-bindgen-futures = "0.4"

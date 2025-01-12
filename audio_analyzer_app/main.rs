@@ -15,6 +15,8 @@ fn main() -> eframe::Result {
 
     let collector = egui_tracing::EventCollector::default();
 
+    // println!("Hello, world!");
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::filter::filter_fn(|event| {
             if let Some(module) = event.module_path() {

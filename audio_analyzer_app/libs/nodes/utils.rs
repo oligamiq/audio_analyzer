@@ -41,7 +41,7 @@ impl FlowNodes {
                     }
                 }
             },
-            FlowNodes::RawInputNodes(raw_input_nodes) => {
+            FlowNodes::AbstractInputNode(raw_input_nodes) => {
                 match pin {
                     // raw stream
                     0 => Some(NodeInfoTypesWithData::Array1F64(raw_input_nodes.get()?)),
@@ -85,6 +85,13 @@ impl FlowNodes {
                 LpcNodes::LpcNode(lpc_node) => {
                     Some(NodeInfoTypesWithData::Array1F64(lpc_node.get_result()?))
                 }
+                LpcNodes::BurgNode(burg_node) => {
+                    Some(NodeInfoTypesWithData::Array1F64(burg_node.get_result()?))
+                }
+            },
+            FlowNodes::UnknownNode(unknown_node) => unknown_node.get_result(),
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(_) => unreachable!(),
             },
         }
     }

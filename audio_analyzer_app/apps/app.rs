@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 #[allow(unused_imports)]
 use crate::prelude::{nodes::*, snarl::*, utils::*};
@@ -14,6 +14,7 @@ pub struct App {
     // streamer: Streamer,
     config: Config,
     reloader: Arc<Mutex<Option<Vec<u8>>>>,
+    queue: Arc<std::sync::Mutex<VecDeque<reqwest_client::lib::Msg>>>,
 }
 
 impl App {
@@ -52,6 +53,7 @@ impl App {
                 collector,
                 config: config,
                 reloader: Arc::new(Mutex::new(None)),
+                queue: Arc::new(std::sync::Mutex::new(VecDeque::new())),
             };
         }
 
@@ -60,6 +62,7 @@ impl App {
             // streamer,
             config: Config::default(),
             reloader: Arc::new(Mutex::new(None)),
+            queue: Arc::new(std::sync::Mutex::new(VecDeque::new())),
         }
     }
 }
@@ -84,11 +87,32 @@ impl eframe::App for App {
             if let Some(config) = reloader.take() {
                 log::info!("taken config: {:?}", config);
 
-                if let Ok(config) = serde_json::from_slice(&config) {
-                    log::info!("parsed config: {:?}", config);
+                let str = match String::from_utf8(config) {
+                    Ok(str) => str,
+                    Err(e) => {
+                        log::info!("failed to parse config: {:?}", e);
+                        return;
+                    }
+                };
 
-                    self.config = config;
+                match Config::deserialize(&str) {
+                    Ok(config) => {
+                        log::info!("parsed config: {:?}", config);
+
+                        self.config = config;
+                    }
+                    Err(e) => {
+                        log::info!("failed to parse config: {:?}", e);
+                    }
                 }
+            }
+        }
+
+        if let Ok(mut q) = self.queue.clone().try_lock() {
+            if let Some(msg) = q.pop_front() {
+                assert_eq!(msg, reqwest_client::lib::Msg::CompileStart);
+
+                log::info!("Compile start");
             }
         }
 
@@ -172,6 +196,34 @@ impl eframe::App for App {
             // }
 
             ui.add(egui::Checkbox::new(&mut self.config.stop, "stop"));
+
+            if ui.button("check").clicked() {
+                log::info!("check");
+
+                use std::panic;
+
+                let snarl_copy_str = serde_json::to_string(&self.config.snarl).unwrap();
+                match panic::catch_unwind(move || {
+                    let snarl_copy = serde_json::from_str(&snarl_copy_str).unwrap();
+                    crate::libs::gen_code::analysis::analysis(&snarl_copy)
+                }) {
+                    Ok(Ok(_)) => {
+                        log::info!("Analysis successful");
+                    }
+                    Ok(Err(e)) => {
+                        log::info!("Analysis failed: {:?}", e);
+                    }
+                    Err(panic_info) => {
+                        log::error!("Analysis panicked: {:?}", panic_info);
+                    }
+                }
+
+                let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
+
+                log::info!("Running code: {}", code);
+
+                assert!(reqwest_client::run_code(code, self.queue.clone()).is_ok());
+            }
 
             ui.separator();
 

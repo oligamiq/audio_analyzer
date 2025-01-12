@@ -14,7 +14,7 @@ pub enum FrequencyNodes {
 #[serde(default)]
 pub struct IFFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
@@ -173,7 +173,7 @@ impl GraphNode for IFFTNode {
 #[serde(default)]
 pub struct FFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
@@ -267,7 +267,7 @@ impl FFTNode {
             self.update();
         }
 
-        let fft = &self.fft;
+        let fft: &Arc<dyn Fft<f64>> = &self.fft;
         let scratch_buf = &mut self.scratch_buf;
         let calculated = &mut self.calculated;
 

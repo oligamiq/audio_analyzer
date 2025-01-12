@@ -112,7 +112,7 @@ impl CustomPinInfo {
     }
 
     pub fn ok_status() -> PinInfo<MyDrawer> {
-        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 0, 255))
+        PinInfo::circle().with_fill(egui::Color32::from_rgb(0, 255, 0))
     }
 
     pub fn ng_status() -> PinInfo<MyDrawer> {

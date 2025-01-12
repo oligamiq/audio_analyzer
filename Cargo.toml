@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web"]
+members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web", "reqwest-client", "rocket-webapi", "rocket-webapi/lib", "audio_analyzer_inner_checker"]
 default-members = ["audio_analyzer_app"]
 
 [workspace.package]
@@ -23,6 +23,8 @@ serde_json = "1.0"
 fasteval3 = "3.0"
 plotters = "0.3.7"
 anyhow = "1.0"
+
+reqwest-client = { path = "reqwest-client" }
 
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering" }

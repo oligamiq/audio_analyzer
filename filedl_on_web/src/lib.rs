@@ -1,3 +1,4 @@
+#[cfg(target_arch = "wasm32")]
 pub fn file_dl(data: &[u8], name: &str) {
     let array = js_sys::Array::new();
     let uint8arr = js_sys::Uint8Array::new(

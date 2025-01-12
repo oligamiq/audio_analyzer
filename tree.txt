@@ -28,7 +28,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   │           │   └── unicode-ident v1.0.14
 │   │   │   │           ├── quote v1.0.38
 │   │   │   │           │   └── proc-macro2 v1.0.92 (*)
-│   │   │   │           └── syn v2.0.92
+│   │   │   │           └── syn v2.0.94
 │   │   │   │               ├── proc-macro2 v1.0.92 (*)
 │   │   │   │               ├── quote v1.0.38 (*)
 │   │   │   │               └── unicode-ident v1.0.14
@@ -54,7 +54,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   │   │   │   └── thiserror-impl v2.0.9 (proc-macro)
 │   │   │   │   │   │       ├── proc-macro2 v1.0.92 (*)
 │   │   │   │   │   │       ├── quote v1.0.38 (*)
-│   │   │   │   │   │       └── syn v2.0.92 (*)
+│   │   │   │   │   │       └── syn v2.0.94 (*)
 │   │   │   │   │   └── ucd-trie v0.1.7
 │   │   │   │   └── pest_derive v2.7.15 (proc-macro)
 │   │   │   │       ├── pest v2.7.15 (*)
@@ -78,14 +78,14 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   │           │               └── typenum v1.17.0
 │   │   │   │           ├── proc-macro2 v1.0.92 (*)
 │   │   │   │           ├── quote v1.0.38 (*)
-│   │   │   │           └── syn v2.0.92 (*)
+│   │   │   │           └── syn v2.0.94 (*)
 │   │   │   └── zip v2.2.2
 │   │   │       ├── crc32fast v1.4.2
 │   │   │       │   └── cfg-if v1.0.0
 │   │   │       ├── displaydoc v0.2.5 (proc-macro)
 │   │   │       │   ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   ├── quote v1.0.38 (*)
-│   │   │       │   └── syn v2.0.92 (*)
+│   │   │       │   └── syn v2.0.94 (*)
 │   │   │       ├── flate2 v1.0.35
 │   │   │       │   ├── crc32fast v1.4.2 (*)
 │   │   │       │   └── miniz_oxide v0.8.2
@@ -152,7 +152,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │       │   │   │   └── bytemuck_derive v1.8.1 (proc-macro)
 │       │   │   │       ├── proc-macro2 v1.0.92 (*)
 │       │   │   │       ├── quote v1.0.38 (*)
-│       │   │   │       └── syn v2.0.92 (*)
+│       │   │   │       └── syn v2.0.94 (*)
 │       │   │   ├── lazy_static v1.5.0
 │       │   │   ├── log v0.4.22
 │       │   │   └── rustfft v6.2.0 (*)
@@ -230,7 +230,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   ├── enumn v0.1.14 (proc-macro)
 │   │   │   │   ├── proc-macro2 v1.0.92 (*)
 │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │   │   └── syn v2.0.92 (*)
+│   │   │   │   └── syn v2.0.94 (*)
 │   │   │   └── serde v1.0.217 (*)
 │   │   ├── ahash v0.8.11 (*)
 │   │   ├── emath v0.30.0
@@ -276,7 +276,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   └── thiserror-impl v1.0.69 (proc-macro)
 │   │   │       ├── proc-macro2 v1.0.92 (*)
 │   │   │       ├── quote v1.0.38 (*)
-│   │   │       └── syn v2.0.92 (*)
+│   │   │       └── syn v2.0.94 (*)
 │   │   ├── type-map v0.5.0
 │   │   │   └── rustc-hash v1.1.0
 │   │   ├── web-time v1.1.0
@@ -369,11 +369,11 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   │   │       │   ├── windows-implement v0.58.0 (proc-macro)
 │   │   │   │   │       │   │   ├── proc-macro2 v1.0.92 (*)
 │   │   │   │   │       │   │   ├── quote v1.0.38 (*)
-│   │   │   │   │       │   │   └── syn v2.0.92 (*)
+│   │   │   │   │       │   │   └── syn v2.0.94 (*)
 │   │   │   │   │       │   ├── windows-interface v0.58.0 (proc-macro)
 │   │   │   │   │       │   │   ├── proc-macro2 v1.0.92 (*)
 │   │   │   │   │       │   │   ├── quote v1.0.38 (*)
-│   │   │   │   │       │   │   └── syn v2.0.92 (*)
+│   │   │   │   │       │   │   └── syn v2.0.94 (*)
 │   │   │   │   │       │   ├── windows-result v0.2.0
 │   │   │   │   │       │   │   └── windows-targets v0.52.6 (*)
 │   │   │   │   │       │   ├── windows-strings v0.1.0
@@ -449,16 +449,16 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │       │   │   │   │   │   ├── yoke-derive v0.7.5 (proc-macro)
 │   │   │       │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   │   │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │   ├── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   │   ├── syn v2.0.94 (*)
 │   │   │       │   │   │   │   │   │   └── synstructure v0.13.1
 │   │   │       │   │   │   │   │   │       ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   │   │   │   │   │       ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │       └── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   │       └── syn v2.0.94 (*)
 │   │   │       │   │   │   │   │   └── zerofrom v0.1.5
 │   │   │       │   │   │   │   │       └── zerofrom-derive v0.1.5 (proc-macro)
 │   │   │       │   │   │   │   │           ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   │   │   │   │           ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │           ├── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │           ├── syn v2.0.94 (*)
 │   │   │       │   │   │   │   │           └── synstructure v0.13.1 (*)
 │   │   │       │   │   │   │   ├── zerofrom v0.1.5 (*)
 │   │   │       │   │   │   │   └── zerovec v0.10.4
@@ -467,7 +467,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │       │   │   │   │       └── zerovec-derive v0.10.3 (proc-macro)
 │   │   │       │   │   │   │           ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   │   │   │           ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │           └── syn v2.0.92 (*)
+│   │   │       │   │   │   │           └── syn v2.0.94 (*)
 │   │   │       │   │   │   ├── icu_normalizer_data v1.5.0
 │   │   │       │   │   │   ├── icu_properties v1.5.1
 │   │   │       │   │   │   │   ├── displaydoc v0.2.5 (proc-macro) (*)
@@ -489,7 +489,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │       │   │   │   │   │   │   ├── icu_provider_macros v1.5.0 (proc-macro)
 │   │   │       │   │   │   │   │   │   │   ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   │   │   │   │   │   │   ├── quote v1.0.38 (*)
-│   │   │       │   │   │   │   │   │   │   └── syn v2.0.92 (*)
+│   │   │       │   │   │   │   │   │   │   └── syn v2.0.94 (*)
 │   │   │       │   │   │   │   │   │   ├── stable_deref_trait v1.2.0
 │   │   │       │   │   │   │   │   │   ├── tinystr v0.7.6 (*)
 │   │   │       │   │   │   │   │   │   ├── writeable v0.5.5
@@ -596,7 +596,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │   └── plotters-backend v0.3.7
 │   │   └── ttf-parser v0.20.0
 │   └── plotters-backend v0.3.7
-├── egui-snarl v0.6.0
+├── egui-snarl v0.6.0 (https://github.com/oligamiq/egui-snarl#af4511a9)
 │   ├── egui v0.30.0 (*)
 │   ├── egui-probe v0.7.0
 │   │   ├── egui v0.30.0 (*)
@@ -606,10 +606,10 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │       ├── proc-easy v0.3.0
 │   │       │   ├── proc-macro2 v1.0.92 (*)
 │   │       │   ├── quote v1.0.38 (*)
-│   │       │   └── syn v2.0.92 (*)
+│   │       │   └── syn v2.0.94 (*)
 │   │       ├── proc-macro2 v1.0.92 (*)
 │   │       ├── quote v1.0.38 (*)
-│   │       └── syn v2.0.92 (*)
+│   │       └── syn v2.0.94 (*)
 │   ├── serde v1.0.217 (*)
 │   └── slab v0.4.9
 │       └── serde v1.0.217 (*)
@@ -632,7 +632,7 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │   │       ├── futures-macro v0.3.31 (proc-macro)
 │   │   │       │   ├── proc-macro2 v1.0.92 (*)
 │   │   │       │   ├── quote v1.0.38 (*)
-│   │   │       │   └── syn v2.0.92 (*)
+│   │   │       │   └── syn v2.0.94 (*)
 │   │   │       ├── futures-sink v0.3.31
 │   │   │       ├── futures-task v0.3.31
 │   │   │       ├── memchr v2.7.4
@@ -650,21 +650,9 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 │   │       └── windows-targets v0.48.5
 │   │           └── windows_x86_64_msvc v0.48.5
 │   └── serde v1.0.217 (*)
-├── egui_tracing v0.2.6
+├── egui_tracing v0.2.6 (https://github.com/oligamiq/egui_tracing#b2ffc05d)
 │   ├── chrono v0.4.39 (*)
-│   ├── egui v0.29.1
-│   │   ├── ahash v0.8.11 (*)
-│   │   ├── emath v0.29.1
-│   │   ├── epaint v0.29.1
-│   │   │   ├── ab_glyph v0.2.29 (*)
-│   │   │   ├── ahash v0.8.11 (*)
-│   │   │   ├── ecolor v0.29.1
-│   │   │   │   └── emath v0.29.1
-│   │   │   ├── emath v0.29.1
-│   │   │   ├── epaint_default_fonts v0.29.1
-│   │   │   ├── nohash-hasher v0.2.0
-│   │   │   └── parking_lot v0.12.3 (*)
-│   │   └── nohash-hasher v0.2.0
+│   ├── egui v0.30.0 (*)
 │   ├── globset v0.4.15
 │   │   ├── aho-corasick v1.1.3
 │   │   │   └── memchr v2.7.4
@@ -704,11 +692,191 @@ audio_analyzer_app v0.1.0 (C:\Users\oligami\audio_analyzer\audio_analyzer_app)
 ├── num-complex v0.4.6 (*)
 ├── num-traits v0.2.19 (*)
 ├── plotters v0.3.7 (*)
+├── reqwest-client v0.1.0 (C:\Users\oligami\audio_analyzer\reqwest-client)
+│   ├── anyhow v1.0.95
+│   ├── lib v0.1.0 (C:\Users\oligami\audio_analyzer\rocket-webapi\lib)
+│   │   ├── serde v1.0.217 (*)
+│   │   └── serde_json v1.0.134
+│   │       ├── itoa v1.0.14
+│   │       ├── memchr v2.7.4
+│   │       ├── ryu v1.0.18
+│   │       └── serde v1.0.217 (*)
+│   ├── pollster v0.4.0
+│   ├── reqwest v0.12.12
+│   │   ├── base64 v0.22.1
+│   │   ├── bytes v1.9.0
+│   │   ├── encoding_rs v0.8.35 (*)
+│   │   ├── futures-channel v0.3.31 (*)
+│   │   ├── futures-core v0.3.31
+│   │   ├── futures-util v0.3.31 (*)
+│   │   ├── h2 v0.4.7
+│   │   │   ├── atomic-waker v1.1.2
+│   │   │   ├── bytes v1.9.0
+│   │   │   ├── fnv v1.0.7
+│   │   │   ├── futures-core v0.3.31
+│   │   │   ├── futures-sink v0.3.31
+│   │   │   ├── http v1.2.0
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── fnv v1.0.7
+│   │   │   │   └── itoa v1.0.14
+│   │   │   ├── indexmap v2.7.0 (*)
+│   │   │   ├── slab v0.4.9 (*)
+│   │   │   ├── tokio v1.42.0
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── mio v1.0.3
+│   │   │   │   │   └── windows-sys v0.52.0 (*)
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   ├── socket2 v0.5.8
+│   │   │   │   │   └── windows-sys v0.52.0 (*)
+│   │   │   │   └── windows-sys v0.52.0 (*)
+│   │   │   ├── tokio-util v0.7.13
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── futures-core v0.3.31
+│   │   │   │   ├── futures-sink v0.3.31
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   └── tracing v0.1.41 (*)
+│   │   ├── http v1.2.0 (*)
+│   │   ├── http-body v1.0.1
+│   │   │   ├── bytes v1.9.0
+│   │   │   └── http v1.2.0 (*)
+│   │   ├── http-body-util v0.1.2
+│   │   │   ├── bytes v1.9.0
+│   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   ├── http v1.2.0 (*)
+│   │   │   ├── http-body v1.0.1 (*)
+│   │   │   └── pin-project-lite v0.2.15
+│   │   ├── hyper v1.5.2
+│   │   │   ├── bytes v1.9.0
+│   │   │   ├── futures-channel v0.3.31 (*)
+│   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   ├── h2 v0.4.7 (*)
+│   │   │   ├── http v1.2.0 (*)
+│   │   │   ├── http-body v1.0.1 (*)
+│   │   │   ├── httparse v1.9.5
+│   │   │   ├── itoa v1.0.14
+│   │   │   ├── pin-project-lite v0.2.15
+│   │   │   ├── smallvec v1.13.2
+│   │   │   ├── tokio v1.42.0 (*)
+│   │   │   └── want v0.3.1
+│   │   │       └── try-lock v0.2.5
+│   │   ├── hyper-rustls v0.27.5
+│   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   ├── http v1.2.0 (*)
+│   │   │   ├── hyper v1.5.2 (*)
+│   │   │   ├── hyper-util v0.1.10
+│   │   │   │   ├── bytes v1.9.0
+│   │   │   │   ├── futures-channel v0.3.31 (*)
+│   │   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   │   ├── http v1.2.0 (*)
+│   │   │   │   ├── http-body v1.0.1 (*)
+│   │   │   │   ├── hyper v1.5.2 (*)
+│   │   │   │   ├── pin-project-lite v0.2.15
+│   │   │   │   ├── socket2 v0.5.8 (*)
+│   │   │   │   ├── tokio v1.42.0 (*)
+│   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   └── tracing v0.1.41 (*)
+│   │   │   ├── rustls v0.23.20
+│   │   │   │   ├── once_cell v1.20.2
+│   │   │   │   ├── ring v0.17.8
+│   │   │   │   │   ├── cfg-if v1.0.0
+│   │   │   │   │   ├── getrandom v0.2.15 (*)
+│   │   │   │   │   ├── spin v0.9.8
+│   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── cc v1.2.6
+│   │   │   │   │       └── shlex v1.3.0
+│   │   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   │   ├── rustls-webpki v0.102.8
+│   │   │   │   │   ├── ring v0.17.8 (*)
+│   │   │   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   ├── subtle v2.6.1
+│   │   │   │   └── zeroize v1.8.1
+│   │   │   ├── rustls-pki-types v1.10.1
+│   │   │   ├── tokio v1.42.0 (*)
+│   │   │   ├── tokio-rustls v0.26.1
+│   │   │   │   ├── rustls v0.23.20 (*)
+│   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   ├── tower-service v0.3.3
+│   │   │   └── webpki-roots v0.26.7
+│   │   │       └── rustls-pki-types v1.10.1
+│   │   ├── hyper-tls v0.6.0
+│   │   │   ├── bytes v1.9.0
+│   │   │   ├── http-body-util v0.1.2 (*)
+│   │   │   ├── hyper v1.5.2 (*)
+│   │   │   ├── hyper-util v0.1.10 (*)
+│   │   │   ├── native-tls v0.2.12
+│   │   │   │   └── schannel v0.1.27
+│   │   │   │       └── windows-sys v0.59.0 (*)
+│   │   │   ├── tokio v1.42.0 (*)
+│   │   │   ├── tokio-native-tls v0.3.1
+│   │   │   │   ├── native-tls v0.2.12 (*)
+│   │   │   │   └── tokio v1.42.0 (*)
+│   │   │   └── tower-service v0.3.3
+│   │   ├── hyper-util v0.1.10 (*)
+│   │   ├── ipnet v2.10.1
+│   │   ├── log v0.4.22
+│   │   ├── mime v0.3.17
+│   │   ├── native-tls v0.2.12 (*)
+│   │   ├── once_cell v1.20.2
+│   │   ├── percent-encoding v2.3.1
+│   │   ├── pin-project-lite v0.2.15
+│   │   ├── rustls v0.23.20 (*)
+│   │   ├── rustls-pemfile v2.2.0
+│   │   │   └── rustls-pki-types v1.10.1
+│   │   ├── rustls-pki-types v1.10.1
+│   │   ├── serde v1.0.217 (*)
+│   │   ├── serde_urlencoded v0.7.1
+│   │   │   ├── form_urlencoded v1.2.1 (*)
+│   │   │   ├── itoa v1.0.14
+│   │   │   ├── ryu v1.0.18
+│   │   │   └── serde v1.0.217 (*)
+│   │   ├── sync_wrapper v1.0.2
+│   │   │   └── futures-core v0.3.31
+│   │   ├── tokio v1.42.0 (*)
+│   │   ├── tokio-native-tls v0.3.1 (*)
+│   │   ├── tokio-rustls v0.26.1 (*)
+│   │   ├── tower v0.5.2
+│   │   │   ├── futures-core v0.3.31
+│   │   │   ├── futures-util v0.3.31 (*)
+│   │   │   ├── pin-project-lite v0.2.15
+│   │   │   ├── sync_wrapper v1.0.2 (*)
+│   │   │   ├── tokio v1.42.0 (*)
+│   │   │   ├── tower-layer v0.3.3
+│   │   │   └── tower-service v0.3.3
+│   │   ├── tower-service v0.3.3
+│   │   ├── url v2.5.4 (*)
+│   │   ├── webpki-roots v0.26.7 (*)
+│   │   └── windows-registry v0.2.0
+│   │       ├── windows-result v0.2.0 (*)
+│   │       ├── windows-strings v0.1.0 (*)
+│   │       └── windows-targets v0.52.6 (*)
+│   ├── serde_json v1.0.134 (*)
+│   └── wasm-bindgen-futures v0.4.49
+│       ├── cfg-if v1.0.0
+│       ├── js-sys v0.3.76
+│       │   ├── once_cell v1.20.2
+│       │   └── wasm-bindgen v0.2.99
+│       │       ├── cfg-if v1.0.0
+│       │       ├── once_cell v1.20.2
+│       │       └── wasm-bindgen-macro v0.2.99 (proc-macro)
+│       │           ├── quote v1.0.38 (*)
+│       │           └── wasm-bindgen-macro-support v0.2.99
+│       │               ├── proc-macro2 v1.0.92 (*)
+│       │               ├── quote v1.0.38 (*)
+│       │               ├── syn v2.0.94 (*)
+│       │               ├── wasm-bindgen-backend v0.2.99
+│       │               │   ├── bumpalo v3.16.0
+│       │               │   ├── log v0.4.22
+│       │               │   ├── proc-macro2 v1.0.92 (*)
+│       │               │   ├── quote v1.0.38 (*)
+│       │               │   ├── syn v2.0.94 (*)
+│       │               │   └── wasm-bindgen-shared v0.2.99
+│       │               └── wasm-bindgen-shared v0.2.99
+│       ├── once_cell v1.20.2
+│       └── wasm-bindgen v0.2.99 (*)
 ├── rustfft v6.2.0 (*)
 ├── serde v1.0.217 (*)
-├── serde_json v1.0.134
-│   ├── itoa v1.0.14
-│   ├── memchr v2.7.4
-│   ├── ryu v1.0.18
-│   └── serde v1.0.217 (*)
+├── serde_json v1.0.134 (*)
 └── tracing-core v0.1.33 (*)
