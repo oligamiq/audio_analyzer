@@ -8,143 +8,93 @@ use rayon::prelude::*;
 type TimeSeriesType = Vec<Vec<Option<f64>>>;
 type TimeCompressedType = Vec<f64>;
 
-pub fn analysis_time_series_audio_mnist<THRESHOLD: F64Ty>(
+pub trait Analysis<T> {
+    type Output;
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> Self::Output;
+}
+
+impl Analysis<TimeSeriesType> for AudioMNISTData<TimeSeriesType> {
+    type Output = (f64, f64);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> (f64, f64) {
+        analysis_time_series_audio_mnist::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+impl Analysis<TimeSeriesType> for AudioBAVED<TimeSeriesType> {
+    type Output = ([f64; 3], f64, [[(f64, f64); 3]; 3]);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+        self,
+    ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
+        analysis_time_series_baved::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+impl Analysis<TimeSeriesType> for AudioChimeHome<TimeSeriesType> {
+    type Output = ([f64; 8], f64, [[(f64, f64); 8]; 8]);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+        self,
+    ) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
+        analysis_time_series_chime_home::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+impl Analysis<TimeCompressedType> for AudioMNISTData<TimeCompressedType> {
+    type Output = (f64, f64);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> (f64, f64) {
+        analysis_audio_mnist::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+impl Analysis<TimeCompressedType> for AudioBAVED<TimeCompressedType> {
+    type Output = ([f64; 3], f64, [[(f64, f64); 3]; 3]);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+        self,
+    ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
+        analysis_baved::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+impl Analysis<TimeCompressedType> for AudioChimeHome<TimeCompressedType> {
+    type Output = ([f64; 8], f64, [[(f64, f64); 8]; 8]);
+
+    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+        self,
+    ) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
+        analysis_chime_home::<THRESHOLD, USE_DATA_N>(self)
+    }
+}
+
+pub fn analysis_time_series_audio_mnist<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     data: AudioMNISTData<TimeSeriesType>,
 ) -> (f64, f64) {
     let AudioMNISTData { speakers } = data;
 
-    analysis_time_series_inner::<THRESHOLD>(&speakers)
+    analysis_time_series_inner::<THRESHOLD, USE_DATA_N>(&speakers)
 }
 
-pub fn analysis_time_series_baved<THRESHOLD: F64Ty>(
+pub fn analysis_time_series_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     data: AudioBAVED<TimeSeriesType>,
 ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
     let AudioBAVED { speakers } = data;
 
-    let level_with_other_and_other_and_self_level_wrapper = speakers
-        .par_iter()
-        .enumerate()
-        .map(|(i, speaker)| {
-            // How many data from the training source will be employed
-            let use_data_n = 10;
+    let level_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
+        3,
+        TimeSeriesType,
+        AudioBAVEDEmotion<TimeSeriesType>,
+        USE_DATA_N,
+        THRESHOLD,
+    >(&speakers);
 
-            fn gen_speakers_all(
-                speaker: &AudioBAVEDEmotion<TimeSeriesType>,
-            ) -> Vec<Vec<TimeSeriesType>> {
-                vec![
-                    speaker.level_0.clone(),
-                    speaker.level_1.clone(),
-                    speaker.level_2.clone(),
-                ]
-            }
-
-            let level_with_other = gen_speakers_all(speaker)
-                .iter()
-                .map(|speaker| {
-                    // Identify data
-                    let mut rng = rand::thread_rng();
-                    let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                    let ident = (0..use_data_n)
-                        .map(|_| {
-                            let n = rng.gen_range(0..unused_n.len());
-                            let n = unused_n.remove(n);
-
-                            let ident = speaker[n].inner_average();
-
-                            ident
-                        })
-                        .collect::<Vec<_>>()
-                        .inner_average();
-
-                    // other speaker's identify data
-                    let other_data = speakers
-                        .iter()
-                        .enumerate()
-                        .filter(|(j, _)| i != *j)
-                        .flat_map(|(_, speaker)| {
-                            gen_speakers_all(speaker)
-                                .into_iter()
-                                .flat_map(|v| v)
-                                .map(|v| v.get_all_some_vec())
-                                .collect::<Vec<_>>()
-                        })
-                        .flatten()
-                        .collect::<Vec<_>>();
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
-
-                    (other_matching_probability, other_data_len_sum)
-                })
-                .collect::<Vec<_>>();
-
-            let level_with_other: [(u64, u64); 3] = level_with_other.try_into().unwrap();
-
-            let other = {
-                let other_matching_probability = level_with_other
-                    .iter()
-                    .map(|(matching_probability, _)| matching_probability)
-                    .sum::<u64>();
-                let other_data_len_sum = level_with_other
-                    .iter()
-                    .map(|(_, data_len_sum)| data_len_sum)
-                    .sum::<u64>();
-
-                (other_matching_probability, other_data_len_sum)
-            };
-
-            let mut self_level_wrapper = LevelWrapper::<(_, _)>::default();
-
-            let speakers = vec![
-                speaker.level_0.clone(),
-                speaker.level_1.clone(),
-                speaker.level_2.clone(),
-            ];
-
-            for (level, speaker) in speakers.iter().enumerate() {
-                let mut rng = rand::thread_rng();
-                let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                let ident = (0..use_data_n)
-                    .map(|_| {
-                        let n = rng.gen_range(0..speaker.len());
-                        let n = unused_n.remove(n);
-                        let ident = speaker[n].inner_average();
-
-                        ident
-                    })
-                    .collect::<Vec<_>>()
-                    .inner_average();
-
-                for (j, speaker) in speakers.iter().enumerate() {
-                    let other_data = speaker;
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .flat_map(|audio_data| {
-                            audio_data
-                                .get_all_some_vec()
-                                .into_iter()
-                                .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        })
-                        .sum::<u64>();
-
-                    self_level_wrapper.0[level][j] =
-                        (other_matching_probability, other_data_len_sum);
-                }
-            }
-
-            (level_with_other, other, self_level_wrapper)
-        })
-        .collect::<Vec<_>>();
-
-    analysis_baved_post_processing(level_with_other_and_other_and_self_level_wrapper)
+    common_post_processing(level_with_other_and_other_and_self_level_wrapper)
 }
 
-pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty>(
+pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     speakers: &[Vec<TimeSeriesType>],
 ) -> (f64, f64) {
     let (
@@ -153,45 +103,12 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty>(
     ) = speakers
         .par_iter()
         .enumerate()
-        .map(|(i, speaker)| {
+        .filter_map(|(i, speaker)| {
             // How many data from the training source will be employed
-            let use_data_n = 10;
-
-            // Identify data
-            let mut rng = rand::thread_rng();
-            let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-            let ident = (0..use_data_n)
-                .map(|_| {
-                    let n = rng.gen_range(0..unused_n.len());
-                    let n = unused_n.remove(n);
-
-                    let ident = speaker[n].inner_average();
-
-                    ident
-                })
-                .collect::<Vec<_>>()
-                .inner_average();
-
-            // other speaker's identify data
-            let other_data = speakers
-                .iter()
-                .enumerate()
-                .filter(|(j, _)| i != *j)
-                .map(|(_, speaker)| speaker)
-                .collect::<Vec<_>>();
-
-            let other_data_len_sum = other_data.custom_get_length();
-            let other_matching_probability = other_data
-                .iter()
-                .flat_map(|speaker| {
-                    speaker.iter().flat_map(|audio_data| {
-                        audio_data
-                            .get_all_some_vec()
-                            .into_iter()
-                            .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                    })
-                })
-                .sum::<u64>();
+            let (other_matching_probability, other_data_len_sum, ident) =
+                common_pre_processing_inner_other::<TimeSeriesType, _, USE_DATA_N, THRESHOLD>(
+                    i, speakers, speaker,
+                )?;
 
             let self_data = &speakers[i];
 
@@ -207,10 +124,10 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty>(
                 })
                 .sum::<u64>();
 
-            (
+            Some((
                 (self_matching_probability, self_data_len_sum),
                 (other_matching_probability, other_data_len_sum),
-            )
+            ))
         })
         .collect::<((Vec<_>, Vec<_>), (Vec<_>, Vec<_>))>();
 
@@ -226,7 +143,7 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty>(
     )
 }
 
-pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty>(
+pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     data: AudioChimeHome<TimeSeriesType>,
 ) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
     let AudioChimeHome {
@@ -237,219 +154,24 @@ pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty>(
 
     let speakers = [father, mother, child];
 
-    #[derive(Default)]
-    struct LevelWrapper<T>(pub [[T; 8]; 8]);
+    let noise_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
+        8,
+        TimeSeriesType,
+        AudioChimeHomeNoise<TimeSeriesType>,
+        USE_DATA_N,
+        THRESHOLD,
+    >(&speakers);
 
-    let noise_with_other_and_other_and_self_level_wrapper = speakers
-        .par_iter()
-        .enumerate()
-        .map(|(i, speaker)| {
-            // How many data from the training source will be employed
-            let use_data_n = 10;
-
-            fn gen_speakers_all(
-                speaker: &AudioChimeHomeNoise<TimeSeriesType>,
-            ) -> Vec<Vec<TimeSeriesType>> {
-                vec![
-                    speaker.none.clone(),
-                    speaker.human_activity.clone(),
-                    speaker.television.clone(),
-                    speaker.household_appliance.clone(),
-                    speaker.human_activity_and_television.clone(),
-                    speaker.human_activity_and_household_appliance.clone(),
-                    speaker.television_and_household_appliance.clone(),
-                    speaker.all.clone(),
-                ]
-            }
-            let speakers_all = gen_speakers_all(speaker);
-
-            let noise_with_other = speakers_all
-                .iter()
-                .map(|speaker| {
-                    // Identify data
-                    let mut rng = rand::thread_rng();
-                    let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                    let ident = (0..use_data_n)
-                        .map(|_| {
-                            let n = rng.gen_range(0..unused_n.len());
-                            let n = unused_n.remove(n);
-
-                            let ident = speaker[n].inner_average();
-
-                            ident
-                        })
-                        .collect::<Vec<_>>()
-                        .inner_average();
-
-                    // other speaker's identify data
-                    let other_data = speakers
-                        .iter()
-                        .enumerate()
-                        .filter(|(j, _)| i != *j)
-                        .flat_map(|(_, speaker)| {
-                            gen_speakers_all(speaker)
-                                .into_iter()
-                                .flat_map(|v| v)
-                                .collect::<Vec<_>>()
-                        })
-                        .flatten()
-                        .collect::<Vec<_>>();
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .get_all_some_vec()
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
-
-                    (other_matching_probability, other_data_len_sum)
-                })
-                .collect::<Vec<_>>();
-
-            let noise_with_other: [(u64, u64); 8] = noise_with_other.try_into().unwrap();
-
-            let other = {
-                let other_matching_probability = noise_with_other
-                    .iter()
-                    .map(|(matching_probability, _)| matching_probability)
-                    .sum::<u64>();
-                let other_data_len_sum = noise_with_other
-                    .iter()
-                    .map(|(_, data_len_sum)| data_len_sum)
-                    .sum::<u64>();
-
-                (other_matching_probability, other_data_len_sum)
-            };
-
-            let mut self_level_wrapper = LevelWrapper::<(_, _)>::default();
-
-            for (type_, speaker) in speakers_all.iter().enumerate() {
-                let mut rng = rand::thread_rng();
-                let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                let ident = (0..use_data_n)
-                    .map(|_| {
-                        let n = rng.gen_range(0..speaker.len());
-                        let n = unused_n.remove(n);
-                        let ident = speaker[n].inner_average();
-
-                        ident
-                    })
-                    .collect::<Vec<_>>()
-                    .inner_average();
-
-                for (j, speaker) in speakers_all.iter().enumerate() {
-                    let other_data = speaker;
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .flat_map(|audio_data| {
-                            audio_data
-                                .get_all_some_vec()
-                                .into_iter()
-                                .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        })
-                        .sum::<u64>();
-
-                    self_level_wrapper.0[type_][j] =
-                        (other_matching_probability, other_data_len_sum);
-                }
-            }
-
-            (noise_with_other, other, self_level_wrapper)
-        })
-        .collect::<Vec<_>>();
-
-    let noise_with_other = noise_with_other_and_other_and_self_level_wrapper
-        .iter()
-        .map(|(noise_with_other, _, _)| noise_with_other)
-        .collect::<Vec<_>>();
-
-    let other = noise_with_other_and_other_and_self_level_wrapper
-        .iter()
-        .map(|(_, other, _)| other)
-        .collect::<Vec<_>>();
-
-    let self_level_wrapper = noise_with_other_and_other_and_self_level_wrapper
-        .iter()
-        .map(|(_, _, self_level_wrapper)| self_level_wrapper)
-        .collect::<Vec<_>>();
-
-    let noise_with_other_matching_probability: [_; 8] = noise_with_other
-        .iter()
-        .map(|noise_with_other| {
-            let noise_with_other_matching_probability = noise_with_other
-                .iter()
-                .map(|(matching_probability, _)| matching_probability)
-                .sum::<u64>();
-            let noise_with_other_data_len_sum = noise_with_other
-                .iter()
-                .map(|(_, data_len_sum)| data_len_sum)
-                .sum::<u64>();
-
-            noise_with_other_matching_probability as f64 / noise_with_other_data_len_sum as f64
-        })
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
-
-    let other_matching_probability = other
-        .iter()
-        .map(|(matching_probability, _)| matching_probability)
-        .sum::<u64>();
-    let other_data_len_sum = other
-        .iter()
-        .map(|(_, data_len_sum)| data_len_sum)
-        .sum::<u64>();
-
-    let other_matching_probability = other_matching_probability as f64 / other_data_len_sum as f64;
-
-    let self_level_wrapper: [[_; 8]; 8] = self_level_wrapper
-        .iter()
-        .map(|self_level_wrapper| {
-            let self_level_matching_probability: [(f64, f64); 8] = self_level_wrapper
-                .0
-                .iter()
-                .map(|v| {
-                    let self_matching_probability = v
-                        .iter()
-                        .map(|(matching_probability, _)| matching_probability)
-                        .sum::<u64>();
-                    let self_data_len_sum =
-                        v.iter().map(|(_, data_len_sum)| data_len_sum).sum::<u64>();
-
-                    (
-                        self_matching_probability as f64 / self_data_len_sum as f64,
-                        self_data_len_sum as f64,
-                    )
-                })
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-
-            self_level_matching_probability
-        })
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
-
-    (
-        noise_with_other_matching_probability,
-        other_matching_probability,
-        self_level_wrapper,
-    )
+    common_post_processing(noise_with_other_and_other_and_self_level_wrapper)
 }
 
-#[derive(Default)]
-struct LevelWrapper<T>(pub [[T; 3]; 3]);
-
-fn analysis_baved_post_processing(
+fn common_post_processing<const N: usize>(
     level_with_other_and_other_and_self_level_wrapper: Vec<(
-        [(u64, u64); 3],
+        [(u64, u64); N],
         (u64, u64),
-        LevelWrapper<(u64, u64)>,
+        [[(u64, u64); N]; N],
     )>,
-) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
+) -> ([f64; N], f64, [[(f64, f64); N]; N]) {
     let level_with_other = level_with_other_and_other_and_self_level_wrapper
         .iter()
         .map(|(level_with_other, _, _)| level_with_other)
@@ -465,16 +187,17 @@ fn analysis_baved_post_processing(
         .map(|(_, _, self_level_wrapper)| self_level_wrapper)
         .collect::<Vec<_>>();
 
-    let level_with_other_matching_probability: [_; 3] = level_with_other
-        .iter()
-        .map(|level_with_other| {
+    assert!(level_with_other.iter().all(|level| level.len() == N));
+    let level_with_other_matching_probability = (0..N)
+        .into_iter()
+        .map(|i| {
             let level_with_other_matching_probability = level_with_other
                 .iter()
-                .map(|(matching_probability, _)| matching_probability)
+                .map(|level_with_other| level_with_other[i].0)
                 .sum::<u64>();
             let level_with_other_data_len_sum = level_with_other
                 .iter()
-                .map(|(_, data_len_sum)| data_len_sum)
+                .map(|level_with_other| level_with_other[i].1)
                 .sum::<u64>();
 
             level_with_other_matching_probability as f64 / level_with_other_data_len_sum as f64
@@ -494,30 +217,33 @@ fn analysis_baved_post_processing(
 
     let other_matching_probability = other_matching_probability as f64 / other_data_len_sum as f64;
 
-    let self_level_wrapper: [[_; 3]; 3] = self_level_wrapper
+    assert!(self_level_wrapper.iter().all(|level| level.len() == N));
+    assert!(self_level_wrapper
         .iter()
-        .map(|self_level_wrapper| {
-            let self_level_matching_probability: [(f64, f64); 3] = self_level_wrapper
-                .0
-                .iter()
-                .map(|v| {
-                    let self_matching_probability = v
+        .all(|level| level.iter().all(|level| level.len() == N)));
+    let self_level_wrapper: [[_; N]; N] = (0..N)
+        .into_iter()
+        .map(|i| {
+            (0..N)
+                .into_iter()
+                .map(|j| {
+                    let other_matching_probability = self_level_wrapper
                         .iter()
-                        .map(|(matching_probability, _)| matching_probability)
+                        .map(|level| level[i][j].0)
                         .sum::<u64>();
-                    let self_data_len_sum =
-                        v.iter().map(|(_, data_len_sum)| data_len_sum).sum::<u64>();
+                    let other_data_len_sum = self_level_wrapper
+                        .iter()
+                        .map(|level| level[i][j].1)
+                        .sum::<u64>();
 
                     (
-                        self_matching_probability as f64 / self_data_len_sum as f64,
-                        self_data_len_sum as f64,
+                        other_matching_probability as f64 / other_data_len_sum as f64,
+                        other_data_len_sum as f64,
                     )
                 })
                 .collect::<Vec<_>>()
                 .try_into()
-                .unwrap();
-
-            self_level_matching_probability
+                .unwrap()
         })
         .collect::<Vec<_>>()
         .try_into()
@@ -530,62 +256,90 @@ fn analysis_baved_post_processing(
     )
 }
 
-fn common_pre_processing<'b, const N: usize, T, Dataset, const UseDataN: usize, THRESHOLD>(
+fn common_pre_processing_inner_other<T, Dataset, const USE_DATA_N: usize, THRESHOLD>(
+    i: usize,
     speakers: &[Dataset],
-) -> Vec<([(u64, u64); N], (u64, u64), [[(u64, u64); N]; N])>
+    speaker: &Vec<T>,
+) -> Option<(u64, u64, Vec<f64>)>
 where
-    T: InnerAverage + std::iter::Iterator + Clone,
-    Dataset: GenSpeakersAll<T> + 'b,
+    T: InnerAverage + Clone,
+    Dataset: GenSpeakersAll<T> + Sync,
     Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
     Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
     THRESHOLD: F64Ty,
-    for<'a> &'a [Dataset]: IntoParallelIterator<Item = Dataset>,
-    for<'a> <&'a [Dataset] as IntoParallelIterator>::Iter: Iterator<Item = &'b Dataset>,
+{
+    // Identify data
+    let mut rng = rand::thread_rng();
+    let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
+    let ident = (0..USE_DATA_N)
+        .map(|_| {
+            if unused_n.is_empty() {
+                return None;
+            }
+
+            let n = rng.gen_range(0..unused_n.len());
+            let n = unused_n.remove(n);
+
+            let ident = speaker[n].inner_average();
+
+            Some(ident)
+        })
+        .collect::<Option<Vec<_>>>()?
+        .inner_average();
+
+    // other speaker's identify data
+    let other_data = speakers
+        .iter()
+        .enumerate()
+        .filter(|(j, _)| i != *j)
+        .flat_map(|(_, speaker)| speaker.gen_speakers_all().custom_flat())
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let other_data_len_sum = other_data.custom_get_length();
+    let other_matching_probability = other_data
+        .iter()
+        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+        .sum::<u64>();
+
+    Some((other_matching_probability, other_data_len_sum, ident))
+}
+
+fn common_pre_processing<'a, 'b, const N: usize, T, Dataset, const USE_DATA_N: usize, THRESHOLD>(
+    speakers: &'a [Dataset],
+) -> Vec<([(u64, u64); N], (u64, u64), [[(u64, u64); N]; N])>
+where
+    T: InnerAverage + Clone,
+    Dataset: GenSpeakersAll<T> + 'b + Sync,
+    Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
+    Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
+    THRESHOLD: F64Ty,
+    &'a [Dataset]: IntoParallelIterator<Item = &'b Dataset>,
+    <&'a [Dataset] as rayon::iter::IntoParallelIterator>::Iter:
+        ParallelIterator<Item = &'b Dataset> + IndexedParallelIterator,
 {
     let noise_with_other_and_other_and_self_level_wrapper = speakers
         .par_iter()
         .enumerate()
-        .map(|(i, speaker)| {
+        .map(|(i, speaker): (usize, &Dataset)| {
             let speakers_all = speaker.gen_speakers_all();
 
-            let noise_with_other = speakers_all
+            let noise_with_other: [(u64, u64); N] = speakers_all
                 .iter()
                 .map(|speaker| {
-                    // Identify data
-                    let mut rng = rand::thread_rng();
-                    let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                    let ident = (0..UseDataN)
-                        .map(|_| {
-                            let n = rng.gen_range(0..unused_n.len());
-                            let n = unused_n.remove(n);
-
-                            let ident = speaker[n].inner_average();
-
-                            ident
-                        })
-                        .collect::<Vec<_>>()
-                        .inner_average();
-
-                    // other speaker's identify data
-                    let other_data = speakers
-                        .iter()
-                        .enumerate()
-                        .filter(|(j, _)| i != *j)
-                        .flat_map(|(_, speaker)| speaker.gen_speakers_all().custom_flat())
-                        .flatten()
-                        .collect::<Vec<_>>();
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
-
-                    (other_matching_probability, other_data_len_sum)
+                    if let Some((other_matching_probability, other_data_len_sum, _)) =
+                        common_pre_processing_inner_other::<T, Dataset, USE_DATA_N, THRESHOLD>(
+                            i, speakers, speaker,
+                        )
+                    {
+                        (other_matching_probability, other_data_len_sum)
+                    } else {
+                        (0, 0)
+                    }
                 })
-                .collect::<Vec<_>>();
-
-            let noise_with_other: [(u64, u64); N] = noise_with_other.try_into().unwrap();
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
 
             let other = {
                 let other_matching_probability = noise_with_other
@@ -605,16 +359,23 @@ where
             for (type_, speaker) in speakers_all.iter().enumerate() {
                 let mut rng = rand::thread_rng();
                 let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                let ident = (0..UseDataN)
+                let ident = match (0..USE_DATA_N)
                     .map(|_| {
-                        let n = rng.gen_range(0..speaker.len());
+                        if unused_n.is_empty() {
+                            return None;
+                        }
+
+                        let n = rng.gen_range(0..unused_n.len());
                         let n = unused_n.remove(n);
                         let ident = speaker[n].inner_average();
 
-                        ident
+                        Some(ident)
                     })
-                    .collect::<Vec<_>>()
-                    .inner_average();
+                    .collect::<Option<Vec<_>>>()
+                {
+                    Some(ident) => ident.inner_average(),
+                    None => continue,
+                };
 
                 for (j, speaker) in speakers_all.iter().enumerate() {
                     let other_data = speaker;
@@ -622,12 +383,11 @@ where
                     let other_data_len_sum = other_data.custom_get_length();
                     let other_matching_probability =
                         CustomFlat::<Vec<Vec<f64>>>::custom_flat(other_data.clone())
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
+                            .iter()
+                            .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+                            .sum::<u64>();
 
-                    self_level_wrapper[type_][j] =
-                        (other_matching_probability, other_data_len_sum);
+                    self_level_wrapper[type_][j] = (other_matching_probability, other_data_len_sum);
                 }
             }
 
@@ -638,119 +398,94 @@ where
     noise_with_other_and_other_and_self_level_wrapper
 }
 
-pub fn analysis_baved<THRESHOLD: F64Ty>(
+pub fn analysis_audio_mnist<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    data: AudioMNISTData<TimeCompressedType>,
+) -> (f64, f64) {
+    let AudioMNISTData { speakers } = data;
+
+    analysis_inner::<THRESHOLD, USE_DATA_N>(&speakers)
+}
+
+pub(super) fn analysis_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    speakers: &[Vec<TimeCompressedType>],
+) -> (f64, f64) {
+    let (
+        (self_matching_probability, self_data_len_sum),
+        (other_matching_probability, other_data_len_sum),
+    ) = speakers
+        .par_iter()
+        .enumerate()
+        .filter_map(|(i, speaker)| {
+            // How many data from the training source will be employed
+            let (other_matching_probability, other_data_len_sum, ident) =
+                common_pre_processing_inner_other::<TimeCompressedType, _, USE_DATA_N, THRESHOLD>(
+                    i, speakers, speaker,
+                )?;
+
+            let self_data = &speakers[i];
+
+            let self_data_len_sum = self_data.custom_get_length();
+
+            let self_matching_probability = self_data
+                .iter()
+                .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+                .sum::<u64>();
+
+            Some((
+                (self_matching_probability, self_data_len_sum),
+                (other_matching_probability, other_data_len_sum),
+            ))
+        })
+        .collect::<((Vec<_>, Vec<_>), (Vec<_>, Vec<_>))>();
+
+    let self_matching_probability = self_matching_probability.iter().sum::<u64>();
+    let self_data_len_sum = self_data_len_sum.iter().sum::<u64>();
+
+    let other_matching_probability = other_matching_probability.iter().sum::<u64>();
+    let other_data_len_sum = other_data_len_sum.iter().sum::<u64>();
+
+    (
+        self_matching_probability as f64 / self_data_len_sum as f64,
+        other_matching_probability as f64 / other_data_len_sum as f64,
+    )
+}
+
+pub fn analysis_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     data: AudioBAVED<TimeCompressedType>,
 ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
     let AudioBAVED { speakers } = data;
 
-    let level_with_other_and_other_and_self_level_wrapper = speakers
-        .par_iter()
-        .enumerate()
-        .map(|(i, speaker)| {
-            // How many data from the training source will be employed
-            let use_data_n = 10;
+    let level_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
+        3,
+        TimeCompressedType,
+        AudioBAVEDEmotion<TimeCompressedType>,
+        USE_DATA_N,
+        THRESHOLD,
+    >(&speakers);
 
-            fn gen_speakers_all(
-                speaker: &AudioBAVEDEmotion<TimeCompressedType>,
-            ) -> Vec<Vec<TimeCompressedType>> {
-                vec![
-                    speaker.level_0.clone(),
-                    speaker.level_1.clone(),
-                    speaker.level_2.clone(),
-                ]
-            }
+    common_post_processing(level_with_other_and_other_and_self_level_wrapper)
+}
 
-            let level_with_other = gen_speakers_all(speaker)
-                .iter()
-                .map(|speaker| {
-                    // Identify data
-                    let mut rng = rand::thread_rng();
-                    let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                    let ident = (0..use_data_n)
-                        .map(|_| {
-                            let n = rng.gen_range(0..unused_n.len());
-                            let n = unused_n.remove(n);
+pub fn analysis_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    data: AudioChimeHome<TimeCompressedType>,
+) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
+    let AudioChimeHome {
+        father,
+        mother,
+        child,
+    } = data;
 
-                            speaker[n].clone()
-                        })
-                        .collect::<Vec<_>>()
-                        .inner_average();
+    let speakers = [father, mother, child];
 
-                    // other speaker's identify data
-                    let other_data = speakers
-                        .iter()
-                        .enumerate()
-                        .filter(|(j, _)| i != *j)
-                        .flat_map(|(_, speaker)| gen_speakers_all(speaker))
-                        .flatten()
-                        .collect::<Vec<_>>();
+    let noise_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
+        8,
+        TimeCompressedType,
+        AudioChimeHomeNoise<TimeCompressedType>,
+        USE_DATA_N,
+        THRESHOLD,
+    >(&speakers);
 
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
-
-                    (other_matching_probability, other_data_len_sum)
-                })
-                .collect::<Vec<_>>();
-
-            let level_with_other: [(u64, u64); 3] = level_with_other.try_into().unwrap();
-
-            let other = {
-                let other_matching_probability = level_with_other
-                    .iter()
-                    .map(|(matching_probability, _)| matching_probability)
-                    .sum::<u64>();
-                let other_data_len_sum = level_with_other
-                    .iter()
-                    .map(|(_, data_len_sum)| data_len_sum)
-                    .sum::<u64>();
-
-                (other_matching_probability, other_data_len_sum)
-            };
-
-            let mut self_level_wrapper = LevelWrapper::<(_, _)>::default();
-
-            let speakers = vec![
-                speaker.level_0.clone(),
-                speaker.level_1.clone(),
-                speaker.level_2.clone(),
-            ];
-
-            for (level, speaker) in speakers.iter().enumerate() {
-                let mut rng = rand::thread_rng();
-                let mut unused_n = (0..speaker.len()).collect::<Vec<_>>();
-                let ident = (0..use_data_n)
-                    .map(|_| {
-                        let n = rng.gen_range(0..speaker.len());
-                        let n = unused_n.remove(n);
-                        let ident = speaker[n].clone();
-
-                        ident
-                    })
-                    .collect::<Vec<_>>()
-                    .inner_average();
-
-                for (j, speaker) in speakers.iter().enumerate() {
-                    let other_data = speaker;
-
-                    let other_data_len_sum = other_data.custom_get_length();
-                    let other_matching_probability = other_data
-                        .iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
-                        .sum::<u64>();
-
-                    self_level_wrapper.0[level][j] =
-                        (other_matching_probability, other_data_len_sum);
-                }
-            }
-
-            (level_with_other, other, self_level_wrapper)
-        })
-        .collect::<Vec<_>>();
-
-    analysis_baved_post_processing(level_with_other_and_other_and_self_level_wrapper)
+    common_post_processing(noise_with_other_and_other_and_self_level_wrapper)
 }
 
 trait CustomGetLength {
@@ -900,6 +635,12 @@ where
             self.television_and_household_appliance.clone(),
             self.all.clone(),
         ]
+    }
+}
+
+impl<T: Clone> GenSpeakersAll<T> for Vec<T> {
+    fn gen_speakers_all(&self) -> Vec<Vec<T>> {
+        vec![self.clone()]
     }
 }
 

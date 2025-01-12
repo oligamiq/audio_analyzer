@@ -645,6 +645,7 @@ dependencies = [
  "anyhow",
  "audio_analyzer_core",
  "bincode",
+ "chrono",
  "const_struct",
  "convert_case",
  "csv",

@@ -1,6 +1,5 @@
 use audio_analyzer_core::prelude::TestData;
 use dashmap::DashMap;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]

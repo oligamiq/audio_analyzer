@@ -1,9 +1,10 @@
 // $ENV:RUSTFLAGS="-C target-cpu=native"
 // cargo run -p audio_analyzer_inner_checker -r
 
-use std::{collections::HashMap, path, sync::atomic::AtomicBool};
+use std::collections::HashMap;
 
-use dashmap::DashMap;
+use analysis::Analysis;
+use const_struct::{primitive::F64Ty, F64};
 
 // pub mod brotli_system;
 pub mod analysis;
@@ -18,7 +19,7 @@ const BAVED_BASE_PATH: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/data
 const CHIME_HOME_BASE_PATH: &'static str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/datasets/ChimeHome/chunks");
 
-use deserialize::{DashMapWrapper, DashMapWrapperRef};
+use deserialize::DashMapWrapperRef;
 use libs::load_dataset::{
     AudioBAVED, AudioChimeHome, AudioChimeHomePattern, AudioMNISTData, BAVEDPattern,
     GetAnalyzedData,
@@ -38,6 +39,8 @@ fn set_handler_boxed(handler: Box<dyn Fn() + 'static + Send + Sync>) {
 }
 
 fn main() -> anyhow::Result<()> {
+    let now = std::time::Instant::now();
+
     ctrlc::set_handler(move || {
         CTRLC_HANDLER.lock()();
     })
@@ -45,17 +48,36 @@ fn main() -> anyhow::Result<()> {
 
     // analysis()?;
 
-    let data = load_data::<Vec<f64>, _>("burg")?;
+    type THRESHOLD = F64!(50.);
+    const USE_DATA_N: usize = 10;
 
-    let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
+    // let data = load_data::<Vec<f64>, _>("burg")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("burg")?;
+    println!("analysis_data: {:?}", analysis_data);
 
-    let data = load_data::<Vec<f64>, _>("lpc")?;
+    // let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
+    let analysis_data =
+        analysis_load_data::<Vec<Vec<Option<f64>>>, _, THRESHOLD, USE_DATA_N>("burg_uncompress")?;
+    println!("analysis_data: {:?}", analysis_data);
 
-    let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
+    // let data = load_data::<Vec<f64>, _>("lpc")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("lpc")?;
+    println!("analysis_data: {:?}", analysis_data);
 
-    let data = load_data::<Vec<f64>, _>("fft")?;
+    // let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
+    let analysis_data =
+        analysis_load_data::<Vec<Vec<Option<f64>>>, _, THRESHOLD, USE_DATA_N>("lpc_uncompress")?;
+    println!("analysis_data: {:?}", analysis_data);
 
-    let data = load_data::<Vec<f64>, _>("liftered")?;
+    // let data = load_data::<Vec<f64>, _>("fft")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("fft")?;
+    println!("analysis_data: {:?}", analysis_data);
+
+    // let data = load_data::<Vec<f64>, _>("liftered")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("liftered")?;
+    println!("analysis_data: {:?}", analysis_data);
+
+    println!("last elapsed: {:?}", now.elapsed());
 
     Ok(())
 }
@@ -88,6 +110,124 @@ fn analysis() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn analysis_load_data<T, S, THRESHOLD, const USE_DATA_N: usize>(
+    place: S,
+) -> anyhow::Result<(
+    <AudioMNISTData<T> as Analysis<T>>::Output,
+    <AudioBAVED<T> as Analysis<T>>::Output,
+    <AudioChimeHome<T> as Analysis<T>>::Output,
+)>
+where
+    T: ToOwned<Owned = T>
+        + Send
+        + Sync
+        + Clone
+        + Default
+        + serde::Serialize
+        + for<'de> serde::Deserialize<'de>
+        + 'static,
+    S: AsRef<str>,
+    AudioMNISTData<T>: Analysis<T>,
+    AudioBAVED<T>: Analysis<T>,
+    AudioChimeHome<T>: Analysis<T>,
+    THRESHOLD: F64Ty,
+    <AudioMNISTData<T> as Analysis<T>>::Output: serde::Serialize,
+    <AudioBAVED<T> as Analysis<T>>::Output: serde::Serialize,
+    <AudioChimeHome<T> as Analysis<T>>::Output: serde::Serialize,
+{
+    let now = std::time::Instant::now();
+
+    let place = place.as_ref();
+
+    println!("loading... {}", place);
+
+    let fake_analyzer = |_: &mut audio_analyzer_core::prelude::TestData, _: u32| -> T {
+        panic!("not implemented");
+    };
+
+    let place = format!("{}{place}/", concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"));
+
+    let mnist_data = fake_analyzer
+        .load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+            MNIST_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let mnist_analyzed_data = mnist_data.analysis::<THRESHOLD, USE_DATA_N>();
+
+    let baved_data = fake_analyzer
+        .load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
+            BAVED_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let baved_analyzed_data = baved_data.analysis::<THRESHOLD, USE_DATA_N>();
+
+    let chime_home_data = fake_analyzer
+        .load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
+            CHIME_HOME_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let chime_home_analyzed_data = chime_home_data.analysis::<THRESHOLD, USE_DATA_N>();
+
+    const fn get_unique_id<U, T, F>(_: &F) -> &'static str
+    where
+        U: LoadAndAnalysis<T, F>,
+        T: Send + Sync + Clone + 'static,
+        F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+    {
+        <U as LoadAndAnalysis<T, F>>::UNIQUE_ID
+    }
+
+    bincode::serialize_into(
+        std::fs::File::create(format!(
+            "{}/{}_{}_{}.bin",
+            place,
+            get_unique_id::<AudioMNISTData<T>, _, _>(&fake_analyzer),
+            THRESHOLD::VALUE,
+            USE_DATA_N
+        ))?,
+        &mnist_analyzed_data,
+    )?;
+
+    bincode::serialize_into(
+        std::fs::File::create(format!(
+            "{}/{}_{}_{}.bin",
+            place,
+            get_unique_id::<AudioBAVED<T>, _, _>(&fake_analyzer),
+            THRESHOLD::VALUE,
+            USE_DATA_N
+        ))?,
+        &baved_analyzed_data,
+    )?;
+
+    bincode::serialize_into(
+        std::fs::File::create(format!(
+            "{}/{}_{}_{}.bin",
+            place,
+            get_unique_id::<AudioChimeHome<T>, _, _>(&fake_analyzer),
+            THRESHOLD::VALUE,
+            USE_DATA_N
+        ))?,
+        &chime_home_analyzed_data,
+    )?;
+
+    println!("elapsed: {:?}", now.elapsed());
+    let now = chrono::Utc::now().with_timezone(chrono::FixedOffset::east_opt(9 * 3600).as_ref().unwrap());
+    println!("{}", now.format("%Y-%m-%d %H:%M:%S").to_string());
+
+    Ok((
+        mnist_analyzed_data,
+        baved_analyzed_data,
+        chime_home_analyzed_data,
+    ))
+}
+
+#[allow(unused)]
 fn load_data<T, S: AsRef<str>>(
     place: S,
 ) -> anyhow::Result<(AudioMNISTData<T>, AudioBAVED<T>, AudioChimeHome<T>)>
@@ -598,190 +738,3 @@ where
         ret_data
     }
 }
-
-// fn load_and_analysis_old<
-//     T: Send
-//         + Sync
-//         + ToOwned<Owned = T>
-//         + Clone
-//         + serde::Serialize
-//         + for<'de> serde::Deserialize<'de>
-//         + 'static,
-//     // K: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync,
-// >(
-//     analyzer: impl Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
-// ) -> anyhow::Result<AudioMNISTData<T>> {
-//     type Hasher = gxhash::GxBuildHasher;
-//     type MapType<K, V> = DashMap<K, V, Hasher>;
-
-//     let save_data_path_mid = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data_mid.bincode");
-//     let save_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/audio_mnist_data.bincode");
-
-//     let data = if let Ok(Ok(data)) = {
-//         std::fs::File::open(save_data_path)
-//             .map(|f| {
-//                 println!("loading...");
-//                 let now = std::time::Instant::now();
-//                 let mut reader = std::io::BufReader::new(f);
-//                 let data = bincode::deserialize_from::<_, AudioMNISTData<_>>(&mut reader);
-//                 data.map_err(|e| {
-//                     println!("failed to load save audio_mnist_complete data: {:?}", e);
-//                 })
-//                 .map(|data| {
-//                     println!("loaded save audio_mnist_complete data: {:?}", now.elapsed());
-//                     data
-//                 })
-//             })
-//             .map_err(|e| {
-//                 println!("failed to load save audio_mnist_complete data: {:?}", e);
-//             })
-//     } {
-//         data
-//     } else {
-//         let save_data: MapType<_, _> = match std::fs::File::open(save_data_path_mid).map(|f| {
-//             let now = std::time::Instant::now();
-//             println!("loading...");
-//             let mut reader = std::io::BufReader::new(f);
-//             let save_data =
-//                 bincode::deserialize_from::<_, DashMapWrapper<_, _, Hasher>>(&mut reader);
-//             println!("load time: {:?}", now.elapsed());
-
-//             save_data
-//         }) {
-//             Ok(Ok(save_data)) => {
-//                 println!("loaded save data");
-//                 save_data.dash_map
-//             }
-//             Err(e) => {
-//                 println!("failed to load save data: {:?}", e);
-//                 DashMap::with_capacity_and_hasher(60 * 10 * 50, Hasher::default())
-//             }
-//             Ok(Err(e)) => {
-//                 println!("failed to load save data: {:?}", e);
-//                 DashMap::with_capacity_and_hasher(60 * 10 * 50, Hasher::default())
-//             }
-//         };
-//         let leaked_save_data_mut: &'static mut MapType<_, _> = Box::leak(Box::new(save_data));
-//         let leaked_save_data: &'static MapType<_, _> = leaked_save_data_mut;
-
-//         let leaked_stopper_mut: &'static mut AtomicBool =
-//             Box::leak(Box::new(AtomicBool::new(false)));
-//         let leaked_stopper: &'static AtomicBool = leaked_stopper_mut;
-
-//         let (blocker, waiter) = std::sync::mpsc::channel::<()>();
-
-//         set_handler(move || {
-//             println!("save with compress file");
-
-//             save_with_compress_file(
-//                 leaked_save_data,
-//                 save_data_path_mid,
-//                 Some(leaked_stopper),
-//                 Some(&blocker),
-//             );
-//         });
-
-//         let data =
-//             load_AudioMNIST(MNIST_BASE_PATH, analyzer, leaked_save_data, &leaked_stopper).unwrap();
-
-//         if leaked_stopper.load(std::sync::atomic::Ordering::Relaxed) {
-//             waiter.recv().unwrap();
-
-//             set_handler(move || {
-//                 std::process::exit(0);
-//             });
-
-//             release(leaked_save_data);
-//             release(leaked_stopper);
-
-//             return Err(anyhow::anyhow!("stop"));
-//         }
-
-//         set_handler(move || {
-//             std::process::exit(0);
-//         });
-
-//         let now = std::time::Instant::now();
-//         println!("saving... audio mnist data");
-//         let mut file = std::fs::File::create(save_data_path).unwrap();
-//         let mut wtr = std::io::BufWriter::new(&mut file);
-//         bincode::serialize_into(&mut wtr, &data).unwrap();
-
-//         println!("save time: {:?}", now.elapsed());
-
-//         release(leaked_save_data_mut);
-//         release(leaked_stopper_mut);
-//         std::mem::drop(waiter);
-
-//         data
-//     };
-
-//     Ok(data)
-// }
-
-// fn save_with_compress_file<
-//     K: Eq + std::hash::Hash + Clone + serde::Serialize + Send + Sync,
-//     V: Clone + serde::Serialize + Send + Sync,
-//     Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync,
-// >(
-//     save_data: &'static DashMap<K, V, Hasher>,
-//     save_data_path: &str,
-//     stopper: Option<&AtomicBool>,
-//     blocker: Option<&std::sync::mpsc::Sender<()>>,
-// ) {
-//     if let Some(stopper) = stopper {
-//         if stopper.load(std::sync::atomic::Ordering::Relaxed) {
-//             std::process::exit(0);
-//         }
-//         stopper.store(true, std::sync::atomic::Ordering::SeqCst);
-//     }
-//     println!("\n\rsaving...");
-
-//     let save_data_path = save_data_path.to_string();
-
-//     std::thread::spawn(move || {
-//         let saveable_data = DashMapWrapperRef {
-//             dash_map: save_data,
-//         };
-//         let compress_now = std::time::Instant::now();
-
-//         let mut file = std::fs::File::create(save_data_path).unwrap();
-
-//         // let mut wtr = snap::write::FrameEncoder::new(
-//         //     &mut file,
-//         // );
-
-//         // let mut wtr = std::io::BufWriter::with_capacity(1024 * 1024 * 10, wtr);
-//         let mut wtr = std::io::BufWriter::new(&mut file);
-//         bincode::serialize_into(&mut wtr, &saveable_data).unwrap();
-//         // serde_json::to_writer(&mut wtr, &saveable_data).unwrap();
-
-//         println!("save time: {:?}", compress_now.elapsed());
-
-//         // let file = std::fs::File::open(save_data_path).unwrap();
-//         std::mem::drop(wtr);
-//         let file_size = file.metadata().unwrap().len();
-//         println!(
-//             "file size: {} bytes",
-//             si_scale::helpers::bibytes2(file_size as f64)
-//         );
-
-//         // let file2 = std::fs::File::create(format!("{}.s", save_data_path)).unwrap();
-//         // let mut file2 = std::io::BufWriter::with_capacity(1024 * 1024 * 10, file2);
-//         // bincode::serialize_into(file2, &saveable_data).unwrap();
-//         // serde_json::to_writer(&mut file2, &saveable_data).unwrap();
-
-//         // let file2 = std::fs::File::open(format!("{}.s", save_data_path)).unwrap();
-//         // let file_size = file2.metadata().unwrap().len();
-//         // println!("file size: {} bytes", si_scale::helpers::bibytes2(file_size as f64));
-//     })
-//     .join()
-//     .unwrap();
-
-//     blocker.map(|blocker| blocker.send(()));
-// }
-
-// fn release<T>(ptr: &T) {
-//     let ptr = ptr as *const T;
-//     std::mem::drop(unsafe { Box::<T>::from_raw(ptr as *mut T) });
-// }
