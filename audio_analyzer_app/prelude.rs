@@ -16,10 +16,11 @@ pub mod nodes {
             SpectrogramDensityLayerNode, SpectrogramDensityLayerNodeInfo,
         },
         lifter::{FilterNodes, LifterNode, LifterNodeInfo},
-        raw_input::{
-            FileInputNode, FileInputNodeInfo, MicrophoneInputNode, MicrophoneInputNodeInfo,
-            RawInputNodes,
-        },
+        lpc::{BurgNode, BurgNodeInfo, LpcNode, LpcNodeInfo, LpcNodes},
+        output::{OutputNode, OutputNodeInfo, OutputNodes},
+        pin_info::MyPinInfo,
+        raw_input::{AbstractInputNode, AbstractInputNodeInfo, FileInputNode, MicrophoneInputNode},
+        unknown::{UnknownNode, UnknownNodeInfo},
         utils::{config_ui, extract_node},
         viewer::{
             DataInspectorNode, DataPlotterNode, DataPlotterNodeInfo, SchemaViewerNode,
@@ -35,7 +36,9 @@ pub mod nodes {
 }
 
 pub mod snarl {
-    pub(crate) use crate::libs::nodes::{editor::FlowNodes, pin_info::CustomPinInfo};
+    pub(crate) use crate::libs::nodes::{
+        editor::FlowNodes, pin_info::CustomPinInfo, pin_info::MyDrawer, pin_info::MyPinInfo,
+    };
     pub use egui_snarl::{
         ui::{AnyPins, PinInfo, SnarlStyle, SnarlViewer},
         InPin, NodeId, OutPin, Snarl,

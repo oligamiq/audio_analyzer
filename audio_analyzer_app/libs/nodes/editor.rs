@@ -5,12 +5,15 @@ pub enum FlowNodes {
     LayerNodes(LayerNodes),
     ConfigNodes(ConfigNodes),
     DataInspectorNode(DataInspectorNode),
-    RawInputNodes(RawInputNodes),
+    AbstractInputNode(AbstractInputNode),
     ExprNode(ExprNodes),
     FrameBufferNode(FrameBufferNode),
     FrequencyNodes(FrequencyNodes),
     FilterNodes(FilterNodes),
     IterNodes(IterNodes),
+    LpcNodes(LpcNodes),
+    OutputNodes(OutputNodes),
+    UnknownNode(UnknownNode),
 }
 
 impl FlowNodes {
@@ -24,10 +27,7 @@ impl FlowNodes {
             FlowNodes::ConfigNodes(node) => match node {
                 ConfigNodes::NumberNode(node) => Box::new(node.to_info()),
             },
-            FlowNodes::RawInputNodes(node) => match node {
-                RawInputNodes::MicrophoneInputNode(node) => Box::new(node.to_info()),
-                RawInputNodes::FileInputNode(node) => Box::new(node.to_info()),
-            },
+            FlowNodes::AbstractInputNode(node) => Box::new(node.to_info()),
             FlowNodes::DataInspectorNode(node) => match node {
                 DataInspectorNode::DataPlotterNode(node) => Box::new(node.to_info()),
                 DataInspectorNode::SchemaViewerNode(node) => Box::new(node.to_info()),
@@ -46,6 +46,14 @@ impl FlowNodes {
             },
             FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
                 IterNodes::EnumerateIterNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(node) => Box::new(node.to_info()),
+                LpcNodes::BurgNode(node) => Box::new(node.to_info()),
+            },
+            FlowNodes::UnknownNode(unknown_node) => Box::new(unknown_node.to_info()),
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(node) => Box::new(node.to_info()),
             },
         }
     }
@@ -78,7 +86,7 @@ pub trait FlowNodesViewerTrait {
         _ui: &mut egui::Ui,
         _scale: f32,
         _snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         todo!()
     }
 }
@@ -90,7 +98,7 @@ impl FlowNodesViewer {
         ui: &mut egui::Ui,
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let ctx = FlowNodesViewerCtx {
             running: self.running,
         };
@@ -103,10 +111,7 @@ impl FlowNodesViewer {
                 }
             },
             FlowNodes::ConfigNodes(_) => unreachable!(),
-            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                RawInputNodes::MicrophoneInputNode(_) => unreachable!(),
-                RawInputNodes::FileInputNode(_) => todo!(),
-            },
+            FlowNodes::AbstractInputNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             FlowNodes::DataInspectorNode(node) => match node {
                 DataInspectorNode::DataPlotterNode(node) => {
                     node.show_input(&ctx, pin, ui, scale, snarl)
@@ -134,11 +139,23 @@ impl FlowNodesViewer {
             FlowNodes::IterNodes(iter_nodes) => match iter_nodes {
                 IterNodes::EnumerateIterNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
             },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+                LpcNodes::BurgNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
+            FlowNodes::UnknownNode(unknown_node) => {
+                unknown_node.show_input(&ctx, pin, ui, scale, snarl)
+            }
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(node) => node.show_input(&ctx, pin, ui, scale, snarl),
+            },
         }
     }
 }
 
 impl SnarlViewer<FlowNodes> for FlowNodesViewer {
+    type Drawer = MyDrawer;
+
     #[inline]
     fn connect(
         &mut self,
@@ -168,6 +185,25 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         node.to_as_info().name().to_string()
     }
 
+    fn show_header(
+        &mut self,
+        node: NodeId,
+        _inputs: &[InPin],
+        _outputs: &[OutPin],
+        ui: &mut Ui,
+        _scale: f32,
+        snarl: &mut Snarl<FlowNodes>,
+    ) {
+        if matches!(snarl[node], FlowNodes::UnknownNode(_)) {
+            ui.label(
+                Into::<egui::WidgetText>::into("UnknownNode")
+                    .color(egui::Color32::from_rgb(255, 0, 0)),
+            );
+        } else {
+            ui.label(self.title(&snarl[node]));
+        }
+    }
+
     fn inputs(&mut self, node: &FlowNodes) -> usize {
         node.to_as_info().inputs()
     }
@@ -183,7 +219,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui: &mut egui::Ui,
         scale: f32,
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
-    ) -> egui_snarl::ui::PinInfo {
+    ) -> MyPinInfo {
         self.show_input(pin, ui, scale, snarl)(snarl, ui)
     }
 
@@ -193,7 +229,7 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &mut egui_snarl::Snarl<FlowNodes>,
-    ) -> egui_snarl::ui::PinInfo {
+    ) -> MyPinInfo {
         match &mut snarl[pin.id.node] {
             FlowNodes::LayerNodes(layer_nodes) => match layer_nodes {
                 LayerNodes::STFTLayer(_) => {
@@ -217,19 +253,16 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     return CustomPinInfo::setting(8);
                 }
             },
-            FlowNodes::RawInputNodes(raw_input_nodes) => match raw_input_nodes {
-                RawInputNodes::MicrophoneInputNode(node) => match pin.id.output {
-                    0 => {
-                        ui.label("raw stream");
+            FlowNodes::AbstractInputNode(node) => match pin.id.output {
+                0 => {
+                    ui.label("raw stream");
 
-                        node.update();
-                    }
-                    1 => {
-                        ui.label("sample rate");
-                    }
-                    _ => unreachable!(),
-                },
-                RawInputNodes::FileInputNode(_) => todo!(),
+                    node.update();
+                }
+                1 => {
+                    ui.label("sample rate");
+                }
+                _ => unreachable!(),
             },
             FlowNodes::DataInspectorNode(_) => {
                 ui.label(format!("shape.{:?}", pin.id.output));
@@ -261,12 +294,54 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
                     ui.label("EnumerateIterNode");
                 }
             },
+            FlowNodes::LpcNodes(lpc_nodes) => match lpc_nodes {
+                LpcNodes::LpcNode(_) => {
+                    ui.label("LpcNode");
+                }
+                LpcNodes::BurgNode(_) => {
+                    ui.label("BurgNode");
+                }
+            },
+            FlowNodes::UnknownNode(_) => {
+                return CustomPinInfo::none_status();
+            }
+            FlowNodes::OutputNodes(output_nodes) => match output_nodes {
+                OutputNodes::OutputNode(_) => {
+                    ui.label("OutputNode");
+                }
+            },
         }
         if !self.running {
             return CustomPinInfo::none_status();
         }
 
         CustomPinInfo::ok_status()
+    }
+
+    fn has_body(&mut self, node: &FlowNodes) -> bool {
+        matches!(node, FlowNodes::UnknownNode(_))
+    }
+
+    /// Renders the node's body.
+    #[inline]
+    fn show_body(
+        &mut self,
+        node: NodeId,
+        _inputs: &[InPin],
+        _outputs: &[OutPin],
+        ui: &mut Ui,
+        _scale: f32,
+        snarl: &mut Snarl<FlowNodes>,
+    ) {
+        match &mut snarl[node] {
+            FlowNodes::UnknownNode(node) => {
+                ui.label(
+                    Into::<egui::WidgetText>::into(format!("unknown node: {}", node.name))
+                        .color(egui::Color32::from_rgb(255, 0, 0)),
+                );
+            }
+            _ => {}
+        }
     }
 
     fn has_graph_menu(&mut self, _pos: egui::Pos2, _snarl: &mut Snarl<FlowNodes>) -> bool {
@@ -306,17 +381,10 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
             }
         });
 
-        ui.menu_button("raw_input", |ui| {
-            if ui.button("MicrophoneInputNode").clicked() {
-                snarl.insert_node(pos, MicrophoneInputNodeInfo.flow_node());
-                ui.close_menu();
-            }
-
-            if ui.button("FileInputNode").clicked() {
-                snarl.insert_node(pos, FileInputNodeInfo.flow_node());
-                ui.close_menu();
-            }
-        });
+        if ui.button("AbstractInputNode").clicked() {
+            snarl.insert_node(pos, AbstractInputNodeInfo.flow_node());
+            ui.close_menu();
+        }
 
         ui.menu_button("inspector", |ui| {
             if ui.button("DataPlotterNode").clicked() {
@@ -371,6 +439,25 @@ impl SnarlViewer<FlowNodes> for FlowNodesViewer {
         ui.menu_button("iter", |ui| {
             if ui.button("EnumerateIterNode").clicked() {
                 snarl.insert_node(pos, EnumerateIterNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("lpc", |ui| {
+            if ui.button("LpcNode").clicked() {
+                snarl.insert_node(pos, LpcNodeInfo.flow_node());
+                ui.close_menu();
+            }
+
+            if ui.button("BurgNode").clicked() {
+                snarl.insert_node(pos, BurgNodeInfo.flow_node());
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("output", |ui| {
+            if ui.button("OutputNode").clicked() {
+                snarl.insert_node(pos, OutputNodeInfo.flow_node());
                 ui.close_menu();
             }
         });

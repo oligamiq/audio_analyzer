@@ -28,19 +28,33 @@ impl Debug for Device {
 impl Device {
     pub fn new() -> Self {
         let host = cpal::default_host();
-        let device = host.default_input_device().unwrap();
+        let device = host.default_input_device().map(|device| {
+            let mut sl = Device {
+                _host: host,
+                device: Some(device),
+                sample_rate: None,
+                data: Arc::new(Mutex::new(Vec::new())),
+                stream: None,
+            };
 
-        let mut sl = Device {
-            _host: host,
-            device: Some(device),
-            sample_rate: None,
-            data: Arc::new(Mutex::new(Vec::new())),
-            stream: None,
-        };
+            sl.start();
 
-        sl.start();
+            sl
+        });
 
-        sl
+        match device {
+            Some(device) => device,
+            None => {
+                log::warn!("no input device found");
+                Device {
+                    _host: cpal::default_host(),
+                    device: None,
+                    sample_rate: None,
+                    data: Arc::new(Mutex::new(Vec::new())),
+                    stream: None,
+                }
+            }
+        }
     }
 
     pub fn get_sample_rate(&self) -> Option<u32> {

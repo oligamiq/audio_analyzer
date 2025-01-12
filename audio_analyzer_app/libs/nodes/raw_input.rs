@@ -1,4 +1,4 @@
-use crate::prelude::nodes::*;
+use crate::{libs::nodes::layer::extract_snarl_ui_pin_member, prelude::nodes::*};
 use audio_analyzer_core::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -7,41 +7,69 @@ pub enum RawInputNodes {
     FileInputNode(FileInputNode),
 }
 
-impl RawInputNodes {
-    pub fn name(&self) -> &str {
-        match self {
-            RawInputNodes::MicrophoneInputNode(_) => "MicrophoneInputNode",
-            RawInputNodes::FileInputNode(_) => "FileInputNode",
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct AbstractInputNode {
+    pub(crate) hop_size: EditableOnText<usize>,
+
+    input: RawInputNodes,
+}
+
+impl Default for AbstractInputNode {
+    fn default() -> Self {
+        AbstractInputNode {
+            hop_size: EditableOnText::new(160),
+            input: RawInputNodes::MicrophoneInputNode(MicrophoneInputNode::default()),
         }
+    }
+}
+
+impl FlowNodesViewerTrait for AbstractInputNode {
+    fn show_input(
+        &self,
+        ctx: &FlowNodesViewerCtx,
+        pin: &egui_snarl::InPin,
+        ui: &mut egui::Ui,
+        _: f32,
+        snarl: &egui_snarl::Snarl<FlowNodes>,
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
+        let pin_id = pin.id;
+
+        match pin_id.input {
+            0 => {
+                if !ctx.running {
+                    ui.label("order");
+
+                    return Box::new(move |_, _| CustomPinInfo::none_status());
+                }
+
+                extract_snarl_ui_pin_member!(
+                    snarl,
+                    ui,
+                    pin,
+                    FlowNodes::AbstractInputNode(node),
+                    node,
+                    hop_size
+                );
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl AbstractInputNode {
+    pub fn name(&self) -> &str {
+        "AbstractInputNode"
     }
 
     pub fn get_sample_rate(&self) -> u32 {
-        match self {
+        match &self.input {
             RawInputNodes::MicrophoneInputNode(node) => node.get_sample_rate(),
             RawInputNodes::FileInputNode(node) => node.get_sample_rate(),
         }
     }
 
-    pub fn inputs(&self) -> usize {
-        match self {
-            RawInputNodes::MicrophoneInputNode(_) => MicrophoneInputNodeInfo.inputs(),
-            RawInputNodes::FileInputNode(_) => FileInputNodeInfo.inputs(),
-        }
-    }
-
-    pub const fn outputs(&self) -> usize {
-        2
-    }
-
-    pub fn update(&mut self) {
-        match self {
-            RawInputNodes::MicrophoneInputNode(node) => node.update(),
-            RawInputNodes::FileInputNode(node) => node.update(),
-        }
-    }
-
     pub fn get(&self) -> Option<Array1<f64>> {
-        match self {
+        match &self.input {
             RawInputNodes::MicrophoneInputNode(node) => match node {
                 #[cfg(not(target_family = "wasm"))]
                 MicrophoneInputNode::Device(_, vec) => vec.clone(),
@@ -53,22 +81,55 @@ impl RawInputNodes {
     }
 }
 
-impl GraphNode for MicrophoneInputNode {
-    type NodeInfoType = MicrophoneInputNodeInfo;
+pub struct AbstractInputNodeInfo;
+
+impl NodeInfo for AbstractInputNodeInfo {
+    fn name(&self) -> &str {
+        "AbstractInputNode"
+    }
+
+    fn inputs(&self) -> usize {
+        1
+    }
+
+    fn outputs(&self) -> usize {
+        2
+    }
+
+    fn input_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![NodeInfoTypes::Number]
+    }
+
+    fn output_types(&self) -> Vec<super::NodeInfoTypes> {
+        vec![NodeInfoTypes::Array1F64, NodeInfoTypes::Number]
+    }
+
+    fn flow_node(&self) -> super::editor::FlowNodes {
+        super::editor::FlowNodes::AbstractInputNode(AbstractInputNode::default())
+    }
+}
+
+impl GraphNode for AbstractInputNode {
+    type NodeInfoType = AbstractInputNodeInfo;
 
     fn to_info(&self) -> Self::NodeInfoType {
-        MicrophoneInputNodeInfo
+        AbstractInputNodeInfo
     }
 
     fn update(&mut self) {
-        match self {
-            #[cfg(not(target_family = "wasm"))]
-            MicrophoneInputNode::Device(node, vec) => {
-                *vec = node.try_recv().map(|x| x.into_iter().collect())
-            }
-            #[cfg(target_family = "wasm")]
-            MicrophoneInputNode::WebAudioStream(node, vec) => {
-                *vec = node.try_recv().map(|x| x.into_iter().collect())
+        match &mut self.input {
+            RawInputNodes::MicrophoneInputNode(node) => match node {
+                #[cfg(not(target_family = "wasm"))]
+                MicrophoneInputNode::Device(node, vec) => {
+                    *vec = node.try_recv().map(|x| x.into_iter().collect())
+                }
+                #[cfg(target_family = "wasm")]
+                MicrophoneInputNode::WebAudioStream(node, vec) => {
+                    *vec = node.try_recv().map(|x| x.into_iter().collect())
+                }
+            },
+            RawInputNodes::FileInputNode(node) => {
+                node.vec = node.data.try_recv().map(|x| x.into_iter().collect());
             }
         }
     }
@@ -80,36 +141,6 @@ pub enum MicrophoneInputNode {
     Device(Device, Option<Array1<f64>>),
     #[cfg(target_family = "wasm")]
     WebAudioStream(WebAudioStream, Option<Array1<f64>>),
-}
-
-pub struct MicrophoneInputNodeInfo;
-
-impl NodeInfo for MicrophoneInputNodeInfo {
-    fn name(&self) -> &str {
-        "MicrophoneInputNode"
-    }
-
-    fn inputs(&self) -> usize {
-        0
-    }
-
-    fn outputs(&self) -> usize {
-        2
-    }
-
-    fn input_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![]
-    }
-
-    fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![NodeInfoTypes::Array1F64, NodeInfoTypes::Number]
-    }
-
-    fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::RawInputNodes(RawInputNodes::MicrophoneInputNode(
-            MicrophoneInputNode::default(),
-        ))
-    }
 }
 
 impl Default for MicrophoneInputNode {
@@ -218,36 +249,6 @@ pub struct FileInputNode {
     data: TestData,
 }
 
-pub struct FileInputNodeInfo;
-
-impl NodeInfo for FileInputNodeInfo {
-    fn name(&self) -> &str {
-        "FileInputNode"
-    }
-
-    fn inputs(&self) -> usize {
-        1
-    }
-
-    fn outputs(&self) -> usize {
-        2
-    }
-
-    fn input_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![]
-    }
-
-    fn output_types(&self) -> Vec<super::NodeInfoTypes> {
-        vec![NodeInfoTypes::Array1F64, NodeInfoTypes::Number]
-    }
-
-    fn flow_node(&self) -> super::editor::FlowNodes {
-        super::editor::FlowNodes::RawInputNodes(RawInputNodes::FileInputNode(
-            FileInputNode::default(),
-        ))
-    }
-}
-
 impl Default for FileInputNode {
     fn default() -> Self {
         Self::new("jfk_f32le.wav".to_string())
@@ -285,17 +286,5 @@ impl FileInputNode {
 
     fn start(&mut self) {
         self.data.start();
-    }
-}
-
-impl GraphNode for FileInputNode {
-    type NodeInfoType = FileInputNodeInfo;
-
-    fn to_info(&self) -> Self::NodeInfoType {
-        FileInputNodeInfo
-    }
-
-    fn update(&mut self) {
-        self.vec = self.data.try_recv().map(|x| x.into_iter().collect());
     }
 }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num"]
+members = ["audio_analyzer_app", "audio_analyzer_core", "bench_data", "egui_editable_num", "filedl_on_web", "reqwest-client", "rocket-webapi", "rocket-webapi/lib", "audio_analyzer_inner_checker"]
 default-members = ["audio_analyzer_app"]
 
 [workspace.package]
@@ -11,21 +11,25 @@ license = "MIT/Apache-2.0"
 
 [workspace.dependencies]
 audio_analyzer_core = { path = "audio_analyzer_core" }
+filedl_on_web = { path = "filedl_on_web" }
 ndarray = { version = "0.16.1", features = ["serde"] }
 num-complex = { version = "0.4.6", features = ["serde"]}
 log = { version = "0.4.22", features = ["std"] }
 mel_spec = { git = "https://github.com/oligamiq/mel-spec" }
-egui = { version = "0.29.1", features = ["accesskit", "log", "persistence"] }
+egui = { version = "0.30.0", features = ["accesskit", "log", "persistence"] }
 egui_editable_num = { path = "egui_editable_num" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 fasteval3 = "3.0"
-linear-predictive-coding = "0.2"
 plotters = "0.3.7"
 anyhow = "1.0"
 
+reqwest-client = { path = "reqwest-client" }
+
 [patch.crates-io]
 egui-plotter = { git = "https://github.com/oligamiq/egui-plotter.git", branch = "allow_feathering" }
+egui_tracing = { git = "https://github.com/oligamiq/egui_tracing" }
+egui-snarl = { git = "https://github.com/oligamiq/egui-snarl" }
 
 [profile.dev]
 # codegen-backend = "cranelift"

@@ -1,0 +1,4 @@
+Version 0.9.4 (2015/07/18): Initial release version
+Version 0.9.5 (2016/02/04): Make chunks available at multiple sampling rates and include partition for 5-fold cross-validation using CHiME-Home-refine 
+Version 0.9.6 (2016/06/01): Incorporate DCASE 2016 evaluation chunks
+Version 0.9.7 (2016/09/08): Incorporate annotations for DCASE 2016 evaluation chunks

@@ -14,7 +14,7 @@ pub enum FrequencyNodes {
 #[serde(default)]
 pub struct IFFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
@@ -56,7 +56,7 @@ impl FlowNodesViewerTrait for IFFTNode {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
         match pin_id.input {
@@ -173,7 +173,7 @@ impl GraphNode for IFFTNode {
 #[serde(default)]
 pub struct FFTNode {
     #[serde(skip)]
-    fft_size: usize,
+    pub(crate) fft_size: usize,
     #[serde(skip)]
     calculated: Vec<Complex<f64>>,
     #[serde(skip)]
@@ -215,7 +215,7 @@ impl FlowNodesViewerTrait for FFTNode {
         ui: &mut egui::Ui,
         _scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
         match pin_id.input {
@@ -267,7 +267,7 @@ impl FFTNode {
             self.update();
         }
 
-        let fft = &self.fft;
+        let fft: &Arc<dyn Fft<f64>> = &self.fft;
         let scratch_buf = &mut self.scratch_buf;
         let calculated = &mut self.calculated;
 

@@ -383,7 +383,7 @@ impl FlowNodesViewerTrait for DataPlotterNode {
         _: &mut egui::Ui,
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
         if let Some(out_pin) = pin.remotes.get(0) {
@@ -564,7 +564,7 @@ impl FlowNodesViewerTrait for SchemaViewerNode {
         _: &mut egui::Ui,
         scale: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         let pin_id = pin.id;
 
         if let Some(out_pin) = pin.remotes.get(0) {

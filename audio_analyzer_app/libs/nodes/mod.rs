@@ -8,8 +8,11 @@ pub mod idct;
 pub mod iter;
 pub mod layer;
 pub mod lifter;
+pub mod lpc;
+pub mod output;
 pub mod pin_info;
 pub mod raw_input;
+pub mod unknown;
 pub mod utils;
 pub mod viewer;
 
@@ -111,8 +114,7 @@ impl NodeInfos {
             Box::new(STFTLayerNodeInfo),
             Box::new(MelLayerNodeInfo),
             Box::new(SpectrogramDensityLayerNodeInfo),
-            Box::new(MicrophoneInputNodeInfo),
-            Box::new(FileInputNodeInfo),
+            Box::new(AbstractInputNodeInfo),
             Box::new(DataPlotterNodeInfo),
             Box::new(SchemaViewerNodeInfo),
             Box::new(ExprNodeInfo),
@@ -122,6 +124,9 @@ impl NodeInfos {
             Box::new(FFTNodeInfo),
             Box::new(LifterNodeInfo),
             Box::new(EnumerateIterNodeInfo),
+            Box::new(LpcNodeInfo),
+            Box::new(BurgNodeInfo),
+            Box::new(OutputNodeInfo),
         ]
     }
 }

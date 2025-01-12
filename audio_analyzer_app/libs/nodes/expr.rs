@@ -12,6 +12,8 @@ pub struct ExprNodes {
     pub input_var_names: Vec<String>,
     pub expr: String,
     pub outputs_num: EditableOnText<usize>,
+
+    #[serde(skip)]
     pub calculated: Option<NodeInfoTypesWithData>,
 
     #[serde(skip)]
@@ -106,7 +108,7 @@ impl Default for ExprNodes {
 }
 
 #[derive(Debug, Clone)]
-enum Ret {
+pub(crate) enum Ret {
     Tuple(Vec<f64>),
     Complex(f64, f64),
 }
@@ -186,6 +188,11 @@ impl ExprNodes {
                         let mut ret_values = ret_values_clone.borrow_mut();
                         *ret_values = Ret::Complex(args[0], args[1]);
                         return Some(0.0);
+                    }
+                }
+                "float" => {
+                    if args.len() == 1 {
+                        return Some(args[0]);
                     }
                 }
                 _ => {}
@@ -292,7 +299,7 @@ impl ExprNodes {
         ctx: &FlowNodesViewerCtx,
         ui: &mut egui::Ui,
         data: Option<NodeInfoTypesWithData>,
-    ) -> PinInfo {
+    ) -> MyPinInfo {
         ui.label("outputs_num");
 
         if egui::TextEdit::singleline(&mut self.outputs_num)
@@ -372,7 +379,7 @@ impl ExprNodes {
                     let array = match data {
                         NodeInfoTypesWithData::Array1F64(array) => {
                             self.inputs_num.set(1);
-                            self.input_var_names = vec!["x".to_string(), "y".to_string()];
+                            self.input_var_names = vec!["x".to_string()];
 
                             array
                                 .iter()
@@ -472,7 +479,7 @@ impl FlowNodesViewerTrait for ExprNodes {
         _: &mut egui::Ui,
         _: f32,
         snarl: &egui_snarl::Snarl<FlowNodes>,
-    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> PinInfo> {
+    ) -> Box<dyn Fn(&mut Snarl<FlowNodes>, &mut egui::Ui) -> MyPinInfo> {
         assert!(pin.id.input == 0);
 
         let data = pin
@@ -493,20 +500,33 @@ impl FlowNodesViewerTrait for ExprNodes {
             (
                 Some(NodeInfoTypesWithData::Array1F64(array)),
                 Some(NodeInfoTypesWithData::Array1F64(array2)),
-            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                array.into_iter().zip(array2).collect(),
-            )),
+            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64({
+                // first is longer length
+                let is_first_longer = array.len() > array2.len();
+
+                if is_first_longer {
+                    array
+                        .slice_move(ndarray::s![..array2.len()])
+                        .into_iter()
+                        .zip(array2.into_iter())
+                        .collect()
+                } else {
+                    array2
+                        .slice_move(ndarray::s![..array.len()])
+                        .into_iter()
+                        .zip(array.into_iter())
+                        .collect()
+                }
+            })),
             (
                 Some(NodeInfoTypesWithData::Array1F64(array)),
                 Some(NodeInfoTypesWithData::Number(num)),
+            )
+            | (
+                Some(NodeInfoTypesWithData::Number(num)),
+                Some(NodeInfoTypesWithData::Array1F64(array)),
             ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
                 array.into_iter().map(|x| (x, num)).collect(),
-            )),
-            (
-                Some(NodeInfoTypesWithData::Number(num)),
-                Some(NodeInfoTypesWithData::Array1F64(array)),
-            ) => Some(NodeInfoTypesWithData::Array1TupleF64F64(
-                array.into_iter().map(|x| (num, x)).collect(),
             )),
             (None, Some(node)) | (Some(node), None) => Some(node),
             _ => None,
