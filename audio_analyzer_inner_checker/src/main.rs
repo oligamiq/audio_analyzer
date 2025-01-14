@@ -254,7 +254,7 @@ fn main() -> anyhow::Result<()> {
 
     root.present()?;
 
-    let root = SVGBackend::new("eer_histogram.svg", (1024, 1024)).into_drawing_area();
+    let root = SVGBackend::new("eer_histogram.svg", (1024, 512)).into_drawing_area();
 
     root.fill(&WHITE)?;
 
@@ -295,7 +295,10 @@ fn main() -> anyhow::Result<()> {
 
     fn fmt_n(v: &f32) -> String {
         if (v.round() - v).abs() < 0.01 {
-            ["mnist", "chime home", "baved"].get(*v as usize).unwrap_or(&"").to_string()
+            ["mnist", "chime home", "baved"]
+                .get(*v as usize)
+                .unwrap_or(&"")
+                .to_string()
         } else {
             "".to_string()
         }
@@ -310,17 +313,35 @@ fn main() -> anyhow::Result<()> {
         .axis_desc_style(("sans-serif", 15))
         .draw()?;
 
+    let mut colors = vec![RED, GREEN, BLUE, YELLOW];
+
     for name in binding {
-        chart.draw_series(LineSeries::new(
-            (0..4)
-                .zip(err.iter())
-                .filter_map(|(dataset_n, err)| {
-                    err.get(name.as_str()).map(|v| (dataset_n as f32, *v as f32))
-                })
-                .collect::<Vec<_>>(),
-            ShapeStyle::from(&BLACK),
-        ))?;
+        let mut color: ShapeStyle = colors.pop().unwrap().mix(0.7).filled();
+        color.stroke_width = 10;
+
+        chart
+            .draw_series(LineSeries::new(
+                (0..4)
+                    .zip(err.iter())
+                    .filter_map(|(dataset_n, err)| {
+                        err.get(name.as_str())
+                            .map(|v| (dataset_n as f32, *v as f32))
+                    })
+                    .collect::<Vec<_>>(),
+                color,
+            ))?
+            .label(name)
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
     }
+
+    chart
+        .configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
+        .label_font(("sans-serif", 40))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
 
     Ok(())
 }
