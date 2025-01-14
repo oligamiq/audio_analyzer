@@ -132,9 +132,12 @@ where
     AudioMNISTData<T>: Analysis<T>,
     AudioBAVED<T>: Analysis<T>,
     AudioChimeHome<T>: Analysis<T>,
-    <AudioMNISTData<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
-    <AudioBAVED<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
-    <AudioChimeHome<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+    <AudioMNISTData<T> as Analysis<T>>::Output:
+        serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+    <AudioBAVED<T> as Analysis<T>>::Output:
+        serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+    <AudioChimeHome<T> as Analysis<T>>::Output:
+        serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
 {
     let now = std::time::Instant::now();
 
@@ -185,7 +188,8 @@ where
             serde::Serialize + serde::Deserialize<'de> + 'static,
         for<'de> <Dataset as LoadAndAnalysis<T, F>>::AllPattern:
             serde::Serialize + serde::Deserialize<'de>,
-        <Dataset as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+        <Dataset as Analysis<T>>::Output:
+            serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
         F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
     {
         let mnist_data = if let Ok(Ok(mnist_data)) = std::fs::File::open(saving_file_name(
@@ -237,6 +241,7 @@ where
                     let mut progress = progress.lock();
                     progress.inc();
                     progress.flush().unwrap();
+                    println!("counted {}", progress.total);
                     out
                 })
                 .collect::<Vec<_>>();
@@ -244,11 +249,7 @@ where
             progress.lock().finish();
 
             bincode::serialize_into(
-                std::fs::File::create(saving_file_name(
-                    place,
-                    unique_id,
-                    USE_DATA_N,
-                ))?,
+                std::fs::File::create(saving_file_name(place, unique_id, USE_DATA_N))?,
                 &mnist_analyzed_data,
             )?;
 
