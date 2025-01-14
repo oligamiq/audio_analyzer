@@ -10,13 +10,13 @@ type TimeCompressedType = Vec<f64>;
 pub trait Analysis<T> {
     type Output;
 
-    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> Self::Output;
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> Self::Output;
 }
 
 impl Analysis<TimeSeriesType> for AudioMNISTData<TimeSeriesType> {
     type Output = (f64, f64);
 
-    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> (f64, f64) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> (f64, f64) {
         analysis_time_series_audio_mnist::<USE_DATA_N>(self, threshold)
     }
 }
@@ -24,10 +24,7 @@ impl Analysis<TimeSeriesType> for AudioMNISTData<TimeSeriesType> {
 impl Analysis<TimeSeriesType> for AudioBAVED<TimeSeriesType> {
     type Output = ([f64; 3], f64, [[f64; 3]; 3]);
 
-    fn analysis<const USE_DATA_N: usize>(
-        self,
-        threshold: f64,
-    ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> ([f64; 3], f64, [[f64; 3]; 3]) {
         analysis_time_series_baved::<USE_DATA_N>(self, threshold)
     }
 }
@@ -35,10 +32,7 @@ impl Analysis<TimeSeriesType> for AudioBAVED<TimeSeriesType> {
 impl Analysis<TimeSeriesType> for AudioChimeHome<TimeSeriesType> {
     type Output = ([f64; 8], f64, [[f64; 8]; 8]);
 
-    fn analysis<const USE_DATA_N: usize>(
-        self,
-        threshold: f64,
-    ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> ([f64; 8], f64, [[f64; 8]; 8]) {
         analysis_time_series_chime_home::<USE_DATA_N>(self, threshold)
     }
 }
@@ -46,7 +40,7 @@ impl Analysis<TimeSeriesType> for AudioChimeHome<TimeSeriesType> {
 impl Analysis<TimeCompressedType> for AudioMNISTData<TimeCompressedType> {
     type Output = (f64, f64);
 
-    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> (f64, f64) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> (f64, f64) {
         analysis_audio_mnist::<USE_DATA_N>(self, threshold)
     }
 }
@@ -54,10 +48,7 @@ impl Analysis<TimeCompressedType> for AudioMNISTData<TimeCompressedType> {
 impl Analysis<TimeCompressedType> for AudioBAVED<TimeCompressedType> {
     type Output = ([f64; 3], f64, [[f64; 3]; 3]);
 
-    fn analysis<const USE_DATA_N: usize>(
-        self,
-        threshold: f64,
-    ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> ([f64; 3], f64, [[f64; 3]; 3]) {
         analysis_baved::<USE_DATA_N>(self, threshold)
     }
 }
@@ -65,35 +56,30 @@ impl Analysis<TimeCompressedType> for AudioBAVED<TimeCompressedType> {
 impl Analysis<TimeCompressedType> for AudioChimeHome<TimeCompressedType> {
     type Output = ([f64; 8], f64, [[f64; 8]; 8]);
 
-    fn analysis<const USE_DATA_N: usize>(
-        self,
-        threshold: f64,
-    ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
+    fn analysis<const USE_DATA_N: usize>(&self, threshold: f64) -> ([f64; 8], f64, [[f64; 8]; 8]) {
         analysis_chime_home::<USE_DATA_N>(self, threshold)
     }
 }
 
 pub fn analysis_time_series_audio_mnist<const USE_DATA_N: usize>(
-    data: AudioMNISTData<TimeSeriesType>,
+    data: &AudioMNISTData<TimeSeriesType>,
     threshold: f64,
 ) -> (f64, f64) {
     let AudioMNISTData { speakers } = data;
 
-    analysis_time_series_inner::<USE_DATA_N>(&speakers, threshold)
+    analysis_time_series_inner::<USE_DATA_N>(speakers, threshold)
 }
 
 pub fn analysis_time_series_baved<const USE_DATA_N: usize>(
-    data: AudioBAVED<TimeSeriesType>,
+    data: &AudioBAVED<TimeSeriesType>,
     threshold: f64,
 ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
     let AudioBAVED { speakers } = data;
 
-    let level_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
-        3,
-        TimeSeriesType,
-        AudioBAVEDEmotion<TimeSeriesType>,
-        USE_DATA_N,
-    >(&speakers, threshold);
+    let level_with_other_and_other_and_self_level_wrapper =
+        common_pre_processing::<3, TimeSeriesType, AudioBAVEDEmotion<TimeSeriesType>, USE_DATA_N>(
+            speakers, threshold,
+        );
 
     common_post_processing(level_with_other_and_other_and_self_level_wrapper)
 }
@@ -149,7 +135,7 @@ pub(super) fn analysis_time_series_inner<const USE_DATA_N: usize>(
 }
 
 pub fn analysis_time_series_chime_home<const USE_DATA_N: usize>(
-    data: AudioChimeHome<TimeSeriesType>,
+    data: &AudioChimeHome<TimeSeriesType>,
     threshold: f64,
 ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
     let AudioChimeHome {
@@ -163,7 +149,7 @@ pub fn analysis_time_series_chime_home<const USE_DATA_N: usize>(
     let noise_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
         8,
         TimeSeriesType,
-        AudioChimeHomeNoise<TimeSeriesType>,
+        &AudioChimeHomeNoise<TimeSeriesType>,
         USE_DATA_N,
     >(&speakers, threshold);
 
@@ -404,12 +390,12 @@ where
 }
 
 pub fn analysis_audio_mnist<const USE_DATA_N: usize>(
-    data: AudioMNISTData<TimeCompressedType>,
+    data: &AudioMNISTData<TimeCompressedType>,
     threshold: f64,
 ) -> (f64, f64) {
     let AudioMNISTData { speakers } = data;
 
-    analysis_inner::<USE_DATA_N>(&speakers, threshold)
+    analysis_inner::<USE_DATA_N>(speakers, threshold)
 }
 
 pub(super) fn analysis_inner<const USE_DATA_N: usize>(
@@ -458,7 +444,7 @@ pub(super) fn analysis_inner<const USE_DATA_N: usize>(
 }
 
 pub fn analysis_baved<const USE_DATA_N: usize>(
-    data: AudioBAVED<TimeCompressedType>,
+    data: &AudioBAVED<TimeCompressedType>,
     threshold: f64,
 ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
     let AudioBAVED { speakers } = data;
@@ -468,13 +454,13 @@ pub fn analysis_baved<const USE_DATA_N: usize>(
         TimeCompressedType,
         AudioBAVEDEmotion<TimeCompressedType>,
         USE_DATA_N,
-    >(&speakers, threshold);
+    >(speakers, threshold);
 
     common_post_processing(level_with_other_and_other_and_self_level_wrapper)
 }
 
 pub fn analysis_chime_home<const USE_DATA_N: usize>(
-    data: AudioChimeHome<TimeCompressedType>,
+    data: &AudioChimeHome<TimeCompressedType>,
     threshold: f64,
 ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
     let AudioChimeHome {
@@ -488,7 +474,7 @@ pub fn analysis_chime_home<const USE_DATA_N: usize>(
     let noise_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
         8,
         TimeCompressedType,
-        AudioChimeHomeNoise<TimeCompressedType>,
+        &AudioChimeHomeNoise<TimeCompressedType>,
         USE_DATA_N,
     >(&speakers, threshold);
 
@@ -601,16 +587,9 @@ pub trait GenSpeakersAll<T> {
     fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>>;
 }
 
-impl<T> GenSpeakersAll<T> for AudioBAVEDEmotion<T>
-where
-    T: Clone,
-{
+impl<T> GenSpeakersAll<T> for AudioBAVEDEmotion<T> {
     fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>> {
-        vec![
-            &self.level_0,
-            &self.level_1,
-            &self.level_2,
-        ]
+        vec![&self.level_0, &self.level_1, &self.level_2]
     }
 }
 
@@ -681,17 +660,13 @@ impl<T> CustomFlat<T> for T {
     }
 }
 
-impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<&Vec<Vec<f64>>>
-{
+impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<&Vec<Vec<f64>>> {
     fn custom_flat(self) -> Vec<Vec<Vec<f64>>> {
         self.into_iter().cloned().collect::<Vec<_>>()
     }
 }
 
-impl<T> GenSpeakersAll<T> for AudioChimeHomeNoise<T>
-where
-    T: Clone,
-{
+impl<T> GenSpeakersAll<T> for &AudioChimeHomeNoise<T> {
     fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>> {
         vec![
             &self.none,

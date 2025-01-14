@@ -1,7 +1,7 @@
 // $ENV:RUSTFLAGS="-C target-cpu=native"
 // cargo run -p audio_analyzer_inner_checker -r
 
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write};
 
 use analysis::Analysis;
 
@@ -49,8 +49,10 @@ fn main() -> anyhow::Result<()> {
 
     const USE_DATA_N: usize = 10;
 
+    let range = (1..=100).map(|n| n as f64 / 100.).collect::<Vec<_>>();
+
     // let data = load_data::<Vec<f64>, _>("burg")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg", &range)?;
     println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
@@ -59,7 +61,7 @@ fn main() -> anyhow::Result<()> {
     // println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("lpc")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc", &range)?;
     println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
@@ -68,11 +70,12 @@ fn main() -> anyhow::Result<()> {
     // println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("fft")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range)?;
     println!("analysis_data: {:?}", analysis_data);
 
+    let range = (1..=100).map(|n| n as f64 / 100.).collect::<Vec<_>>();
     // let data = load_data::<Vec<f64>, _>("liftered")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered", &range)?;
     println!("analysis_data: {:?}", analysis_data);
 
     println!("last elapsed: {:?}", now.elapsed());
@@ -110,10 +113,11 @@ fn analysis() -> anyhow::Result<()> {
 
 fn analysis_load_data<T, S, const USE_DATA_N: usize>(
     place: S,
+    range: &Vec<f64>,
 ) -> anyhow::Result<(
-    <AudioMNISTData<T> as Analysis<T>>::Output,
-    <AudioBAVED<T> as Analysis<T>>::Output,
-    <AudioChimeHome<T> as Analysis<T>>::Output,
+    Vec<<AudioMNISTData<T> as Analysis<T>>::Output>,
+    Vec<<AudioBAVED<T> as Analysis<T>>::Output>,
+    Vec<<AudioChimeHome<T> as Analysis<T>>::Output>,
 )>
 where
     T: ToOwned<Owned = T>
@@ -128,9 +132,9 @@ where
     AudioMNISTData<T>: Analysis<T>,
     AudioBAVED<T>: Analysis<T>,
     AudioChimeHome<T>: Analysis<T>,
-    <AudioMNISTData<T> as Analysis<T>>::Output: serde::Serialize,
-    <AudioBAVED<T> as Analysis<T>>::Output: serde::Serialize,
-    <AudioChimeHome<T> as Analysis<T>>::Output: serde::Serialize,
+    <AudioMNISTData<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+    <AudioBAVED<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+    <AudioChimeHome<T> as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
 {
     let now = std::time::Instant::now();
 
@@ -153,67 +157,131 @@ where
         <U as LoadAndAnalysis<T, F>>::UNIQUE_ID
     }
 
-    let mnist_data = fake_analyzer
-        .load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
-            MNIST_BASE_PATH,
+    fn saving_file_name(place: &str, unique_id: &str, use_data_n: usize) -> String {
+        format!("{place}/{unique_id}_{use_data_n}.bin")
+    }
+
+    fn analysis_load_data<T, const USE_DATA_N: usize, Dataset, F, Hasher>(
+        place: &str,
+        range: &Vec<f64>,
+        fake_analyzer: F,
+    ) -> anyhow::Result<Vec<<Dataset as Analysis<T>>::Output>>
+    where
+        T: ToOwned<Owned = T>
+            + Send
+            + Sync
+            + Clone
+            + Default
+            + serde::Serialize
+            + for<'de> serde::Deserialize<'de>
+            + 'static,
+        Dataset: LoadAndAnalysis<T, F>
+            + serde::Serialize
+            + for<'de> serde::Deserialize<'de>
+            + Analysis<T>
+            + Sync,
+        Hasher: Default + std::hash::BuildHasher + Clone + Send + Sync + 'static,
+        for<'de> <Dataset as LoadAndAnalysis<T, F>>::Key:
+            serde::Serialize + serde::Deserialize<'de> + 'static,
+        for<'de> <Dataset as LoadAndAnalysis<T, F>>::AllPattern:
+            serde::Serialize + serde::Deserialize<'de>,
+        <Dataset as Analysis<T>>::Output: serde::Serialize + for<'de> serde::Deserialize<'de> + Send,
+        F: Fn(&mut audio_analyzer_core::prelude::TestData, u32) -> T + Send + Sync,
+    {
+        let mnist_data = if let Ok(Ok(mnist_data)) = std::fs::File::open(saving_file_name(
+            place,
+            get_unique_id::<Dataset, _, _>(&fake_analyzer),
+            USE_DATA_N,
+        ))
+        .map(|f| {
+            bincode::deserialize_from(f)
+                .map_err(|e| {
+                    println!("failed to load save data: {:?}", e);
+                })
+                .map(|data| {
+                    println!("loaded save data");
+                    data
+                })
+        })
+        .map_err(|e| {
+            println!("failed to load save data: {:?}", e);
+        }) {
+            mnist_data
+        } else {
+            let unique_id = get_unique_id::<Dataset, _, _>(&fake_analyzer);
+
+            let mnist_data = fake_analyzer.load_and_analysis::<Dataset, _, _, Hasher>(
+                MNIST_BASE_PATH,
+                place,
+                set_handler_boxed,
+            )?;
+
+            println!("loaded {unique_id}");
+
+            let progress = parking_lot::Mutex::new(pbr::ProgressBar::new(range.len() as u64));
+            {
+                let mut progress = progress.lock();
+                progress.message("analysis");
+                progress.flush().unwrap();
+            }
+
+            #[allow(unused)]
+            use rayon::prelude::*;
+
+            let mnist_analyzed_data = range
+                // .par_iter()
+                .iter()
+                .cloned()
+                .map(|threshold| {
+                    let out = mnist_data.analysis::<USE_DATA_N>(threshold as f64);
+                    let mut progress = progress.lock();
+                    progress.inc();
+                    progress.flush().unwrap();
+                    out
+                })
+                .collect::<Vec<_>>();
+
+            progress.lock().finish();
+
+            bincode::serialize_into(
+                std::fs::File::create(saving_file_name(
+                    place,
+                    unique_id,
+                    USE_DATA_N,
+                ))?,
+                &mnist_analyzed_data,
+            )?;
+
+            mnist_analyzed_data
+        };
+
+        Ok(mnist_data)
+    }
+
+    let mnist_analyzed_data =
+        analysis_load_data::<T, USE_DATA_N, AudioMNISTData<T>, _, gxhash::GxBuildHasher>(
             &place,
-            set_handler_boxed,
+            &range,
+            &fake_analyzer,
         )?;
 
-    let threshold = 50.;
-
-    let mnist_analyzed_data = mnist_data.analysis::<USE_DATA_N>(threshold);
-
-    bincode::serialize_into(
-        std::fs::File::create(format!(
-            "{}/{}_{}.bin",
-            place,
-            get_unique_id::<AudioMNISTData<T>, _, _>(&fake_analyzer),
-            USE_DATA_N
-        ))?,
-        &mnist_analyzed_data,
-    )?;
-
-    let baved_data = fake_analyzer
-        .load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
-            BAVED_BASE_PATH,
+    let baved_analyzed_data =
+        analysis_load_data::<T, USE_DATA_N, AudioBAVED<T>, _, gxhash::GxBuildHasher>(
             &place,
-            set_handler_boxed,
+            &range,
+            &fake_analyzer,
         )?;
 
-    let baved_analyzed_data = baved_data.analysis::<USE_DATA_N>(threshold);
-
-    bincode::serialize_into(
-        std::fs::File::create(format!(
-            "{}/{}_{}.bin",
-            place,
-            get_unique_id::<AudioBAVED<T>, _, _>(&fake_analyzer),
-            USE_DATA_N
-        ))?,
-        &baved_analyzed_data,
-    )?;
-
-    let chime_home_data = fake_analyzer
-        .load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
-            CHIME_HOME_BASE_PATH,
+    let chime_home_analyzed_data =
+        analysis_load_data::<T, USE_DATA_N, AudioChimeHome<T>, _, gxhash::GxBuildHasher>(
             &place,
-            set_handler_boxed,
+            &range,
+            &fake_analyzer,
         )?;
-
-    let chime_home_analyzed_data = chime_home_data.analysis::<USE_DATA_N>(threshold);
-
-    bincode::serialize_into(
-        std::fs::File::create(format!(
-            "{}/{}_{}.bin",
-            place,
-            get_unique_id::<AudioChimeHome<T>, _, _>(&fake_analyzer),
-            USE_DATA_N
-        ))?,
-        &chime_home_analyzed_data,
-    )?;
 
     println!("elapsed: {:?}", now.elapsed());
-    let now = chrono::Utc::now().with_timezone(chrono::FixedOffset::east_opt(9 * 3600).as_ref().unwrap());
+    let now =
+        chrono::Utc::now().with_timezone(chrono::FixedOffset::east_opt(9 * 3600).as_ref().unwrap());
     println!("{}", now.format("%Y-%m-%d %H:%M:%S").to_string());
 
     Ok((
