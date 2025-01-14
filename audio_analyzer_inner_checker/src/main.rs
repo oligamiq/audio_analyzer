@@ -73,7 +73,8 @@ fn main() -> anyhow::Result<()> {
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range)?;
     println!("analysis_data: {:?}", analysis_data);
 
-    let range = (1..=100).map(|n| n as f64 / 100.).collect::<Vec<_>>();
+    // let range = (1..=10).map(|n| n as f64 / 10.).collect::<Vec<_>>();
+    let range = vec![0.5];
     // let data = load_data::<Vec<f64>, _>("liftered")?;
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered", &range)?;
     println!("analysis_data: {:?}", analysis_data);
