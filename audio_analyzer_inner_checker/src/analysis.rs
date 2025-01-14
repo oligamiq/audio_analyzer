@@ -1,7 +1,6 @@
 use crate::libs::load_dataset::{
     AudioBAVED, AudioBAVEDEmotion, AudioChimeHome, AudioChimeHomeNoise, AudioMNISTData,
 };
-use const_struct::primitive::F64Ty;
 use rand::Rng;
 use rayon::prelude::*;
 
@@ -11,76 +10,82 @@ type TimeCompressedType = Vec<f64>;
 pub trait Analysis<T> {
     type Output;
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> Self::Output;
+    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> Self::Output;
 }
 
 impl Analysis<TimeSeriesType> for AudioMNISTData<TimeSeriesType> {
     type Output = (f64, f64);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> (f64, f64) {
-        analysis_time_series_audio_mnist::<THRESHOLD, USE_DATA_N>(self)
+    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> (f64, f64) {
+        analysis_time_series_audio_mnist::<USE_DATA_N>(self, threshold)
     }
 }
 
 impl Analysis<TimeSeriesType> for AudioBAVED<TimeSeriesType> {
-    type Output = ([f64; 3], f64, [[(f64, f64); 3]; 3]);
+    type Output = ([f64; 3], f64, [[f64; 3]; 3]);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    fn analysis<const USE_DATA_N: usize>(
         self,
-    ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
-        analysis_time_series_baved::<THRESHOLD, USE_DATA_N>(self)
+        threshold: f64,
+    ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
+        analysis_time_series_baved::<USE_DATA_N>(self, threshold)
     }
 }
 
 impl Analysis<TimeSeriesType> for AudioChimeHome<TimeSeriesType> {
-    type Output = ([f64; 8], f64, [[(f64, f64); 8]; 8]);
+    type Output = ([f64; 8], f64, [[f64; 8]; 8]);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    fn analysis<const USE_DATA_N: usize>(
         self,
-    ) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
-        analysis_time_series_chime_home::<THRESHOLD, USE_DATA_N>(self)
+        threshold: f64,
+    ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
+        analysis_time_series_chime_home::<USE_DATA_N>(self, threshold)
     }
 }
 
 impl Analysis<TimeCompressedType> for AudioMNISTData<TimeCompressedType> {
     type Output = (f64, f64);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(self) -> (f64, f64) {
-        analysis_audio_mnist::<THRESHOLD, USE_DATA_N>(self)
+    fn analysis<const USE_DATA_N: usize>(self, threshold: f64) -> (f64, f64) {
+        analysis_audio_mnist::<USE_DATA_N>(self, threshold)
     }
 }
 
 impl Analysis<TimeCompressedType> for AudioBAVED<TimeCompressedType> {
-    type Output = ([f64; 3], f64, [[(f64, f64); 3]; 3]);
+    type Output = ([f64; 3], f64, [[f64; 3]; 3]);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    fn analysis<const USE_DATA_N: usize>(
         self,
-    ) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
-        analysis_baved::<THRESHOLD, USE_DATA_N>(self)
+        threshold: f64,
+    ) -> ([f64; 3], f64, [[f64; 3]; 3]) {
+        analysis_baved::<USE_DATA_N>(self, threshold)
     }
 }
 
 impl Analysis<TimeCompressedType> for AudioChimeHome<TimeCompressedType> {
-    type Output = ([f64; 8], f64, [[(f64, f64); 8]; 8]);
+    type Output = ([f64; 8], f64, [[f64; 8]; 8]);
 
-    fn analysis<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+    fn analysis<const USE_DATA_N: usize>(
         self,
-    ) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
-        analysis_chime_home::<THRESHOLD, USE_DATA_N>(self)
+        threshold: f64,
+    ) -> ([f64; 8], f64, [[f64; 8]; 8]) {
+        analysis_chime_home::<USE_DATA_N>(self, threshold)
     }
 }
 
-pub fn analysis_time_series_audio_mnist<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_time_series_audio_mnist<const USE_DATA_N: usize>(
     data: AudioMNISTData<TimeSeriesType>,
+    threshold: f64,
 ) -> (f64, f64) {
     let AudioMNISTData { speakers } = data;
 
-    analysis_time_series_inner::<THRESHOLD, USE_DATA_N>(&speakers)
+    analysis_time_series_inner::<USE_DATA_N>(&speakers, threshold)
 }
 
-pub fn analysis_time_series_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_time_series_baved<const USE_DATA_N: usize>(
     data: AudioBAVED<TimeSeriesType>,
-) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
+    threshold: f64,
+) -> ([f64; 3], f64, [[f64; 3]; 3]) {
     let AudioBAVED { speakers } = data;
 
     let level_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
@@ -88,14 +93,14 @@ pub fn analysis_time_series_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
         TimeSeriesType,
         AudioBAVEDEmotion<TimeSeriesType>,
         USE_DATA_N,
-        THRESHOLD,
-    >(&speakers);
+    >(&speakers, threshold);
 
     common_post_processing(level_with_other_and_other_and_self_level_wrapper)
 }
 
-pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub(super) fn analysis_time_series_inner<const USE_DATA_N: usize>(
     speakers: &[Vec<TimeSeriesType>],
+    threshold: f64,
 ) -> (f64, f64) {
     let (
         (self_matching_probability, self_data_len_sum),
@@ -106,8 +111,8 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty, const USE_DATA_N: usi
         .filter_map(|(i, speaker)| {
             // How many data from the training source will be employed
             let (other_matching_probability, other_data_len_sum, ident) =
-                common_pre_processing_inner_other::<TimeSeriesType, _, USE_DATA_N, THRESHOLD>(
-                    i, speakers, speaker,
+                common_pre_processing_inner_other::<TimeSeriesType, _, USE_DATA_N>(
+                    i, speakers, speaker, threshold,
                 )?;
 
             let self_data = &speakers[i];
@@ -120,7 +125,7 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty, const USE_DATA_N: usi
                     audio_data
                         .get_all_some_vec()
                         .into_iter()
-                        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+                        .map(|v| compare(&ident, &v, threshold) as u8 as u64)
                 })
                 .sum::<u64>();
 
@@ -143,9 +148,10 @@ pub(super) fn analysis_time_series_inner<THRESHOLD: F64Ty, const USE_DATA_N: usi
     )
 }
 
-pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_time_series_chime_home<const USE_DATA_N: usize>(
     data: AudioChimeHome<TimeSeriesType>,
-) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
+    threshold: f64,
+) -> ([f64; 8], f64, [[f64; 8]; 8]) {
     let AudioChimeHome {
         father,
         mother,
@@ -159,8 +165,7 @@ pub fn analysis_time_series_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize
         TimeSeriesType,
         AudioChimeHomeNoise<TimeSeriesType>,
         USE_DATA_N,
-        THRESHOLD,
-    >(&speakers);
+    >(&speakers, threshold);
 
     common_post_processing(noise_with_other_and_other_and_self_level_wrapper)
 }
@@ -171,7 +176,7 @@ fn common_post_processing<const N: usize>(
         (u64, u64),
         [[(u64, u64); N]; N],
     )>,
-) -> ([f64; N], f64, [[(f64, f64); N]; N]) {
+) -> ([f64; N], f64, [[f64; N]; N]) {
     let level_with_other = level_with_other_and_other_and_self_level_wrapper
         .iter()
         .map(|(level_with_other, _, _)| level_with_other)
@@ -236,10 +241,7 @@ fn common_post_processing<const N: usize>(
                         .map(|level| level[i][j].1)
                         .sum::<u64>();
 
-                    (
-                        other_matching_probability as f64 / other_data_len_sum as f64,
-                        other_data_len_sum as f64,
-                    )
+                    other_matching_probability as f64 / other_data_len_sum as f64
                 })
                 .collect::<Vec<_>>()
                 .try_into()
@@ -256,17 +258,17 @@ fn common_post_processing<const N: usize>(
     )
 }
 
-fn common_pre_processing_inner_other<T, Dataset, const USE_DATA_N: usize, THRESHOLD>(
+fn common_pre_processing_inner_other<T, Dataset, const USE_DATA_N: usize>(
     i: usize,
     speakers: &[Dataset],
     speaker: &Vec<T>,
+    threshold: f64,
 ) -> Option<(u64, u64, Vec<f64>)>
 where
     T: InnerAverage + Clone,
     Dataset: GenSpeakersAll<T> + Sync,
     Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
     Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
-    THRESHOLD: F64Ty,
 {
     // Identify data
     let mut rng = rand::thread_rng();
@@ -299,21 +301,21 @@ where
     let other_data_len_sum = other_data.custom_get_length();
     let other_matching_probability = other_data
         .iter()
-        .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+        .map(|v| compare(&ident, &v, threshold) as u8 as u64)
         .sum::<u64>();
 
     Some((other_matching_probability, other_data_len_sum, ident))
 }
 
-fn common_pre_processing<'a, 'b, const N: usize, T, Dataset, const USE_DATA_N: usize, THRESHOLD>(
+fn common_pre_processing<'a, 'b, const N: usize, T, Dataset, const USE_DATA_N: usize>(
     speakers: &'a [Dataset],
+    threshold: f64,
 ) -> Vec<([(u64, u64); N], (u64, u64), [[(u64, u64); N]; N])>
 where
     T: InnerAverage + Clone,
     Dataset: GenSpeakersAll<T> + 'b + Sync,
     Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
     Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
-    THRESHOLD: F64Ty,
     &'a [Dataset]: IntoParallelIterator<Item = &'b Dataset>,
     <&'a [Dataset] as rayon::iter::IntoParallelIterator>::Iter:
         ParallelIterator<Item = &'b Dataset> + IndexedParallelIterator,
@@ -328,8 +330,8 @@ where
                 .iter()
                 .map(|speaker| {
                     if let Some((other_matching_probability, other_data_len_sum, _)) =
-                        common_pre_processing_inner_other::<T, Dataset, USE_DATA_N, THRESHOLD>(
-                            i, speakers, speaker,
+                        common_pre_processing_inner_other::<T, Dataset, USE_DATA_N>(
+                            i, speakers, speaker, threshold,
                         )
                     {
                         (other_matching_probability, other_data_len_sum)
@@ -384,7 +386,7 @@ where
                     let other_matching_probability =
                         CustomFlat::<Vec<Vec<f64>>>::custom_flat(other_data.clone())
                             .iter()
-                            .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+                            .map(|v| compare(&ident, &v, threshold) as u8 as u64)
                             .sum::<u64>();
 
                     self_level_wrapper[type_][j] = (other_matching_probability, other_data_len_sum);
@@ -398,16 +400,18 @@ where
     noise_with_other_and_other_and_self_level_wrapper
 }
 
-pub fn analysis_audio_mnist<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_audio_mnist<const USE_DATA_N: usize>(
     data: AudioMNISTData<TimeCompressedType>,
+    threshold: f64,
 ) -> (f64, f64) {
     let AudioMNISTData { speakers } = data;
 
-    analysis_inner::<THRESHOLD, USE_DATA_N>(&speakers)
+    analysis_inner::<USE_DATA_N>(&speakers, threshold)
 }
 
-pub(super) fn analysis_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub(super) fn analysis_inner<const USE_DATA_N: usize>(
     speakers: &[Vec<TimeCompressedType>],
+    threshold: f64,
 ) -> (f64, f64) {
     let (
         (self_matching_probability, self_data_len_sum),
@@ -418,8 +422,8 @@ pub(super) fn analysis_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
         .filter_map(|(i, speaker)| {
             // How many data from the training source will be employed
             let (other_matching_probability, other_data_len_sum, ident) =
-                common_pre_processing_inner_other::<TimeCompressedType, _, USE_DATA_N, THRESHOLD>(
-                    i, speakers, speaker,
+                common_pre_processing_inner_other::<TimeCompressedType, _, USE_DATA_N>(
+                    i, speakers, speaker, threshold,
                 )?;
 
             let self_data = &speakers[i];
@@ -428,7 +432,7 @@ pub(super) fn analysis_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
 
             let self_matching_probability = self_data
                 .iter()
-                .map(|v| compare::<THRESHOLD>(&ident, &v) as u8 as u64)
+                .map(|v| compare(&ident, &v, threshold) as u8 as u64)
                 .sum::<u64>();
 
             Some((
@@ -450,9 +454,10 @@ pub(super) fn analysis_inner<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
     )
 }
 
-pub fn analysis_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_baved<const USE_DATA_N: usize>(
     data: AudioBAVED<TimeCompressedType>,
-) -> ([f64; 3], f64, [[(f64, f64); 3]; 3]) {
+    threshold: f64,
+) -> ([f64; 3], f64, [[f64; 3]; 3]) {
     let AudioBAVED { speakers } = data;
 
     let level_with_other_and_other_and_self_level_wrapper = common_pre_processing::<
@@ -460,15 +465,15 @@ pub fn analysis_baved<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
         TimeCompressedType,
         AudioBAVEDEmotion<TimeCompressedType>,
         USE_DATA_N,
-        THRESHOLD,
-    >(&speakers);
+    >(&speakers, threshold);
 
     common_post_processing(level_with_other_and_other_and_self_level_wrapper)
 }
 
-pub fn analysis_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
+pub fn analysis_chime_home<const USE_DATA_N: usize>(
     data: AudioChimeHome<TimeCompressedType>,
-) -> ([f64; 8], f64, [[(f64, f64); 8]; 8]) {
+    threshold: f64,
+) -> ([f64; 8], f64, [[f64; 8]; 8]) {
     let AudioChimeHome {
         father,
         mother,
@@ -482,8 +487,7 @@ pub fn analysis_chime_home<THRESHOLD: F64Ty, const USE_DATA_N: usize>(
         TimeCompressedType,
         AudioChimeHomeNoise<TimeCompressedType>,
         USE_DATA_N,
-        THRESHOLD,
-    >(&speakers);
+    >(&speakers, threshold);
 
     common_post_processing(noise_with_other_and_other_and_self_level_wrapper)
 }
@@ -644,7 +648,7 @@ impl<T: Clone> GenSpeakersAll<T> for Vec<T> {
     }
 }
 
-fn compare<THRESHOLD: F64Ty>(a: &Vec<f64>, b: &Vec<f64>) -> bool {
+fn compare(a: &Vec<f64>, b: &Vec<f64>, threshold: f64) -> bool {
     fn get_distance(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
         a.iter()
             .zip(b.iter())
@@ -654,5 +658,5 @@ fn compare<THRESHOLD: F64Ty>(a: &Vec<f64>, b: &Vec<f64>) -> bool {
 
     let distance = get_distance(a, b);
 
-    distance < THRESHOLD::VALUE
+    distance < threshold
 }
