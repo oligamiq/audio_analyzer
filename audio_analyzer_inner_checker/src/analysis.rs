@@ -268,6 +268,7 @@ where
     T: InnerAverage + Clone,
     Dataset: GenSpeakersAll<T> + Sync,
     Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
+    for<'a> Vec<&'a Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
     Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
 {
     // Identify data
@@ -315,7 +316,9 @@ where
     T: InnerAverage + Clone,
     Dataset: GenSpeakersAll<T> + 'b + Sync,
     Vec<Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
+    for<'c> Vec<&'c Vec<T>>: CustomFlat<Vec<Vec<Vec<f64>>>>,
     Vec<T>: CustomFlat<Vec<Vec<f64>>> + CustomGetLength,
+    for<'c> &'c Vec<T>: CustomFlat<Vec<Vec<f64>>>,
     &'a [Dataset]: IntoParallelIterator<Item = &'b Dataset>,
     <&'a [Dataset] as rayon::iter::IntoParallelIterator>::Iter:
         ParallelIterator<Item = &'b Dataset> + IndexedParallelIterator,
@@ -384,7 +387,7 @@ where
 
                     let other_data_len_sum = other_data.custom_get_length();
                     let other_matching_probability =
-                        CustomFlat::<Vec<Vec<f64>>>::custom_flat(other_data.clone())
+                        CustomFlat::<Vec<Vec<f64>>>::custom_flat(*other_data)
                             .iter()
                             .map(|v| compare(&ident, &v, threshold) as u8 as u64)
                             .sum::<u64>();
@@ -504,7 +507,21 @@ impl CustomGetLength for Vec<Vec<Option<f64>>> {
     }
 }
 
+impl CustomGetLength for Vec<&Vec<Option<f64>>> {
+    fn custom_get_length(&self) -> u64 {
+        self.iter()
+            .filter(|v| v.iter().all(|v| v.is_some()))
+            .count() as u64
+    }
+}
+
 impl CustomGetLength for Vec<Vec<f64>> {
+    fn custom_get_length(&self) -> u64 {
+        self.len() as u64
+    }
+}
+
+impl CustomGetLength for Vec<&Vec<f64>> {
     fn custom_get_length(&self) -> u64 {
         self.len() as u64
     }
@@ -526,7 +543,7 @@ trait GetAllSomeVec {
     fn get_all_some_vec(&self) -> Vec<Vec<f64>>;
 }
 
-impl GetAllSomeVec for Vec<Vec<Option<f64>>> {
+impl GetAllSomeVec for &Vec<Vec<Option<f64>>> {
     fn get_all_some_vec(&self) -> Vec<Vec<f64>> {
         self.iter()
             .filter_map(|v| {
@@ -540,7 +557,7 @@ impl GetAllSomeVec for Vec<Vec<Option<f64>>> {
     }
 }
 
-impl GetAllSomeVec for Vec<&Vec<Option<f64>>> {
+impl GetAllSomeVec for &Vec<&Vec<Option<f64>>> {
     fn get_all_some_vec(&self) -> Vec<Vec<f64>> {
         self.iter()
             .filter_map(|v| {
@@ -581,18 +598,18 @@ impl InnerAverage for Vec<Vec<Option<f64>>> {
 }
 
 pub trait GenSpeakersAll<T> {
-    fn gen_speakers_all(&self) -> Vec<Vec<T>>;
+    fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>>;
 }
 
 impl<T> GenSpeakersAll<T> for AudioBAVEDEmotion<T>
 where
     T: Clone,
 {
-    fn gen_speakers_all(&self) -> Vec<Vec<T>> {
+    fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>> {
         vec![
-            self.level_0.clone(),
-            self.level_1.clone(),
-            self.level_2.clone(),
+            &self.level_0,
+            &self.level_1,
+            &self.level_2,
         ]
     }
 }
@@ -603,7 +620,25 @@ pub trait CustomFlat<T> {
 
 impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<Vec<Vec<Vec<Option<f64>>>>> {
     fn custom_flat(self) -> Vec<Vec<Vec<f64>>> {
+        self.iter()
+            .flat_map(|v| v)
+            .map(|v| v.get_all_some_vec())
+            .collect::<Vec<_>>()
+    }
+}
+
+impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<&Vec<Vec<Vec<Option<f64>>>>> {
+    fn custom_flat(self) -> Vec<Vec<Vec<f64>>> {
         self.into_iter()
+            .flat_map(|v| v)
+            .map(|v| v.get_all_some_vec())
+            .collect::<Vec<_>>()
+    }
+}
+
+impl CustomFlat<Vec<Vec<Vec<f64>>>> for &Vec<Vec<Vec<Vec<Option<f64>>>>> {
+    fn custom_flat(self) -> Vec<Vec<Vec<f64>>> {
+        self.iter()
             .flat_map(|v| v)
             .map(|v| v.get_all_some_vec())
             .collect::<Vec<_>>()
@@ -612,9 +647,31 @@ impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<Vec<Vec<Vec<Option<f64>>>>> {
 
 impl CustomFlat<Vec<Vec<f64>>> for Vec<Vec<Vec<Option<f64>>>> {
     fn custom_flat(self) -> Vec<Vec<f64>> {
+        self.iter()
+            .flat_map(|v| v.get_all_some_vec())
+            .collect::<Vec<_>>()
+    }
+}
+
+impl CustomFlat<Vec<Vec<f64>>> for Vec<&Vec<Vec<Option<f64>>>> {
+    fn custom_flat(self) -> Vec<Vec<f64>> {
         self.into_iter()
             .flat_map(|v| v.get_all_some_vec())
             .collect::<Vec<_>>()
+    }
+}
+
+impl CustomFlat<Vec<Vec<f64>>> for &Vec<Vec<Vec<Option<f64>>>> {
+    fn custom_flat(self) -> Vec<Vec<f64>> {
+        self.into_iter()
+            .flat_map(|v| v.get_all_some_vec())
+            .collect::<Vec<_>>()
+    }
+}
+
+impl CustomFlat<Vec<Vec<f64>>> for &Vec<Vec<f64>> {
+    fn custom_flat(self) -> Vec<Vec<f64>> {
+        self.clone()
     }
 }
 
@@ -624,27 +681,34 @@ impl<T> CustomFlat<T> for T {
     }
 }
 
+impl CustomFlat<Vec<Vec<Vec<f64>>>> for Vec<&Vec<Vec<f64>>>
+{
+    fn custom_flat(self) -> Vec<Vec<Vec<f64>>> {
+        self.into_iter().cloned().collect::<Vec<_>>()
+    }
+}
+
 impl<T> GenSpeakersAll<T> for AudioChimeHomeNoise<T>
 where
     T: Clone,
 {
-    fn gen_speakers_all(&self) -> Vec<Vec<T>> {
+    fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>> {
         vec![
-            self.none.clone(),
-            self.human_activity.clone(),
-            self.television.clone(),
-            self.household_appliance.clone(),
-            self.human_activity_and_television.clone(),
-            self.human_activity_and_household_appliance.clone(),
-            self.television_and_household_appliance.clone(),
-            self.all.clone(),
+            &self.none,
+            &self.human_activity,
+            &self.television,
+            &self.household_appliance,
+            &self.human_activity_and_television,
+            &self.human_activity_and_household_appliance,
+            &self.television_and_household_appliance,
+            &self.all,
         ]
     }
 }
 
 impl<T: Clone> GenSpeakersAll<T> for Vec<T> {
-    fn gen_speakers_all(&self) -> Vec<Vec<T>> {
-        vec![self.clone()]
+    fn gen_speakers_all<'a>(&'a self) -> Vec<&'a Vec<T>> {
+        vec![self]
     }
 }
 
