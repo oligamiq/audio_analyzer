@@ -252,6 +252,76 @@ fn main() -> anyhow::Result<()> {
             .data(mnist_max_diff_string.iter().map(|(s, v)| (s, *v))),
     )?;
 
+    root.present()?;
+
+    let root = SVGBackend::new("eer_histogram.svg", (1024, 1024)).into_drawing_area();
+
+    root.fill(&WHITE)?;
+
+    let mnist_eer = vec![
+        ("burg", 0.32),
+        ("lpc", 0.31),
+        ("fft", 0.435),
+        ("liftered", 0.2),
+    ];
+    let baved_eer = vec![
+        ("burg", 0.31),
+        ("lpc", 0.315),
+        ("fft", 0.39),
+        // ("liftered", ),
+    ];
+    let chime_home_eer = vec![
+        ("burg", 0.44),
+        ("lpc", 0.47),
+        ("fft", 0.5),
+        ("liftered", 0.4),
+    ];
+    let err = vec![mnist_eer, chime_home_eer, baved_eer]
+        .into_iter()
+        .map(|v| v.into_iter().collect::<HashMap<&str, _>>())
+        .collect::<Vec<_>>();
+
+    let binding = vec!["burg", "lpc", "fft", "liftered"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    let mut chart = ChartBuilder::on(&root)
+        .x_label_area_size(100)
+        .y_label_area_size(100)
+        .margin(5)
+        .caption("EER", ("sans-serif", 50.0))
+        .build_cartesian_2d(0f32..2.2, 0f32..1f32)?;
+
+    fn fmt_n(v: &f32) -> String {
+        if (v.round() - v).abs() < 0.01 {
+            ["mnist", "chime home", "baved"].get(*v as usize).unwrap_or(&"").to_string()
+        } else {
+            "".to_string()
+        }
+    }
+
+    chart
+        .configure_mesh()
+        .disable_x_mesh()
+        .bold_line_style(WHITE.mix(0.3))
+        .x_label_style(("sans-serif", 50))
+        .x_label_formatter(&fmt_n)
+        .axis_desc_style(("sans-serif", 15))
+        .draw()?;
+
+    for name in binding {
+        chart.draw_series(LineSeries::new(
+            (0..4)
+                .zip(err.iter())
+                .filter_map(|(dataset_n, err)| {
+                    err.get(name.as_str()).map(|v| (dataset_n as f32, *v as f32))
+                })
+                .collect::<Vec<_>>(),
+            ShapeStyle::from(&BLACK),
+        ))?;
+    }
+
     Ok(())
 }
 

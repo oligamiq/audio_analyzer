@@ -1,7 +1,7 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
 <rect x="0" y="0" width="1024" height="1024" opacity="1" fill="#FFFFFF" stroke="none"/>
 <text x="512" y="10" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-TAR - FAR (一致成功率 - 不一致成功率)
+EER
 </text>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="105" y1="918" x2="1018" y2="918"/>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="105" y1="910" x2="1018" y2="910"/>
@@ -160,24 +160,28 @@ TAR - FAR (一致成功率 - 不一致成功率)
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="99,55 104,55 "/>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,919 1018,919 "/>
-<text x="219" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-burg
+<text x="105" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
+mnist
 </text>
-<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="219,919 219,924 "/>
-<text x="447" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-liftered
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,919 105,924 "/>
+<text x="312" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
+
 </text>
-<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="447,919 447,924 "/>
-<text x="676" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-lpc
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="312,919 312,924 "/>
+<text x="520" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
+chime home
 </text>
-<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="676,919 676,924 "/>
-<text x="904" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-fft
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="520,919 520,924 "/>
+<text x="727" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
+
 </text>
-<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="904,919 904,924 "/>
-<rect x="338" y="397" width="219" height="521" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="110" y="599" width="218" height="319" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="567" y="593" width="218" height="325" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="795" y="774" width="218" height="144" opacity="0.5" fill="#FF0000" stroke="none"/>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="727,919 727,924 "/>
+<text x="935" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
+baved
+</text>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="935,919 935,924 "/>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,642 520,539 935,651 "/>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,651 520,513 935,647 "/>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,543 520,487 935,582 "/>
+<polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,746 520,573 "/>
 </svg>
