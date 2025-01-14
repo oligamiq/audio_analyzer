@@ -4,7 +4,6 @@
 use std::collections::HashMap;
 
 use analysis::Analysis;
-use const_struct::{primitive::F64Ty, F64};
 
 // pub mod brotli_system;
 pub mod analysis;
@@ -48,33 +47,32 @@ fn main() -> anyhow::Result<()> {
 
     // analysis()?;
 
-    type THRESHOLD = F64!(50.);
     const USE_DATA_N: usize = 10;
 
     // let data = load_data::<Vec<f64>, _>("burg")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("burg")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg")?;
     println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
-    let analysis_data =
-        analysis_load_data::<Vec<Vec<Option<f64>>>, _, THRESHOLD, USE_DATA_N>("burg_uncompress")?;
-    println!("analysis_data: {:?}", analysis_data);
+    // let analysis_data =
+    //     analysis_load_data::<Vec<Vec<Option<f64>>>, _, USE_DATA_N>("burg_uncompress")?;
+    // println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("lpc")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("lpc")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc")?;
     println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
-    let analysis_data =
-        analysis_load_data::<Vec<Vec<Option<f64>>>, _, THRESHOLD, USE_DATA_N>("lpc_uncompress")?;
-    println!("analysis_data: {:?}", analysis_data);
+    // let analysis_data =
+    //     analysis_load_data::<Vec<Vec<Option<f64>>>, _, USE_DATA_N>("lpc_uncompress")?;
+    // println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("fft")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("fft")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft")?;
     println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("liftered")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, THRESHOLD, USE_DATA_N>("liftered")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered")?;
     println!("analysis_data: {:?}", analysis_data);
 
     println!("last elapsed: {:?}", now.elapsed());
@@ -110,7 +108,7 @@ fn analysis() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn analysis_load_data<T, S, THRESHOLD, const USE_DATA_N: usize>(
+fn analysis_load_data<T, S, const USE_DATA_N: usize>(
     place: S,
 ) -> anyhow::Result<(
     <AudioMNISTData<T> as Analysis<T>>::Output,
@@ -130,7 +128,6 @@ where
     AudioMNISTData<T>: Analysis<T>,
     AudioBAVED<T>: Analysis<T>,
     AudioChimeHome<T>: Analysis<T>,
-    THRESHOLD: F64Ty,
     <AudioMNISTData<T> as Analysis<T>>::Output: serde::Serialize,
     <AudioBAVED<T> as Analysis<T>>::Output: serde::Serialize,
     <AudioChimeHome<T> as Analysis<T>>::Output: serde::Serialize,
@@ -147,33 +144,6 @@ where
 
     let place = format!("{}{place}/", concat!(env!("CARGO_MANIFEST_DIR"), "/tmp/"));
 
-    let mnist_data = fake_analyzer
-        .load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
-            MNIST_BASE_PATH,
-            &place,
-            set_handler_boxed,
-        )?;
-
-    let mnist_analyzed_data = mnist_data.analysis::<THRESHOLD, USE_DATA_N>();
-
-    let baved_data = fake_analyzer
-        .load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
-            BAVED_BASE_PATH,
-            &place,
-            set_handler_boxed,
-        )?;
-
-    let baved_analyzed_data = baved_data.analysis::<THRESHOLD, USE_DATA_N>();
-
-    let chime_home_data = fake_analyzer
-        .load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
-            CHIME_HOME_BASE_PATH,
-            &place,
-            set_handler_boxed,
-        )?;
-
-    let chime_home_analyzed_data = chime_home_data.analysis::<THRESHOLD, USE_DATA_N>();
-
     const fn get_unique_id<U, T, F>(_: &F) -> &'static str
     where
         U: LoadAndAnalysis<T, F>,
@@ -183,34 +153,60 @@ where
         <U as LoadAndAnalysis<T, F>>::UNIQUE_ID
     }
 
+    let mnist_data = fake_analyzer
+        .load_and_analysis::<AudioMNISTData<_>, _, _, gxhash::GxBuildHasher>(
+            MNIST_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let threshold = 50.;
+
+    let mnist_analyzed_data = mnist_data.analysis::<USE_DATA_N>(threshold);
+
     bincode::serialize_into(
         std::fs::File::create(format!(
-            "{}/{}_{}_{}.bin",
+            "{}/{}_{}.bin",
             place,
             get_unique_id::<AudioMNISTData<T>, _, _>(&fake_analyzer),
-            THRESHOLD::VALUE,
             USE_DATA_N
         ))?,
         &mnist_analyzed_data,
     )?;
 
+    let baved_data = fake_analyzer
+        .load_and_analysis::<AudioBAVED<_>, _, _, gxhash::GxBuildHasher>(
+            BAVED_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let baved_analyzed_data = baved_data.analysis::<USE_DATA_N>(threshold);
+
     bincode::serialize_into(
         std::fs::File::create(format!(
-            "{}/{}_{}_{}.bin",
+            "{}/{}_{}.bin",
             place,
             get_unique_id::<AudioBAVED<T>, _, _>(&fake_analyzer),
-            THRESHOLD::VALUE,
             USE_DATA_N
         ))?,
         &baved_analyzed_data,
     )?;
 
+    let chime_home_data = fake_analyzer
+        .load_and_analysis::<AudioChimeHome<_>, _, _, gxhash::GxBuildHasher>(
+            CHIME_HOME_BASE_PATH,
+            &place,
+            set_handler_boxed,
+        )?;
+
+    let chime_home_analyzed_data = chime_home_data.analysis::<USE_DATA_N>(threshold);
+
     bincode::serialize_into(
         std::fs::File::create(format!(
-            "{}/{}_{}_{}.bin",
+            "{}/{}_{}.bin",
             place,
             get_unique_id::<AudioChimeHome<T>, _, _>(&fake_analyzer),
-            THRESHOLD::VALUE,
             USE_DATA_N
         ))?,
         &chime_home_analyzed_data,
