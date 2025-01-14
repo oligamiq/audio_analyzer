@@ -38,8 +38,6 @@ fn set_handler_boxed(handler: Box<dyn Fn() + 'static + Send + Sync>) {
 }
 
 fn main() -> anyhow::Result<()> {
-    let now = std::time::Instant::now();
-
     ctrlc::set_handler(move || {
         CTRLC_HANDLER.lock()();
     })
@@ -47,13 +45,238 @@ fn main() -> anyhow::Result<()> {
 
     // analysis()?;
 
+    let data = analysis_data_all()?;
+
+    use plotters::prelude::*;
+
+    let mut mnist_max_diff = HashMap::<&str, f64>::new();
+
+    for name in vec!["burg", "lpc", "fft", "fft_small", "liftered"] {
+        let (data, range) = data.get(name).unwrap();
+        let out_file_name = format!("{name}_out.svg");
+        let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
+        root.fill(&WHITE)?;
+        let range_min = range.iter().cloned().reduce(f64::min).unwrap() as f32;
+        let range_max = range.iter().cloned().reduce(f64::max).unwrap() as f32;
+        let mut chart = ChartBuilder::on(&root)
+            .caption(name, ("sans-serif", 50).into_font())
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(range_min..range_max, -0.01f32..1f32)?;
+
+        chart.configure_mesh().draw()?;
+
+        let mut dashed_line_style = ShapeStyle {
+            color: RED.to_rgba(),
+            filled: false,
+            stroke_width: 2,
+        };
+
+        chart
+            .draw_series(LineSeries::new(
+                range
+                    .iter()
+                    .cloned()
+                    .map(|threshold| threshold as f32)
+                    .zip(data.0.iter().map(|(x, _)| 1. - *x as f32)),
+                dashed_line_style.clone(),
+            ))?
+            .label("mnist self")
+            .legend(move |(x, y)| {
+                PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+            });
+
+        dashed_line_style.stroke_width = 1;
+
+        chart
+            .draw_series(LineSeries::new(
+                range
+                    .iter()
+                    .cloned()
+                    .map(|threshold| threshold as f32)
+                    .zip(data.0.iter().map(|(_, x)| *x as f32)),
+                dashed_line_style.clone(),
+            ))?
+            .label("mnist other")
+            .legend(move |(x, y)| {
+                PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+            });
+
+        fn draw_chart_for_noise_kind<const N: usize>(
+            range: &Vec<f64>,
+            chart: &mut ChartContext<
+                '_,
+                SVGBackend<'_>,
+                Cartesian2d<
+                    plotters::coord::types::RangedCoordf32,
+                    plotters::coord::types::RangedCoordf32,
+                >,
+            >,
+            data: &Vec<([f64; N], f64, [[f64; N]; N])>,
+            title: &str,
+            color_: RGBColor,
+        ) -> anyhow::Result<()> {
+            // ノイズなしで学習して、その他の人の全てに対しての分類精度を見る
+            // レベル1で学習して、その他の人の全てに対しての分類精度を見る
+            // レベル2で学習して、その他の人の全てに対しての分類精度を見る
+            let mut color = color_;
+            for n in 0..N {
+                chart
+                    .draw_series(LineSeries::new(
+                        range
+                            .iter()
+                            .cloned()
+                            .map(|threshold| threshold as f32)
+                            .zip(data.iter().map(|(x, ..)| x[n] as f32)),
+                        &color.mix(0.5),
+                    ))?
+                    .label(format!("{title} other learn by {n}"))
+                    .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+
+                color.0 = color.0.wrapping_add(64);
+            }
+
+            // 上記3つの合計
+            chart
+                .draw_series(LineSeries::new(
+                    range
+                        .iter()
+                        .cloned()
+                        .map(|threshold| threshold as f32)
+                        .zip(data.iter().map(|(_, x, _)| *x as f32)),
+                    &color,
+                ))?
+                .label(format!("{title} other learn by n sum"))
+                .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+
+            // type_で学習し、targetに対し確認する
+            let mut color = color_;
+            for type_ in 0..N {
+                {
+                    for target in 0..N {
+                        {
+                            let mut style: ShapeStyle = color.mix(0.3).into();
+                            style.stroke_width = if type_ == target { 2 } else { 1 };
+
+                            chart
+                                .draw_series(LineSeries::new(
+                                    range.iter().cloned().map(|threshold| threshold as f32).zip(
+                                        data.iter()
+                                            .map(|(_, _, x)| x[type_][target] as f32)
+                                            .map(|x| if type_ == target { 1. - x } else { x }),
+                                    ),
+                                    style,
+                                ))?
+                                .label(format!("{title} self learn by {type_} -> {target}"))
+                                .legend(move |(x, y)| {
+                                    PathElement::new(vec![(x, y), (x + 20, y)], style)
+                                });
+
+                            color.1 = color.1.wrapping_add(32);
+                        }
+                        color.0 = color.0.wrapping_add(32);
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        // BAVED
+        draw_chart_for_noise_kind(&range, &mut chart, &data.1, "baved", BLUE)?;
+        // ChimeHome
+        draw_chart_for_noise_kind(&range, &mut chart, &data.2, "chime home", GREEN)?;
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()?;
+
+        root.present()?;
+
+        let mnist_max_diff_ = data
+            .0
+            .iter()
+            .map(|(up, down)| up - down)
+            .reduce(f64::max)
+            .unwrap();
+        mnist_max_diff.insert(name, mnist_max_diff_);
+    }
+
+    println!("mnist_max_diff: {:?}", mnist_max_diff);
+
+    let mnist_max_diff_string = mnist_max_diff
+        .iter()
+        .filter(|(s, _)| **s != "fft_small")
+        .map(|(s, v)| (s.to_string(), *v as f32))
+        .collect::<Vec<_>>();
+    let mnist_max_diff_string_only = mnist_max_diff_string
+        .iter()
+        .cloned()
+        .map(|(s, _)| s)
+        .collect::<Vec<_>>();
+    let root = SVGBackend::new("mnist_diff_histogram.svg", (1024, 1024)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .x_label_area_size(100)
+        .y_label_area_size(100)
+        .margin(5)
+        .caption(
+            "TAR - FAR (一致成功率 - 不一致成功率)",
+            ("sans-serif", 50.0),
+        )
+        .build_cartesian_2d(mnist_max_diff_string_only.into_segmented(), 0f32..1f32)?;
+
+    fn fmt(v: &SegmentValue<&std::string::String>) -> String {
+        match v {
+            SegmentValue::Exact(v) => v.to_string(),
+            SegmentValue::CenterOf(v) => v.to_string(),
+            SegmentValue::Last => "Last".to_string(),
+        }
+    }
+
+    chart
+        .configure_mesh()
+        .disable_x_mesh()
+        .bold_line_style(WHITE.mix(0.3))
+        .x_label_style(("sans-serif", 50))
+        .x_label_formatter(&fmt)
+        .axis_desc_style(("sans-serif", 15))
+        .draw()?;
+
+    chart.draw_series(
+        Histogram::vertical(&chart)
+            .style(RED.mix(0.5).filled())
+            .data(mnist_max_diff_string.iter().map(|(s, v)| (s, *v))),
+    )?;
+
+    Ok(())
+}
+
+type AnalyzedDataType = (
+    Vec<(f64, f64)>,
+    Vec<([f64; 3], f64, [[f64; 3]; 3])>,
+    Vec<([f64; 8], f64, [[f64; 8]; 8])>,
+);
+
+#[allow(unused)]
+fn analysis_data_all(
+) -> anyhow::Result<HashMap<compact_str::CompactString, (AnalyzedDataType, Vec<f64>)>> {
+    let now = std::time::Instant::now();
+
     const USE_DATA_N: usize = 10;
 
-    let range = (1..=100).map(|n| n as f64 / 100.).collect::<Vec<_>>();
+    let range = (1..=250).map(|n| n as f64 / 100.).collect::<Vec<_>>();
+
+    let mut analysis_data_map =
+        HashMap::<compact_str::CompactString, (AnalyzedDataType, Vec<f64>)>::new();
 
     // let data = load_data::<Vec<f64>, _>("burg")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg", &range)?;
-    println!("analysis_data: {:?}", analysis_data);
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg", &range, "")?;
+    // println!("analysis_data: {:?}", analysis_data);
+    analysis_data_map.insert("burg".into(), (analysis_data, range.clone()));
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
     // let analysis_data =
@@ -61,27 +284,39 @@ fn main() -> anyhow::Result<()> {
     // println!("analysis_data: {:?}", analysis_data);
 
     // let data = load_data::<Vec<f64>, _>("lpc")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc", &range)?;
-    println!("analysis_data: {:?}", analysis_data);
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc", &range, "")?;
+    // println!("analysis_data: {:?}", analysis_data);
+    analysis_data_map.insert("lpc".into(), (analysis_data, range.clone()));
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
     // let analysis_data =
     //     analysis_load_data::<Vec<Vec<Option<f64>>>, _, USE_DATA_N>("lpc_uncompress")?;
     // println!("analysis_data: {:?}", analysis_data);
 
+    let range = (1..=250).map(|n| n as f64 / 100.).collect::<Vec<_>>();
     // let data = load_data::<Vec<f64>, _>("fft")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range)?;
-    println!("analysis_data: {:?}", analysis_data);
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range, "_small")?;
+    // println!("analysis_data: {:?}", analysis_data);
+    analysis_data_map.insert("fft_small".into(), (analysis_data, range.clone()));
 
-    let range = (0..=15).map(|n| (n * 10000 + 100000) as f64).collect::<Vec<_>>();
+    let range = (1..=500).map(|n| n as f64 / 10.).collect::<Vec<_>>();
+    // let data = load_data::<Vec<f64>, _>("fft")?;
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range, "")?;
+    // println!("analysis_data: {:?}", analysis_data);
+    analysis_data_map.insert("fft".into(), (analysis_data, range.clone()));
+
+    let range = (0..=15)
+        .map(|n| (n * 10000 + 100000) as f64)
+        .collect::<Vec<_>>();
     // let range = vec![0.5];
     // let data = load_data::<Vec<f64>, _>("liftered")?;
-    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered", &range)?;
-    println!("analysis_data: {:?}", analysis_data);
+    let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("liftered", &range, "")?;
+    // println!("analysis_data: {:?}", analysis_data);
+    analysis_data_map.insert("liftered".into(), (analysis_data, range.clone()));
 
     println!("last elapsed: {:?}", now.elapsed());
 
-    Ok(())
+    Ok(analysis_data_map)
 }
 
 #[allow(unused)]
@@ -115,6 +350,7 @@ fn analysis() -> anyhow::Result<()> {
 fn analysis_load_data<T, S, const USE_DATA_N: usize>(
     place: S,
     range: &Vec<f64>,
+    unique_salt: &str,
 ) -> anyhow::Result<(
     Vec<<AudioMNISTData<T> as Analysis<T>>::Output>,
     Vec<<AudioBAVED<T> as Analysis<T>>::Output>,
@@ -161,14 +397,20 @@ where
         <U as LoadAndAnalysis<T, F>>::UNIQUE_ID
     }
 
-    fn saving_file_name(place: &str, unique_id: &str, use_data_n: usize) -> String {
-        format!("{place}/{unique_id}_{use_data_n}.bin")
+    fn saving_file_name(
+        place: &str,
+        unique_id: &str,
+        use_data_n: usize,
+        unique_salt: &str,
+    ) -> String {
+        format!("{place}/{unique_id}{unique_salt}_{use_data_n}.bin")
     }
 
     fn analysis_load_data<T, const USE_DATA_N: usize, Dataset, F, Hasher>(
         place: &str,
         range: &Vec<f64>,
         fake_analyzer: F,
+        unique_salt: &str,
     ) -> anyhow::Result<Vec<<Dataset as Analysis<T>>::Output>>
     where
         T: ToOwned<Owned = T>
@@ -197,6 +439,7 @@ where
             place,
             get_unique_id::<Dataset, _, _>(&fake_analyzer),
             USE_DATA_N,
+            unique_salt,
         ))
         .map(|f| {
             bincode::deserialize_from(f)
@@ -242,7 +485,6 @@ where
                     let mut progress = progress.lock();
                     progress.inc();
                     progress.flush().unwrap();
-                    println!("counted {}", progress.total);
                     out
                 })
                 .collect::<Vec<_>>();
@@ -250,7 +492,7 @@ where
             progress.lock().finish();
 
             bincode::serialize_into(
-                std::fs::File::create(saving_file_name(place, unique_id, USE_DATA_N))?,
+                std::fs::File::create(saving_file_name(place, unique_id, USE_DATA_N, unique_salt))?,
                 &mnist_analyzed_data,
             )?;
 
@@ -260,26 +502,29 @@ where
         Ok(mnist_data)
     }
 
-    let mnist_analyzed_data =
-        analysis_load_data::<T, USE_DATA_N, AudioMNISTData<T>, _, gxhash::GxBuildHasher>(
-            &place,
-            &range,
-            &fake_analyzer,
-        )?;
+    let mnist_analyzed_data = analysis_load_data::<
+        T,
+        USE_DATA_N,
+        AudioMNISTData<T>,
+        _,
+        gxhash::GxBuildHasher,
+    >(&place, &range, &fake_analyzer, unique_salt)?;
 
-    let baved_analyzed_data =
-        analysis_load_data::<T, USE_DATA_N, AudioBAVED<T>, _, gxhash::GxBuildHasher>(
-            &place,
-            &range,
-            &fake_analyzer,
-        )?;
+    let baved_analyzed_data = analysis_load_data::<
+        T,
+        USE_DATA_N,
+        AudioBAVED<T>,
+        _,
+        gxhash::GxBuildHasher,
+    >(&place, &range, &fake_analyzer, unique_salt)?;
 
-    let chime_home_analyzed_data =
-        analysis_load_data::<T, USE_DATA_N, AudioChimeHome<T>, _, gxhash::GxBuildHasher>(
-            &place,
-            &range,
-            &fake_analyzer,
-        )?;
+    let chime_home_analyzed_data = analysis_load_data::<
+        T,
+        USE_DATA_N,
+        AudioChimeHome<T>,
+        _,
+        gxhash::GxBuildHasher,
+    >(&place, &range, &fake_analyzer, unique_salt)?;
 
     println!("elapsed: {:?}", now.elapsed());
     let now =
