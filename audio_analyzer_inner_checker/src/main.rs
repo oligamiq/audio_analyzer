@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
             .configure_mesh()
             .x_desc("Threshold")
             .axis_desc_style(("sans-serif", 50))
-            .y_desc("Success rate")
+            .y_desc("FAR / FRR")
             .draw()?;
 
         let mut dashed_line_style = ShapeStyle {

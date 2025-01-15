@@ -154,7 +154,7 @@ fft_small
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="55" y1="84" x2="1018" y2="84"/>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="55" y1="70" x2="1018" y2="70"/>
 <text x="5" y="768" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000" transform="rotate(270, 5, 768)">
-Success rate
+FAR / FRR
 </text>
 <text x="537" y="1531" dy="-0.5ex" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
 Threshold
