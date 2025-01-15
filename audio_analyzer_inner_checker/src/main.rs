@@ -61,13 +61,14 @@ fn main() -> anyhow::Result<()> {
         let mut chart = ChartBuilder::on(&root)
             .caption(name, ("sans-serif", 50).into_font())
             .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
+            .x_label_area_size(50)
+            .y_label_area_size(50)
             .build_cartesian_2d(range_min..range_max, -0.01f32..1f32)?;
 
         chart
             .configure_mesh()
             .x_desc("Threshold")
+            .axis_desc_style(("sans-serif", 50))
             .y_desc("Success rate")
             .draw()?;
 
@@ -292,10 +293,10 @@ fn main() -> anyhow::Result<()> {
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
 
-    let binding_dataset = ["mnist", "chime home", "baved"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>();
+    // let binding_dataset = ["mnist", "chime home", "baved"]
+    //     .iter()
+    //     .map(|s| s.to_string())
+    //     .collect::<Vec<_>>();
 
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(100)
