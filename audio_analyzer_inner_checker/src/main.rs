@@ -65,7 +65,11 @@ fn main() -> anyhow::Result<()> {
             .y_label_area_size(30)
             .build_cartesian_2d(range_min..range_max, -0.01f32..1f32)?;
 
-        chart.configure_mesh().draw()?;
+        chart
+            .configure_mesh()
+            .x_desc("Threshold")
+            .y_desc("Success rate")
+            .draw()?;
 
         let mut dashed_line_style = ShapeStyle {
             color: RED.to_rgba(),
@@ -239,6 +243,8 @@ fn main() -> anyhow::Result<()> {
 
     chart
         .configure_mesh()
+        .x_desc("Method")
+        .y_desc("TAR - FAR")
         .disable_x_mesh()
         .bold_line_style(WHITE.mix(0.3))
         .x_label_style(("sans-serif", 50))
@@ -281,7 +287,12 @@ fn main() -> anyhow::Result<()> {
         .map(|v| v.into_iter().collect::<HashMap<&str, _>>())
         .collect::<Vec<_>>();
 
-    let binding = vec!["burg", "lpc", "fft", "liftered"]
+    let binding = ["burg", "lpc", "fft", "liftered"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    let binding_dataset = ["mnist", "chime home", "baved"]
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
@@ -290,46 +301,36 @@ fn main() -> anyhow::Result<()> {
         .x_label_area_size(100)
         .y_label_area_size(100)
         .margin(5)
-        .caption("EER", ("sans-serif", 50.0))
-        .build_cartesian_2d(0f32..2.2, 0f32..1f32)?;
-
-    fn fmt_n(v: &f32) -> String {
-        if (v.round() - v).abs() < 0.01 {
-            ["mnist", "chime home", "baved"]
-                .get(*v as usize)
-                .unwrap_or(&"")
-                .to_string()
-        } else {
-            "".to_string()
-        }
-    }
+        // .caption("EER", ("sans-serif", 50.0))
+        .build_cartesian_2d(binding_dataset.into_segmented(), 0f32..1f32)?;
 
     chart
         .configure_mesh()
         .disable_x_mesh()
         .bold_line_style(WHITE.mix(0.3))
         .x_label_style(("sans-serif", 50))
-        .x_label_formatter(&fmt_n)
+        .x_label_formatter(&fmt)
         .axis_desc_style(("sans-serif", 15))
         .draw()?;
 
     let mut colors = vec![RED, GREEN, BLUE, YELLOW];
 
     for name in binding {
-        let mut color: ShapeStyle = colors.pop().unwrap().mix(0.7).filled();
+        let mut color: ShapeStyle = colors.pop().unwrap().filled();
         color.stroke_width = 10;
 
         chart
-            .draw_series(LineSeries::new(
-                (0..4)
-                    .zip(err.iter())
-                    .filter_map(|(dataset_n, err)| {
-                        err.get(name.as_str())
-                            .map(|v| (dataset_n as f32, *v as f32))
-                    })
-                    .collect::<Vec<_>>(),
-                color,
-            ))?
+            .draw_series(
+                Histogram::vertical(&chart).style(color).data(
+                    binding_dataset
+                        .iter()
+                        .zip(err.iter())
+                        .filter_map(|(dataset_n, err)| {
+                            err.get(name.as_str()).map(|v| (dataset_n, *v as f32))
+                        })
+                        .collect::<Vec<_>>(),
+                ),
+            )?
             .label(name)
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
     }

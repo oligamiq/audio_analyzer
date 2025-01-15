@@ -153,6 +153,12 @@ fft_small
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="35" y1="98" x2="1018" y2="98"/>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="35" y1="84" x2="1018" y2="84"/>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="35" y1="70" x2="1018" y2="70"/>
+<text x="5" y="778" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="9.67741935483871" opacity="1" fill="#000000" transform="rotate(270, 5, 778)">
+Success rate
+</text>
+<text x="527" y="1531" dy="-0.5ex" text-anchor="middle" font-family="sans-serif" font-size="9.67741935483871" opacity="1" fill="#000000">
+Threshold
+</text>
 <line opacity="0.2" stroke="#000000" stroke-width="1" x1="228" y1="1500" x2="228" y2="55"/>
 <line opacity="0.2" stroke="#000000" stroke-width="1" x1="425" y1="1500" x2="425" y2="55"/>
 <line opacity="0.2" stroke="#000000" stroke-width="1" x1="623" y1="1500" x2="623" y2="55"/>
