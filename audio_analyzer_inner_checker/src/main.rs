@@ -287,7 +287,7 @@ fn main() -> anyhow::Result<()> {
         .map(|v| v.into_iter().collect::<HashMap<&str, _>>())
         .collect::<Vec<_>>();
 
-    let binding = ["burg", "lpc", "fft", "liftered"]
+    let binding = ["fft", "lpc", "burg", "liftered"]
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
@@ -302,35 +302,68 @@ fn main() -> anyhow::Result<()> {
         .y_label_area_size(100)
         .margin(5)
         // .caption("EER", ("sans-serif", 50.0))
-        .build_cartesian_2d(binding_dataset.into_segmented(), 0f32..1f32)?;
+        .build_cartesian_2d(0f32..3.0f32, 0f32..1f32)?;
+
+    fn fmt_n(v: &f32) -> String {
+        if (v.round() - v - 0.5).abs() < 0.01 {
+            ["mnist", "chime home", "baved"]
+                .get(*v as usize)
+                .unwrap_or(&"")
+                .to_string()
+        } else {
+            "".to_string()
+        }
+    }
 
     chart
         .configure_mesh()
         .disable_x_mesh()
         .bold_line_style(WHITE.mix(0.3))
         .x_label_style(("sans-serif", 50))
-        .x_label_formatter(&fmt)
+        .x_label_formatter(&fmt_n)
         .axis_desc_style(("sans-serif", 15))
         .draw()?;
 
     let mut colors = vec![RED, GREEN, BLUE, YELLOW];
 
-    for name in binding {
+    for (i, name) in binding.iter().enumerate() {
         let mut color: ShapeStyle = colors.pop().unwrap().filled();
         color.stroke_width = 10;
 
+        // chart
+        //     .draw_series(
+        //         Histogram::vertical(&chart).style(color).data(
+        //             binding_dataset
+        //                 .iter()
+        //                 .zip(err.iter())
+        //                 .filter_map(|(dataset_n, err)| {
+        //                     err.get(name.as_str()).map(|v| (dataset_n, *v as f32))
+        //                 })
+        //                 .collect::<Vec<_>>(),
+        //         ),
+        //     )?
+        //     .label(name)
+        //     .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+
+        // creating a histogram by Rectangle
+        let i = i as f32;
+        let num = 4.;
+        let a = (0..3)
+            .zip(err.iter())
+            .filter_map(|(dataset_n, err)| err.get(name.as_str()).map(|v| (dataset_n, *v as f32)))
+            .map(|(x, y)| {
+                Rectangle::new(
+                    [
+                        (x as f32 + 0.1 + i / num * 0.9, y),
+                        (x as f32 + (i + 1.) / num * 0.9, 0.),
+                    ],
+                    color,
+                )
+            })
+            .collect::<Vec<_>>();
+
         chart
-            .draw_series(
-                Histogram::vertical(&chart).style(color).data(
-                    binding_dataset
-                        .iter()
-                        .zip(err.iter())
-                        .filter_map(|(dataset_n, err)| {
-                            err.get(name.as_str()).map(|v| (dataset_n, *v as f32))
-                        })
-                        .collect::<Vec<_>>(),
-                ),
-            )?
+            .draw_series(a.into_iter())?
             .label(name)
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
     }
