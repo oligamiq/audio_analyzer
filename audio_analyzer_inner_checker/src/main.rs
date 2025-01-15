@@ -250,7 +250,7 @@ fn main() -> anyhow::Result<()> {
         .bold_line_style(WHITE.mix(0.3))
         .x_label_style(("sans-serif", 50))
         .x_label_formatter(&fmt)
-        .axis_desc_style(("sans-serif", 15))
+        .axis_desc_style(("sans-serif", 50))
         .draw()?;
 
     chart.draw_series(
@@ -320,9 +320,11 @@ fn main() -> anyhow::Result<()> {
         .configure_mesh()
         .disable_x_mesh()
         .bold_line_style(WHITE.mix(0.3))
+        .x_desc("Dataset")
+        .y_desc("EER")
         .x_label_style(("sans-serif", 50))
         .x_label_formatter(&fmt_n)
-        .axis_desc_style(("sans-serif", 15))
+        .axis_desc_style(("sans-serif", 50))
         .draw()?;
 
     let mut colors = vec![RED, GREEN, BLUE, YELLOW];
