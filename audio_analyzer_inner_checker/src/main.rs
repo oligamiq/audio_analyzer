@@ -54,8 +54,8 @@ fn main() -> anyhow::Result<()> {
     for name in vec!["burg", "lpc", "fft", "fft_small", "liftered"] {
         let (data, range) = data.get(name).unwrap();
         let out_file_name = format!("{name}_out.svg");
-        // let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
-        let root = SVGBackend::new(&out_file_name, (1024, 1024)).into_drawing_area();
+        let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
+        // let root = SVGBackend::new(&out_file_name, (1024, 1024)).into_drawing_area();
         root.fill(&WHITE)?;
         let range_min = range.iter().cloned().reduce(f64::min).unwrap() as f32;
         let range_max = range.iter().cloned().reduce(f64::max).unwrap() as f32;
