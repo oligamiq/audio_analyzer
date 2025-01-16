@@ -54,7 +54,8 @@ fn main() -> anyhow::Result<()> {
     for name in vec!["burg", "lpc", "fft", "fft_small", "liftered"] {
         let (data, range) = data.get(name).unwrap();
         let out_file_name = format!("{name}_out.svg");
-        let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
+        // let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
+        let root = SVGBackend::new(&out_file_name, (1024, 1024)).into_drawing_area();
         root.fill(&WHITE)?;
         let range_min = range.iter().cloned().reduce(f64::min).unwrap() as f32;
         let range_max = range.iter().cloned().reduce(f64::max).unwrap() as f32;
@@ -86,11 +87,11 @@ fn main() -> anyhow::Result<()> {
                     .map(|threshold| threshold as f32)
                     .zip(data.0.iter().map(|(x, _)| 1. - *x as f32)),
                 dashed_line_style.clone(),
-            ))?
-            .label("mnist self")
-            .legend(move |(x, y)| {
-                PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
-            });
+            ))?;
+            // .label("mnist self")
+            // .legend(move |(x, y)| {
+            //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+            // });
 
         dashed_line_style.stroke_width = 1;
 
@@ -102,11 +103,11 @@ fn main() -> anyhow::Result<()> {
                     .map(|threshold| threshold as f32)
                     .zip(data.0.iter().map(|(_, x)| *x as f32)),
                 dashed_line_style.clone(),
-            ))?
-            .label("mnist other")
-            .legend(move |(x, y)| {
-                PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
-            });
+            ))?;
+            // .label("mnist other")
+            // .legend(move |(x, y)| {
+            //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+            // });
 
         fn draw_chart_for_noise_kind<const N: usize>(
             range: &Vec<f64>,
@@ -151,9 +152,9 @@ fn main() -> anyhow::Result<()> {
                         .map(|threshold| threshold as f32)
                         .zip(data.iter().map(|(_, x, _)| *x as f32)),
                     &color,
-                ))?
-                .label(format!("{title} other learn by n sum"))
-                .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+                ))?;
+                // .label(format!("{title} other learn by n sum"))
+                // .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
 
             // type_で学習し、targetに対し確認する
             let mut color = color_;
@@ -185,6 +186,26 @@ fn main() -> anyhow::Result<()> {
                 }
             }
 
+            // let self_sum = (0..N)
+            //     .map(|type_| {
+            //         data.iter()
+            //             .map(|(_, _, x)| x[type_][type_])
+            //             .sum::<f64>()
+            //     })
+            //     .collect::<Vec<_>>();
+
+            // chart
+            //     .draw_series(LineSeries::new(
+            //         range
+            //             .iter()
+            //             .cloned()
+            //             .map(|threshold| threshold as f32)
+            //             .zip(self_sum.iter().map(|x| *x as f32)),
+            //         &color,
+            //     ))?
+            //     .label(format!("{title} self learn by n sum"))
+            //     .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+
             Ok(())
         }
 
@@ -193,11 +214,11 @@ fn main() -> anyhow::Result<()> {
         // ChimeHome
         draw_chart_for_noise_kind(&range, &mut chart, &data.2, "chime home", GREEN)?;
 
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw()?;
+        // chart
+        //     .configure_series_labels()
+        //     .background_style(&WHITE.mix(0.8))
+        //     .border_style(&BLACK)
+        //     .draw()?;
 
         root.present()?;
 

@@ -708,6 +708,7 @@ dependencies = [
  "anyhow",
  "audio_analyzer_core",
  "image 0.25.5",
+ "linear-predictive-coding",
  "mel_spec",
  "ndarray",
  "num-complex",
