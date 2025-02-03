@@ -65,7 +65,7 @@ fn main() {
 
                 let liftered = lifter(quefrency, 15);
 
-                let lpc_spectral_envelope = spectral_envelope(lpc_log.clone(), 100);
+                let lpc_spectral_envelope = spectral_envelope(lpc.clone(), 100);
                 // let lpc_spectral_envelope = spectral_envelope(lpc.clone(), 100);
 
                 let spectral_envelope = spectral_envelope(liftered, log_amplitude_spectrum.len());
