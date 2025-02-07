@@ -79,35 +79,33 @@ fn main() -> anyhow::Result<()> {
             stroke_width: 2,
         };
 
-        chart
-            .draw_series(LineSeries::new(
-                range
-                    .iter()
-                    .cloned()
-                    .map(|threshold| threshold as f32)
-                    .zip(data.0.iter().map(|(x, _)| 1. - *x as f32)),
-                dashed_line_style.clone(),
-            ))?;
-            // .label("mnist self")
-            // .legend(move |(x, y)| {
-            //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
-            // });
+        chart.draw_series(LineSeries::new(
+            range
+                .iter()
+                .cloned()
+                .map(|threshold| threshold as f32)
+                .zip(data.0.iter().map(|(x, _)| 1. - *x as f32)),
+            dashed_line_style.clone(),
+        ))?;
+        // .label("mnist self")
+        // .legend(move |(x, y)| {
+        //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+        // });
 
         dashed_line_style.stroke_width = 1;
 
-        chart
-            .draw_series(LineSeries::new(
-                range
-                    .iter()
-                    .cloned()
-                    .map(|threshold| threshold as f32)
-                    .zip(data.0.iter().map(|(_, x)| *x as f32)),
-                dashed_line_style.clone(),
-            ))?;
-            // .label("mnist other")
-            // .legend(move |(x, y)| {
-            //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
-            // });
+        chart.draw_series(LineSeries::new(
+            range
+                .iter()
+                .cloned()
+                .map(|threshold| threshold as f32)
+                .zip(data.0.iter().map(|(_, x)| *x as f32)),
+            dashed_line_style.clone(),
+        ))?;
+        // .label("mnist other")
+        // .legend(move |(x, y)| {
+        //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
+        // });
 
         fn draw_chart_for_noise_kind<const N: usize>(
             range: &Vec<f64>,
@@ -144,17 +142,16 @@ fn main() -> anyhow::Result<()> {
             }
 
             // 上記3つの合計
-            chart
-                .draw_series(LineSeries::new(
-                    range
-                        .iter()
-                        .cloned()
-                        .map(|threshold| threshold as f32)
-                        .zip(data.iter().map(|(_, x, _)| *x as f32)),
-                    &color,
-                ))?;
-                // .label(format!("{title} other learn by n sum"))
-                // .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+            chart.draw_series(LineSeries::new(
+                range
+                    .iter()
+                    .cloned()
+                    .map(|threshold| threshold as f32)
+                    .zip(data.iter().map(|(_, x, _)| *x as f32)),
+                &color,
+            ))?;
+            // .label(format!("{title} other learn by n sum"))
+            // .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
 
             // type_で学習し、targetに対し確認する
             let mut color = color_;

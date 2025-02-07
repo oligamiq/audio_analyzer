@@ -6,7 +6,9 @@ use num_complex::Complex;
 use plotters::prelude::*;
 
 fn main() {
-    let mut data = TestData::new_with_path("../test_data/jfk_f32le.wav".into());
+    let now_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let mut data = TestData::new_with_path(format!("{now_dir}/../test_data/jfk_f32le.wav"));
+    println!("{:?}", now_dir);
     data.start();
 
     // 50ms
@@ -48,51 +50,19 @@ fn main() {
 
         if let Ok(fft) = fft_layer.through_inner(&data) {
             for fft in fft {
-                // println!("{:?}", fft.len());
-
                 let mel = mel_layer.through_inner(&fft).unwrap().unwrap();
 
                 let lpc = linear_predictive_coding::calc_lpc_by_burg(
                     data.clone().into_iter().collect::<Array1<f64>>().view(),
-                    100,
+                    500,
                 )
                 .unwrap();
 
-                // println!("lpc: {:?}", lpc);
-                // println!("mel: {:?}", mel);
-
-                let log_mel_amplitude_spectrum = log_mel_amplitude_spectrum(&mel.view());
-
-                let log_amplitude_spectrum = log_amplitude_spectrum(&fft.view());
-
-                let quefrency = quefrency(log_amplitude_spectrum.clone());
-
-                let liftered = lifter(quefrency, 15);
-
-                let lpc_spectral_envelope = spectral_envelope(lpc.clone(), 100);
-                // let lpc_spectral_envelope = spectral_envelope(lpc.clone(), 100);
-
-                let spectral_envelope = spectral_envelope(liftered, log_amplitude_spectrum.len());
-
-                let log_amplitude_spectrum_harf =
-                    log_amplitude_spectrum.slice(s![..log_amplitude_spectrum.len() / 2]);
-
-                let spectral_envelope_harf =
-                    spectral_envelope.slice(s![..spectral_envelope.len() / 2]);
-
-                let lpc_spectral_envelope_harf =
-                    lpc_spectral_envelope.slice(s![..lpc_spectral_envelope.len() / 2]);
-
-                // println!("{:?}", lpc);
-
                 n += 1;
                 plot.plot(
-                    log_amplitude_spectrum_harf.to_owned(),
-                    log_mel_amplitude_spectrum,
-                    spectral_envelope_harf.to_owned(),
-                    lpc_spectral_envelope_harf.to_owned(),
-                    // lpc_log.to_owned(),
-                    // lpc.to_owned(),
+                    fft.iter().map(|x| x.re).collect::<Array1<_>>().view(),
+                    mel.view(),
+                    lpc.view(),
                     &format!("out/mel_{n}.png"),
                     sample_rate as f64,
                     (800, 600),
@@ -103,8 +73,8 @@ fn main() {
         }
     }
 
-    plot.plot_3d("out/3d.svg", sample_rate as f64, (8000, 6000))
-        .unwrap();
+    // plot.plot_3d("out/3d.svg", sample_rate as f64, (8000, 6000))
+    //     .unwrap();
 }
 
 fn spectral_envelope(quefrency: Array1<f64>, n: usize) -> Array1<f64> {
@@ -140,45 +110,25 @@ struct Plot {
 impl Plot {
     pub fn plot(
         &mut self,
-        log_amplitude_spectrum: Array1<f64>,
-        log_mel_amplitude_spectrum: Array1<f64>,
-        spectral_envelope: Array1<f64>,
-        lpc_spectral_envelope: Array1<f64>,
+        fft: ArrayView1<f64>,
+        mel: ArrayView1<f64>,
+        lpc: ArrayView1<f64>,
         name: &str,
         sample_rate: f64,
         (width, height): (u32, u32),
         is_plot: bool,
     ) -> anyhow::Result<()> {
-        let Self {
-            log_amplitude_spectrum: _log_amplitude_spectrum,
-            log_mel_amplitude_spectrum: _log_mel_amplitude_spectrum,
-            spectral_envelope: _spectral_envelope,
-        } = self;
-
-        _log_amplitude_spectrum.push(log_amplitude_spectrum.clone());
-        _log_mel_amplitude_spectrum.push(log_mel_amplitude_spectrum.clone());
-        _spectral_envelope.push(spectral_envelope.clone());
-
         if is_plot {
-            Self::plot_inner(
-                log_amplitude_spectrum,
-                log_mel_amplitude_spectrum,
-                spectral_envelope,
-                lpc_spectral_envelope,
-                name,
-                sample_rate,
-                (width, height),
-            )
+            Self::plot_inner(fft, mel, lpc, name, sample_rate, (width, height))
         } else {
             Ok(())
         }
     }
 
     fn plot_inner(
-        log_amplitude_spectrum: Array1<f64>,
-        log_mel_amplitude_spectrum: Array1<f64>,
-        spectral_envelope: Array1<f64>,
-        lpc_spectral_envelope: Array1<f64>,
+        fft: ArrayView1<f64>,
+        mel: ArrayView1<f64>,
+        lpc: ArrayView1<f64>,
         name: &str,
         sample_rate: f64,
         (width, height): (u32, u32),
@@ -187,23 +137,16 @@ impl Plot {
 
         {
             let x_fft_axis = (0.0..1.0 as f64)
-                .step(1.0f64 / log_amplitude_spectrum.len() as f64)
+                .step(1.0f64 / fft.len() as f64)
                 .values()
                 .into_iter()
                 .map(|x| x * sample_rate / 2.0)
                 .collect::<Vec<_>>();
-            let max_mel_hz = hz_to_mel(sample_rate / 2.0, false);
-            let x_mel_axis = Array1::linspace(0.0, max_mel_hz, log_mel_amplitude_spectrum.len())
-                .iter()
-                .map(|x| mel_to_hz(*x, false))
-                .collect::<Vec<_>>();
-
-            let x_spectral_envelope_axis = (0.0..1.0 as f64)
-                .step(1.0f64 / spectral_envelope.len() as f64)
-                .values()
-                .into_iter()
-                .map(|x| x * sample_rate / 2.0)
-                .collect::<Vec<_>>();
+            // let max_mel_hz = hz_to_mel(sample_rate / 2.0, false);
+            // let x_mel_axis = Array1::linspace(0.0, max_mel_hz, mel.len())
+            //     .iter()
+            //     .map(|x| mel_to_hz(*x, false))
+            //     .collect::<Vec<_>>();
 
             let root_area =
                 BitMapBackend::with_buffer(&mut root_area_buf, (width, height)).into_drawing_area();
@@ -212,10 +155,7 @@ impl Plot {
 
             let root_area = root_area.titled("Spectrogram", ("sans-serif", 60))?;
 
-            let max_y = log_amplitude_spectrum
-                .iter()
-                .cloned()
-                .fold(0.0f64, |acc, x| acc.max(x.abs()));
+            let max_y = fft.iter().cloned().fold(0.0f64, |acc, x| acc.max(x.abs()));
 
             let mut cc = ChartBuilder::on(&root_area)
                 .margin(5)
@@ -238,47 +178,32 @@ impl Plot {
                 .draw()?;
 
             cc.draw_series(LineSeries::new(
-                x_fft_axis
+                x_fft_axis[0..fft.len() / 2]
                     .iter()
-                    .cloned()
-                    .zip(log_amplitude_spectrum.iter().cloned()),
+                    .map(|x| x * 2.0)
+                    .zip(fft.iter().cloned()),
                 &RED,
             ))?
-            .label("fft spectrogram (dB)")
+            .label("fft")
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
 
             cc.draw_series(LineSeries::new(
-                x_mel_axis
-                    .iter()
-                    .cloned()
-                    .zip(log_mel_amplitude_spectrum.iter().cloned()),
+                x_fft_axis.iter().cloned().zip(mel.iter().cloned()),
                 &BLUE,
             ))?
-            .label("mel spectrogram (dB)")
+            .label("mel")
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLUE));
 
             cc.draw_series(LineSeries::new(
-                x_spectral_envelope_axis
+                x_fft_axis
                     .iter()
                     .cloned()
-                    .zip(spectral_envelope.iter().cloned()),
+                    .map(|x| x * x_fft_axis.len() as f64 / lpc.len() as f64)
+                    .zip(lpc.iter().cloned()),
                 &GREEN,
             ))?
-            .label("spectral envelope")
+            .label("lpc")
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
-
-            cc.draw_series(LineSeries::new(
-                x_spectral_envelope_axis
-                    .iter()
-                    .cloned()
-                    .map(|x| {
-                        x / lpc_spectral_envelope.len() as f64 * spectral_envelope.len() as f64
-                    })
-                    .zip(lpc_spectral_envelope.iter().cloned()),
-                &BLACK,
-            ))?
-            .label("lpc spectral envelope")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLACK));
 
             cc.configure_series_labels().border_style(BLACK).draw()?;
 
