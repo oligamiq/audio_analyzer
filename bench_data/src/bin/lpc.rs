@@ -1,12 +1,13 @@
 use audio_analyzer_core::prelude::*;
 use bench_data::lifter;
+use linear_predictive_coding::{calc_lpc_by_burg, calc_lpc_by_levinson_durbin};
 use ndarray::*;
 use num_complex::Complex;
 use plotters::prelude::*;
 
 // lifterをしてから呼び出す
 // idct
-fn calculate_log_power_spectrum_envelope(cepstrum: Array1<f64>, n: usize) -> Array1<f64> {
+fn calculate_log_power_spectrum_envelope_fft(cepstrum: Array1<f64>, n: usize) -> Array1<f64> {
     let fft = rustfft::FftPlanner::new().plan_fft_inverse(n);
 
     let mut fft_input = cepstrum
@@ -22,6 +23,38 @@ fn calculate_log_power_spectrum_envelope(cepstrum: Array1<f64>, n: usize) -> Arr
     let spectral_envelope = spectral_envelope.mapv(|x| x / n as f64);
 
     spectral_envelope
+}
+
+/// LPC係数から対数パワースペクトルを求める
+pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: f64, n: usize, fft_size: usize) -> Vec<f64> {
+    // インパルス応答（LPCフィルタ）
+    let mut impulse_response = vec![0.0; fft_size];
+    impulse_response[0] = 1.0; // インパルス
+    for i in 1..=n {
+        impulse_response[i] = -lpc[i - 1];
+    }
+
+    let mut spectrum: Vec<Complex<f64>> = impulse_response.iter().map(|&x| Complex::new(x, 0.0)).collect();
+
+    let mut fft_planner = rustfft::FftPlanner::new();
+    let fft = fft_planner.plan_fft_forward(fft_size);
+    fft.process(&mut spectrum);
+
+    // let spectrum = spectrum.iter().map(|&x| x / (fft_size as f64).sqrt()).collect::<Vec<_>>();
+
+    // 振幅スペクトル
+    let mut amp: Vec<f64> = spectrum.iter().map(|c| c.norm_sqr()).collect();
+    // let mut amp: Vec<f64> = spectrum.iter().map(|c| c.re).collect();
+
+    // 片側スペクトル（ナイキスト周波数まで）
+    amp.truncate(fft_size / 2 + 1);
+
+    let e = e.sqrt().log10();
+
+    // dBスケール変換
+    let env = amp.iter().map(|&x| (e - x.log10()) * 20.).collect::<Vec<f64>>();
+
+    env
 }
 
 fn main() {
@@ -101,14 +134,14 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
     let root_area = SVGBackend::new(&file_name, (1024, 768)).into_drawing_area();
     root_area.fill(&WHITE).unwrap();
 
-    let root_area = root_area.titled("FFT", ("sans-serif", 60)).unwrap();
+    // let root_area = root_area.titled("FFT", ("sans-serif", 60)).unwrap();
 
     let mut chart = ChartBuilder::on(&root_area)
         .margin(5)
         .caption("FFT", ("sans-serif", 50).into_font())
         .x_label_area_size(40)
         .y_label_area_size(40)
-        .build_cartesian_2d(0.0..x_max, -40.0..40.0)
+        .build_cartesian_2d(0.0..x_max, -100.0..40.0)
         .unwrap();
 
     chart.configure_mesh().draw().unwrap();
@@ -166,7 +199,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
             cepstrum[i] = 0.0;
         }
     }
-    let spectral_envelope = calculate_log_power_spectrum_envelope(cepstrum, log_power.len());
+    let spectral_envelope = calculate_log_power_spectrum_envelope_fft(cepstrum, log_power.len());
 
     view_data.push((
         frequencies
@@ -177,6 +210,21 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         "spectral_envelope".to_string(),
     ));
 
-    // plot_view_data(view_data, frame_rate / 2.0, salt);
-    plot_view_data(view_data, 4000.0, salt);
+    let depth = 30;
+
+    // let lpc = calc_lpc_by_levinson_durbin(hanning.view(), log_power.len() - 1).unwrap();
+    let (lpc, e) = calc_lpc_by_levinson_durbin(hanning.view(), depth).unwrap();
+
+    let a_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), e, depth, fft_.len());
+
+    view_data.push((
+        frequencies
+            .iter()
+            .zip(a_log_power.iter())
+            .map(|(x, y)| (*x, *y))
+            .collect(),
+        "a_log_power".to_string(),
+    ));
+
+    plot_view_data(view_data, frame_rate / 2.0, salt);
 }
