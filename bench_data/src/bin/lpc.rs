@@ -26,7 +26,7 @@ fn calculate_log_power_spectrum_envelope_fft(cepstrum: Array1<f64>, n: usize) ->
 }
 
 /// LPC係数から対数パワースペクトルを求める
-pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: f64, n: usize, fft_size: usize) -> Vec<f64> {
+pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: Option<f64>, n: usize, fft_size: usize) -> Vec<f64> {
     // インパルス応答（LPCフィルタ）
     let mut impulse_response = vec![0.0; fft_size];
     impulse_response[0] = 1.0; // インパルス
@@ -49,7 +49,7 @@ pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: f64, n
     // 片側スペクトル（ナイキスト周波数まで）
     amp.truncate(fft_size / 2 + 1);
 
-    let e = e.sqrt().log10();
+    let e = e.map(|x| x.sqrt().log10()).unwrap_or(0.0);
 
     // dBスケール変換
     let env = amp.iter().map(|&x| (e - x.log10()) * 20.).collect::<Vec<f64>>();
@@ -215,15 +215,28 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
     // let lpc = calc_lpc_by_levinson_durbin(hanning.view(), log_power.len() - 1).unwrap();
     let (lpc, e) = calc_lpc_by_levinson_durbin(hanning.view(), depth).unwrap();
 
-    let a_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), e, depth, fft_.len());
+    let levinson_durbin_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), Some(e), depth, fft_.len());
 
     view_data.push((
         frequencies
             .iter()
-            .zip(a_log_power.iter())
+            .zip(levinson_durbin_log_power.iter())
             .map(|(x, y)| (*x, *y))
             .collect(),
-        "a_log_power".to_string(),
+        "levinson_durbin_log_power".to_string(),
+    ));
+
+    let lpc = calc_lpc_by_burg(hanning.view(), depth).unwrap();
+
+    let burg_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), None, depth, fft_.len());
+
+    view_data.push((
+        frequencies
+            .iter()
+            .zip(burg_log_power.iter())
+            .map(|(x, y)| (*x, *y))
+            .collect(),
+        "burg_log_power".to_string(),
     ));
 
     plot_view_data(view_data, frame_rate / 2.0, salt);
