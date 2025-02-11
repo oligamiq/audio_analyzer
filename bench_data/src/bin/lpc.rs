@@ -26,7 +26,12 @@ fn calculate_log_power_spectrum_envelope_fft(cepstrum: Array1<f64>, n: usize) ->
 }
 
 /// LPC係数から対数パワースペクトルを求める
-pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: Option<f64>, n: usize, fft_size: usize) -> Vec<f64> {
+pub fn calculate_log_power_spectrum_envelope_lpc(
+    lpc: ArrayView1<f64>,
+    e: Option<f64>,
+    n: usize,
+    fft_size: usize,
+) -> Vec<f64> {
     // インパルス応答（LPCフィルタ）
     let mut impulse_response = vec![0.0; fft_size];
     impulse_response[0] = 1.0; // インパルス
@@ -34,7 +39,10 @@ pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: Option
         impulse_response[i] = -lpc[i - 1];
     }
 
-    let mut spectrum: Vec<Complex<f64>> = impulse_response.iter().map(|&x| Complex::new(x, 0.0)).collect();
+    let mut spectrum: Vec<Complex<f64>> = impulse_response
+        .iter()
+        .map(|&x| Complex::new(x, 0.0))
+        .collect();
 
     let mut fft_planner = rustfft::FftPlanner::new();
     let fft = fft_planner.plan_fft_forward(fft_size);
@@ -52,7 +60,10 @@ pub fn calculate_log_power_spectrum_envelope_lpc(lpc: ArrayView1<f64>, e: Option
     let e = e.map(|x| x.sqrt().log10()).unwrap_or(0.0);
 
     // dBスケール変換
-    let env = amp.iter().map(|&x| (e - x.log10()) * 20.).collect::<Vec<f64>>();
+    let env = amp
+        .iter()
+        .map(|&x| (e - x.log10()) * 20.)
+        .collect::<Vec<f64>>();
 
     env
 }
@@ -137,14 +148,21 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
     // let root_area = root_area.titled("FFT", ("sans-serif", 60)).unwrap();
 
     let mut chart = ChartBuilder::on(&root_area)
-        .margin(5)
-        .caption("FFT", ("sans-serif", 50).into_font())
-        .x_label_area_size(40)
-        .y_label_area_size(40)
+        .margin(20)
+        // .caption("FFT", ("sans-serif", 50).into_font())
+        .x_label_area_size(90)
+        .y_label_area_size(110)
         .build_cartesian_2d(0.0..x_max, -100.0..40.0)
         .unwrap();
 
-    chart.configure_mesh().draw().unwrap();
+    chart
+        .configure_mesh()
+        .x_desc("Frequency [Hz]")
+        .y_desc("Power [dB]")
+        .x_label_style(("sans-serif", 30))
+        .y_label_style(("sans-serif", 30))
+        .draw()
+        .unwrap();
 
     for (i, (data, title)) in view_data.iter().enumerate() {
         chart
@@ -161,6 +179,7 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
+        .label_font(("sans-serif", 30))
         .draw()
         .unwrap();
 
@@ -215,7 +234,8 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
     // let lpc = calc_lpc_by_levinson_durbin(hanning.view(), log_power.len() - 1).unwrap();
     let (lpc, e) = calc_lpc_by_levinson_durbin(hanning.view(), depth).unwrap();
 
-    let levinson_durbin_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), Some(e), depth, fft_.len());
+    let levinson_durbin_log_power =
+        calculate_log_power_spectrum_envelope_lpc(lpc.view(), Some(e), depth, fft_.len());
 
     view_data.push((
         frequencies
@@ -228,7 +248,8 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
 
     let lpc = calc_lpc_by_burg(hanning.view(), depth).unwrap();
 
-    let burg_log_power = calculate_log_power_spectrum_envelope_lpc(lpc.view(), None, depth, fft_.len());
+    let burg_log_power =
+        calculate_log_power_spectrum_envelope_lpc(lpc.view(), None, depth, fft_.len());
 
     view_data.push((
         frequencies
