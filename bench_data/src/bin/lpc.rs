@@ -35,8 +35,8 @@ pub fn calculate_log_power_spectrum_envelope_lpc(
     // インパルス応答（LPCフィルタ）
     let mut impulse_response = vec![0.0; fft_size];
     impulse_response[0] = 1.0; // インパルス
-    for i in 1..=n {
-        impulse_response[i] = -lpc[i - 1];
+    for i in 0..n {
+        impulse_response[i + 1] = -lpc[i];
     }
 
     let mut spectrum: Vec<Complex<f64>> = impulse_response
@@ -51,11 +51,14 @@ pub fn calculate_log_power_spectrum_envelope_lpc(
     // let spectrum = spectrum.iter().map(|&x| x / (fft_size as f64).sqrt()).collect::<Vec<_>>();
 
     // 振幅スペクトル
-    let mut amp: Vec<f64> = spectrum.iter().map(|c| c.norm_sqr()).collect();
+    let amp: Vec<f64> = spectrum
+        .iter()
+        .map(|c| c.norm_sqr())
+        .collect();
     // let mut amp: Vec<f64> = spectrum.iter().map(|c| c.re).collect();
 
     // 片側スペクトル（ナイキスト周波数まで）
-    amp.truncate(fft_size / 2 + 1);
+    // amp.truncate(fft_size / 2 + 1);
 
     let e = e.map(|x| x.sqrt().log10()).unwrap_or(0.0);
 
@@ -105,14 +108,38 @@ fn main() {
         count
     };
 
+    let mut min__ = None;
+    let mut max__ = 0.;
+
     let mut n = 0;
     while let Some(data) = data.try_recv() {
         {
             n += 1;
-            if n != count / 2 && n % 50 != 0 {
-                continue;
+            // if n != count / 2 && n % 50 != 0 {
+            //     continue;
+            // }
+        }
+
+        // -1.1 ~ 1.1 to -1 ~ 1
+        let data = data.iter().map(|x| *x as f64 / 2.).collect::<Vec<_>>();
+
+        let max = data.iter().fold(0.0, |acc, x| if acc < *x { *x } else { acc });
+        let min = data.iter().fold(0.0, |acc, x| if acc > *x { *x } else { acc });
+        // if max > 1.0 {
+        //     println!("max: {:?}", max);
+        //     panic!();
+        // }
+        if max__ < max {
+            max__ = max;
+        }
+        if min__ == None {
+            min__ = Some(min);
+        } else {
+            if min__ > Some(min) {
+                min__ = Some(min);
             }
         }
+        println!("max: {:?}", max);
 
         analyze_data(
             data.iter().map(|x| *x as f64).collect::<Array1<f64>>(),
@@ -123,6 +150,9 @@ fn main() {
         // println!("n: {:?}", n);
         // println!("data: {:?}", data);
     }
+
+    println!("max__: {:?}", max__);
+    println!("min__: {:?}", min__);
 }
 
 fn fft(data: Array1<f64>) -> Array1<f64> {
@@ -178,6 +208,7 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
     chart
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
+        .position(SeriesLabelPosition::UpperRight)
         .border_style(&BLACK)
         .label_font(("sans-serif", 30))
         .draw()
@@ -229,7 +260,8 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         "spectral_envelope".to_string(),
     ));
 
-    let depth = 30;
+    // let depth = hanning.len() - 1;
+    let depth = 32;
 
     // let lpc = calc_lpc_by_levinson_durbin(hanning.view(), log_power.len() - 1).unwrap();
     let (lpc, e) = calc_lpc_by_levinson_durbin(hanning.view(), depth).unwrap();
@@ -260,5 +292,6 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         "burg_log_power".to_string(),
     ));
 
+    // plot_view_data(view_data, frame_rate, salt);
     plot_view_data(view_data, frame_rate / 2.0, salt);
 }

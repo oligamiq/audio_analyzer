@@ -167,23 +167,23 @@ Method
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="99,55 104,55 "/>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="105,919 1018,919 "/>
 <text x="219" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-burg
+burg-lpc
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="219,919 219,924 "/>
 <text x="447" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-fft
+liftered
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="447,919 447,924 "/>
 <text x="676" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-liftered
+spectrum
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="676,919 676,924 "/>
 <text x="904" y="929" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="40.32258064516129" opacity="1" fill="#000000">
-lpc
+ld-lpc
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="904,919 904,924 "/>
-<rect x="338" y="774" width="219" height="144" opacity="0.5" fill="#FF0000" stroke="none"/>
 <rect x="110" y="599" width="218" height="319" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="567" y="397" width="218" height="521" opacity="0.5" fill="#FF0000" stroke="none"/>
 <rect x="795" y="593" width="218" height="325" opacity="0.5" fill="#FF0000" stroke="none"/>
+<rect x="338" y="397" width="219" height="521" opacity="0.5" fill="#FF0000" stroke="none"/>
+<rect x="567" y="774" width="218" height="144" opacity="0.5" fill="#FF0000" stroke="none"/>
 </svg>

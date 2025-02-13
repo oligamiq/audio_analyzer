@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut mnist_max_diff = HashMap::<&str, f64>::new();
 
-    for name in vec!["burg", "lpc", "fft", "fft_small", "liftered"] {
+    for name in vec!["burg-lpc", "ld-lpc", "spectrum", "spectrum_small", "liftered"] {
         let (data, range) = data.get(name).unwrap();
         let out_file_name = format!("{name}_out.svg");
         let root = SVGBackend::new(&out_file_name, (1024, 1536)).into_drawing_area();
@@ -60,7 +60,7 @@ fn main() -> anyhow::Result<()> {
         let range_min = range.iter().cloned().reduce(f64::min).unwrap() as f32;
         let range_max = range.iter().cloned().reduce(f64::max).unwrap() as f32;
         let mut chart = ChartBuilder::on(&root)
-            .caption(name, ("sans-serif", 50).into_font())
+            // .caption(name, ("sans-serif", 50).into_font())
             .margin(5)
             .x_label_area_size(50)
             .y_label_area_size(50)
@@ -79,6 +79,12 @@ fn main() -> anyhow::Result<()> {
             stroke_width: 2,
         };
 
+        fn color_to_bold(color: RGBColor) -> ShapeStyle {
+            let mut style: ShapeStyle = color.into();
+            style.stroke_width = 5;
+            style
+        }
+
         chart.draw_series(LineSeries::new(
             range
                 .iter()
@@ -86,11 +92,13 @@ fn main() -> anyhow::Result<()> {
                 .map(|threshold| threshold as f32)
                 .zip(data.0.iter().map(|(x, _)| 1. - *x as f32)),
             dashed_line_style.clone(),
-        ))?;
+        ))?
         // .label("mnist self")
         // .legend(move |(x, y)| {
         //     PathElement::new(vec![(x, y), (x + 20, y)], dashed_line_style.clone())
         // });
+        .label("mnist")
+        .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 50, y)], color_to_bold(RED)));
 
         dashed_line_style.stroke_width = 1;
 
@@ -135,8 +143,9 @@ fn main() -> anyhow::Result<()> {
                             .zip(data.iter().map(|(x, ..)| x[n] as f32)),
                         &color.mix(0.5),
                     ))?
-                    .label(format!("{title} other learn by {n}"))
-                    .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+                    // .label(format!("{title} other learn by {n}"))
+                    // .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+                    ;
 
                 color.0 = color.0.wrapping_add(64);
             }
@@ -149,9 +158,11 @@ fn main() -> anyhow::Result<()> {
                     .map(|threshold| threshold as f32)
                     .zip(data.iter().map(|(_, x, _)| *x as f32)),
                 &color,
-            ))?;
+            ))?
             // .label(format!("{title} other learn by n sum"))
             // .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+            .label(title)
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 50, y)], color_to_bold(color_)));
 
             // type_で学習し、targetに対し確認する
             let mut color = color_;
@@ -162,7 +173,7 @@ fn main() -> anyhow::Result<()> {
                             let mut style: ShapeStyle = color.mix(0.3).into();
                             style.stroke_width = if type_ == target { 2 } else { 1 };
 
-                            chart
+                            let series = chart
                                 .draw_series(LineSeries::new(
                                     range.iter().cloned().map(|threshold| threshold as f32).zip(
                                         data.iter()
@@ -171,10 +182,11 @@ fn main() -> anyhow::Result<()> {
                                     ),
                                     style,
                                 ))?
-                                .label(format!("{title} self learn by {type_} -> {target}"))
-                                .legend(move |(x, y)| {
-                                    PathElement::new(vec![(x, y), (x + 20, y)], style)
-                                });
+                                // .label(format!("{title} self learn by {type_} -> {target}"))
+                                // .legend(move |(x, y)| {
+                                //     PathElement::new(vec![(x, y), (x + 20, y)], style)
+                                // });
+                                ;
 
                             color.1 = color.1.wrapping_add(32);
                         }
@@ -211,11 +223,26 @@ fn main() -> anyhow::Result<()> {
         // ChimeHome
         draw_chart_for_noise_kind(&range, &mut chart, &data.2, "chime home", GREEN)?;
 
-        // chart
-        //     .configure_series_labels()
-        //     .background_style(&WHITE.mix(0.8))
-        //     .border_style(&BLACK)
-        //     .draw()?;
+        let mut configure_label = chart
+            .configure_series_labels();
+
+        configure_label
+            .legend_area_size(100)
+            .label_font(("sans-serif", 50))
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK);
+
+        configure_label.position(match name {
+            "ld-lpc" => SeriesLabelPosition::MiddleLeft,
+            "burg-lpc" => SeriesLabelPosition::MiddleLeft,
+            "liftered" => SeriesLabelPosition::MiddleRight,
+            "spectrum" => SeriesLabelPosition::MiddleRight,
+            "spectrum_small" => SeriesLabelPosition::UpperRight,
+            _ => unreachable!(),
+        });
+
+        configure_label
+            .draw()?;
 
         root.present()?;
 
@@ -232,7 +259,7 @@ fn main() -> anyhow::Result<()> {
 
     let mnist_max_diff_string = mnist_max_diff
         .iter()
-        .filter(|(s, _)| **s != "fft_small")
+        .filter(|(s, _)| **s != "spectrum_small")
         .map(|(s, v)| (s.to_string(), *v as f32))
         .collect::<Vec<_>>();
     let mnist_max_diff_string_only = mnist_max_diff_string
@@ -284,21 +311,21 @@ fn main() -> anyhow::Result<()> {
     root.fill(&WHITE)?;
 
     let mnist_eer = vec![
-        ("burg", 0.32),
-        ("lpc", 0.31),
-        ("fft", 0.435),
+        ("burg-lpc", 0.32),
+        ("ld-lpc", 0.31),
+        ("spectrum", 0.435),
         ("liftered", 0.2),
     ];
     let baved_eer = vec![
-        ("burg", 0.31),
-        ("lpc", 0.315),
-        ("fft", 0.39),
+        ("burg-lpc", 0.31),
+        ("ld-lpc", 0.315),
+        ("spectrum", 0.39),
         // ("liftered", ),
     ];
     let chime_home_eer = vec![
-        ("burg", 0.44),
-        ("lpc", 0.47),
-        ("fft", 0.5),
+        ("burg-lpc", 0.44),
+        ("ld-lpc", 0.47),
+        ("spectrum", 0.5),
         ("liftered", 0.4),
     ];
     let err = vec![mnist_eer, chime_home_eer, baved_eer]
@@ -306,7 +333,7 @@ fn main() -> anyhow::Result<()> {
         .map(|v| v.into_iter().collect::<HashMap<&str, _>>())
         .collect::<Vec<_>>();
 
-    let binding = ["fft", "lpc", "burg", "liftered"]
+    let binding = ["spectrum", "ld-lpc", "burg-lpc", "liftered"]
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
@@ -391,6 +418,7 @@ fn main() -> anyhow::Result<()> {
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::UpperRight)
         .background_style(&WHITE.mix(0.8))
         .label_font(("sans-serif", 40))
         .border_style(&BLACK)
@@ -422,7 +450,7 @@ fn analysis_data_all(
     // let data = load_data::<Vec<f64>, _>("burg")?;
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("burg", &range, "")?;
     // println!("analysis_data: {:?}", analysis_data);
-    analysis_data_map.insert("burg".into(), (analysis_data, range.clone()));
+    analysis_data_map.insert("burg-lpc".into(), (analysis_data, range.clone()));
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("burg_uncompress")?;
     // let analysis_data =
@@ -432,7 +460,7 @@ fn analysis_data_all(
     // let data = load_data::<Vec<f64>, _>("lpc")?;
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("lpc", &range, "")?;
     // println!("analysis_data: {:?}", analysis_data);
-    analysis_data_map.insert("lpc".into(), (analysis_data, range.clone()));
+    analysis_data_map.insert("ld-lpc".into(), (analysis_data, range.clone()));
 
     // let data = load_data::<Vec<Vec<Option<f64>>>, _>("lpc_uncompress")?;
     // let analysis_data =
@@ -443,13 +471,13 @@ fn analysis_data_all(
     // let data = load_data::<Vec<f64>, _>("fft")?;
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range, "_small")?;
     // println!("analysis_data: {:?}", analysis_data);
-    analysis_data_map.insert("fft_small".into(), (analysis_data, range.clone()));
+    analysis_data_map.insert("spectrum_small".into(), (analysis_data, range.clone()));
 
     let range = (1..=500).map(|n| n as f64 / 10.).collect::<Vec<_>>();
     // let data = load_data::<Vec<f64>, _>("fft")?;
     let analysis_data = analysis_load_data::<Vec<f64>, _, USE_DATA_N>("fft", &range, "")?;
     // println!("analysis_data: {:?}", analysis_data);
-    analysis_data_map.insert("fft".into(), (analysis_data, range.clone()));
+    analysis_data_map.insert("spectrum".into(), (analysis_data, range.clone()));
 
     let range = (0..=15)
         .map(|n| (n * 10000 + 100000) as f64)
