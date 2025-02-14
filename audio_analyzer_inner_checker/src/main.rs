@@ -61,15 +61,33 @@ fn main() -> anyhow::Result<()> {
         let range_max = range.iter().cloned().reduce(f64::max).unwrap() as f32;
         let mut chart = ChartBuilder::on(&root)
             // .caption(name, ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(50)
-            .y_label_area_size(50)
+            .margin(40)
+            .x_label_area_size(100)
+            .y_label_area_size(100)
             .build_cartesian_2d(range_min..range_max, -0.01f32..1f32)?;
+
+        let x_desc = if name == "liftered" {
+            "Threshold [k]"
+        } else {
+            "Threshold"
+        };
+
+        fn fmt(v: &f32) -> String {
+            if *v > 1000. {
+                format!("{:.1}", v / 1000.)
+            } else {
+                format!("{:.1}", v)
+            }
+        }
 
         chart
             .configure_mesh()
-            .x_desc("Threshold")
-            .axis_desc_style(("sans-serif", 50))
+            .x_desc(x_desc)
+            // .axis_desc_style(("sans-serif", 50))
+            .x_label_formatter(&fmt)
+            .y_label_formatter(&fmt)
+            .x_label_style(("sans-serif", 50))
+            .y_label_style(("sans-serif", 50))
             .y_desc("FAR / FRR")
             .draw()?;
 
