@@ -115,9 +115,9 @@ fn main() {
     while let Some(data) = data.try_recv() {
         {
             n += 1;
-            // if n != count / 2 && n % 50 != 0 {
-            //     continue;
-            // }
+            if n != count / 2 && n % 50 != 0 {
+                continue;
+            }
         }
 
         // -1.1 ~ 1.1 to -1 ~ 1
@@ -238,7 +238,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
             .zip(log_power.iter())
             .map(|(x, y)| (*x, *y))
             .collect(),
-        "log_power".to_string(),
+        "(1) log_power".to_string(),
     ));
 
     let mut cepstrum = fft(log_power.clone());
@@ -257,7 +257,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
             .zip(spectral_envelope.iter())
             .map(|(x, y)| (*x, *y))
             .collect(),
-        "spectral_envelope".to_string(),
+        "(2) spectral_envelope by cepstrum".to_string(),
     ));
 
     // let depth = hanning.len() - 1;
@@ -275,7 +275,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
             .zip(levinson_durbin_log_power.iter())
             .map(|(x, y)| (*x, *y))
             .collect(),
-        "levinson_durbin_log_power".to_string(),
+        "(3) spectral_envelope by levinson-durbin".to_string(),
     ));
 
     let lpc = calc_lpc_by_burg(hanning.view(), depth).unwrap();
@@ -289,7 +289,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
             .zip(burg_log_power.iter())
             .map(|(x, y)| (*x, *y))
             .collect(),
-        "burg_log_power".to_string(),
+        "(4) spectral_envelope by burg".to_string(),
     ));
 
     // plot_view_data(view_data, frame_rate, salt);
