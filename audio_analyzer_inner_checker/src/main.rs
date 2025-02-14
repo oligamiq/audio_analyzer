@@ -362,8 +362,8 @@ fn main() -> anyhow::Result<()> {
     //     .collect::<Vec<_>>();
 
     let mut chart = ChartBuilder::on(&root)
-        .x_label_area_size(100)
-        .y_label_area_size(100)
+        .x_label_area_size(60)
+        .y_label_area_size(60)
         .margin(5)
         // .caption("EER", ("sans-serif", 50.0))
         .build_cartesian_2d(0f32..3.0f32, 0f32..1f32)?;
@@ -385,9 +385,9 @@ fn main() -> anyhow::Result<()> {
         .bold_line_style(WHITE.mix(0.3))
         .x_desc("Dataset")
         .y_desc("EER")
-        .x_label_style(("sans-serif", 50))
+        .x_label_style(("sans-serif", 30))
         .x_label_formatter(&fmt_n)
-        .axis_desc_style(("sans-serif", 50))
+        .axis_desc_style(("sans-serif", 30))
         .draw()?;
 
     let mut colors = vec![RED, GREEN, BLUE, YELLOW];
@@ -438,7 +438,7 @@ fn main() -> anyhow::Result<()> {
         .configure_series_labels()
         .position(SeriesLabelPosition::UpperRight)
         .background_style(&WHITE.mix(0.8))
-        .label_font(("sans-serif", 40))
+        .label_font(("sans-serif", 30))
         .border_style(&BLACK)
         .draw()?;
 
