@@ -194,6 +194,21 @@ fn fft_re(data: Array1<f64>) -> Array1<f64> {
     fft_output
 }
 
+fn fft_norm(data: Array1<f64>) -> Array1<f64> {
+    let fft = rustfft::FftPlanner::new().plan_fft_forward(data.len());
+
+    let mut fft_input = data
+        .iter()
+        .map(|x| Complex::new(*x, 0.0))
+        .collect::<Vec<_>>();
+
+    fft.process(&mut fft_input);
+
+    let fft_output = fft_input.iter().map(|x| x.norm()).collect::<Array1<_>>();
+
+    fft_output
+}
+
 fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: usize) {
     let file_name = format!("out/{salt}.svg");
     let root_area = SVGBackend::new(&file_name, (1024, 768)).into_drawing_area();
@@ -250,11 +265,11 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         0.5 - 0.5 * (2.0 * std::f64::consts::PI * i as f64 / data.len() as f64).cos()
     });
     let hanning = hanning * data;
-    let fft_ = fft_re(hanning.clone());
+    let fft_ = fft_norm(hanning.clone());
     let frequencies = (0..fft_.len())
         .map(|x| x as f64 * frame_rate / fft_.len() as f64)
         .collect::<Vec<_>>();
-    let log_power = fft_.mapv(|x| x.abs().log10() * 10.0);
+    let log_power = fft_.mapv(|x| x.log10() * 10.0);
 
     view_data.push((
         frequencies
