@@ -182,8 +182,8 @@ spectrum
 liftered
 </text>
 <polyline fill="none" opacity="1" stroke="#000000" stroke-width="1" points="904,919 904,924 "/>
-<rect x="795" y="397" width="218" height="521" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="338" y="593" width="219" height="325" opacity="0.5" fill="#FF0000" stroke="none"/>
-<rect x="567" y="774" width="218" height="144" opacity="0.5" fill="#FF0000" stroke="none"/>
 <rect x="110" y="599" width="218" height="319" opacity="0.5" fill="#FF0000" stroke="none"/>
+<rect x="567" y="774" width="218" height="144" opacity="0.5" fill="#FF0000" stroke="none"/>
+<rect x="338" y="593" width="219" height="325" opacity="0.5" fill="#FF0000" stroke="none"/>
+<rect x="795" y="397" width="218" height="521" opacity="0.5" fill="#FF0000" stroke="none"/>
 </svg>

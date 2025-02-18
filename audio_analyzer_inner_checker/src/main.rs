@@ -363,8 +363,8 @@ fn main() -> anyhow::Result<()> {
 
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(60)
-        .y_label_area_size(60)
-        .margin(5)
+        .y_label_area_size(70)
+        .margin(20)
         // .caption("EER", ("sans-serif", 50.0))
         .build_cartesian_2d(0f32..3.0f32, 0f32..1f32)?;
 
@@ -382,10 +382,12 @@ fn main() -> anyhow::Result<()> {
     chart
         .configure_mesh()
         .disable_x_mesh()
+        .y_max_light_lines(1)
         .bold_line_style(WHITE.mix(0.3))
         .x_desc("Dataset")
         .y_desc("EER")
         .x_label_style(("sans-serif", 30))
+        .y_label_style(("sans-serif", 30))
         .x_label_formatter(&fmt_n)
         .axis_desc_style(("sans-serif", 30))
         .draw()?;
