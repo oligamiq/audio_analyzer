@@ -7,22 +7,23 @@ use plotters::prelude::*;
 
 // lifterをしてから呼び出す
 // idct
-fn calculate_log_power_spectrum_envelope_fft(cepstrum: Array1<f64>, n: usize) -> Array1<f64> {
-    let fft = rustfft::FftPlanner::new().plan_fft_inverse(n);
-
-    let mut fft_input = cepstrum
-        .iter()
-        .map(|x| Complex::new(*x, 0.0))
-        .collect::<Vec<_>>();
-
-    fft.process(&mut fft_input);
-
-    let spectral_envelope = fft_input.iter().map(|x| x.re).collect::<Array1<_>>();
+fn calculate_log_power_spectrum_envelope_fft_re(cepstrum: Array1<f64>, n: usize) -> Array1<f64> {
+    let spectral_envelope = fft_re(cepstrum);
 
     // データをサイズで割って正規化
     let spectral_envelope = spectral_envelope.mapv(|x| x / n as f64);
 
     spectral_envelope
+}
+
+fn calculate_log_power_spectrum_envelope_fft(cepstrum: Array1<Complex<f64>>, n: usize) -> Array1<f64> {
+    let cepstrum = cepstrum.mapv(|x| x / n as f64);
+
+    let spectral_envelope = fft(cepstrum);
+
+    // データをサイズで割って正規化
+
+    spectral_envelope.into_iter().map(|x| 0. - x.norm()).collect::<Array1<_>>()
 }
 
 /// LPC係数から対数パワースペクトルを求める
@@ -53,7 +54,7 @@ pub fn calculate_log_power_spectrum_envelope_lpc(
     // 振幅スペクトル
     let amp: Vec<f64> = spectrum
         .iter()
-        .map(|c| c.norm_sqr())
+        .map(|c| c.norm())
         .collect();
     // let mut amp: Vec<f64> = spectrum.iter().map(|c| c.re).collect();
 
@@ -155,7 +156,30 @@ fn main() {
     println!("min__: {:?}", min__);
 }
 
-fn fft(data: Array1<f64>) -> Array1<f64> {
+fn ifft(data: Array1<f64>) -> Array1<Complex<f64>> {
+    let fft = rustfft::FftPlanner::new().plan_fft_inverse(data.len());
+
+    let mut fft_input = data
+        .iter()
+        .map(|x| Complex::new(*x, 0.0))
+        .collect::<Vec<_>>();
+
+    fft.process(&mut fft_input);
+
+    fft_input.into_iter().collect::<Array1<_>>()
+}
+
+fn fft(data: Array1<Complex<f64>>) -> Array1<Complex<f64>> {
+    let fft = rustfft::FftPlanner::new().plan_fft_forward(data.len());
+
+    let mut fft_input = data.into_iter().collect::<Vec<_>>();
+
+    fft.process(&mut fft_input);
+
+    fft_input.into_iter().collect::<Array1<_>>()
+}
+
+fn fft_re(data: Array1<f64>) -> Array1<f64> {
     let fft = rustfft::FftPlanner::new().plan_fft_forward(data.len());
 
     let mut fft_input = data
@@ -182,7 +206,7 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
         // .caption("FFT", ("sans-serif", 50).into_font())
         .x_label_area_size(90)
         .y_label_area_size(110)
-        .build_cartesian_2d(0.0..x_max, -100.0..40.0)
+        .build_cartesian_2d(0.0..x_max, -60.0..20.0)
         .unwrap();
 
     chart
@@ -226,11 +250,11 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         0.5 - 0.5 * (2.0 * std::f64::consts::PI * i as f64 / data.len() as f64).cos()
     });
     let hanning = hanning * data;
-    let fft_ = fft(hanning.clone());
+    let fft_ = fft_re(hanning.clone());
     let frequencies = (0..fft_.len())
         .map(|x| x as f64 * frame_rate / fft_.len() as f64)
         .collect::<Vec<_>>();
-    let log_power = fft_.mapv(|x| x.abs().log10() * 20.0);
+    let log_power = fft_.mapv(|x| x.abs().log10() * 10.0);
 
     view_data.push((
         frequencies
@@ -241,12 +265,14 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
         "(1) log_power".to_string(),
     ));
 
-    let mut cepstrum = fft(log_power.clone());
+    // let mut cepstrum = fft_re(log_power.clone());
+    let mut cepstrum = ifft(log_power.clone());
     // let liftered = lifter(cepstrum.clone(), 30);
     println!("cepstrum: {:?}", cepstrum.len());
     for i in 0..cepstrum.len() {
         if i > 30 {
-            cepstrum[i] = 0.0;
+            // cepstrum[i] = 0.0;
+            cepstrum[i] = Complex::new(0.0, 0.0);
         }
     }
     let spectral_envelope = calculate_log_power_spectrum_envelope_fft(cepstrum, log_power.len());
