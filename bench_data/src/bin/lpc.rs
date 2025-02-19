@@ -221,7 +221,7 @@ fn plot_view_data(view_data: Vec<(Vec<(f64, f64)>, String)>, x_max: f64, salt: u
         // .caption("FFT", ("sans-serif", 50).into_font())
         .x_label_area_size(90)
         .y_label_area_size(110)
-        .build_cartesian_2d(0.0..x_max, -60.0..20.0)
+        .build_cartesian_2d(0.0..x_max, -110.0..30.0)
         .unwrap();
 
     chart
@@ -269,7 +269,7 @@ fn analyze_data(data: Array1<f64>, frame_rate: f64, salt: usize) {
     let frequencies = (0..fft_.len())
         .map(|x| x as f64 * frame_rate / fft_.len() as f64)
         .collect::<Vec<_>>();
-    let log_power = fft_.mapv(|x| x.log10() * 10.0);
+    let log_power = fft_.mapv(|x| x.log10() * 20.0);
 
     view_data.push((
         frequencies
