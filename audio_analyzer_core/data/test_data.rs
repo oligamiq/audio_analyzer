@@ -42,6 +42,12 @@ impl Debug for TestData {
     }
 }
 
+impl Clone for TestData {
+    fn clone(&self) -> Self {
+        Self::new_with_path(self.test_data_string.clone())
+    }
+}
+
 impl TestData {
     pub fn new(test_data_type: TestDataType) -> Self {
         TestData {

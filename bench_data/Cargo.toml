@@ -16,11 +16,13 @@ path = "src/bin/bench.rs"
 [dependencies]
 audio_analyzer_core.workspace = true
 ndarray.workspace = true
-plotters.workspace = true
+linear-predictive-coding = "*"
+# plotters.workspace = true
+plotters = "*"
 num-complex.workspace = true
 anyhow.workspace = true
 image = { version = "0.25.4", default-features = false, features = ["png"] }
 mel_spec.workspace = true
 rustfft = "6.2"
-rand = "0.8"
+rand = "0.9"
 rayon = "1.10"
