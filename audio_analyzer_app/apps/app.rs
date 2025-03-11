@@ -45,7 +45,10 @@ impl App {
                 }
                 None => {
                     info!("failed to load app state");
-                    Config::default()
+                    // Config::default()
+
+                    Config::deserialize(include_str!("./audio_analyzer_config.json"))
+                        .expect("failed to load default config")
                 }
             };
 
