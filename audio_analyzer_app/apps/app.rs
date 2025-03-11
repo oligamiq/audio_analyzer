@@ -173,6 +173,12 @@ impl eframe::App for App {
                             );
                         }
                     }
+
+                    if ui.button("🔄 Reset").clicked() {
+                        log::info!("Reset");
+
+                        self.config = Config::default();
+                    }
                 });
 
                 egui::widgets::global_theme_preference_buttons(ui);
